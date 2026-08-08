@@ -1,0 +1,7 @@
+source,use,evidence_type,freshness,url
+CMS Provider Data Catalog,"Quality, HCAHPS, readmissions, payment benchmarks",Public benchmark source,Quarterly / annual,https://data.cms.gov/provider-data/topics/hospitals
+AHRQ Quality Indicators,Patient safety and quality methods,Public methodology,Versioned,https://qualityindicators.ahrq.gov/
+CDC/ATSDR Social Vulnerability Index,Community vulnerability context,Public benchmark source,Periodic,https://www.atsdr.cdc.gov/place-health/php/svi/
+HRSA Area Health Resources Files,Workforce and community context,Public benchmark source,Annual,https://data.hrsa.gov/topics/health-workforce/ahrf
+HHS OCR Breach Portal,Privacy breach benchmark categories,Public benchmark source,Rolling,https://ocrportal.hhs.gov/ocr/breach/breach_report.jsf
+GulfStar Synthetic Operations,"Operations, finance, encounters, staffing",Synthetic portfolio data,Through 2026-08-07,Generated with fixed seed; no PHI

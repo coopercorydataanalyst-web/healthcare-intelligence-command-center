@@ -1,0 +1,9 @@
+intervention,domain,annual_cost,annual_value,capacity_days,confidence
+Discharge-before-noon reliability,Flow,360000,1250000,1200,75
+High-risk transition nurse,Readmissions,540000,1180000,420,78
+Sepsis rescue bundle,Quality,410000,1640000,95,84
+ED fast-track redesign,Access,290000,910000,870,73
+Denial prevention work queue,Margin,240000,1320000,0,81
+OR first-case-on-time program,Procedural,180000,780000,0,76
+Minimum-necessary access controls,Privacy,210000,520000,0,69
+Language-access navigation,Equity,260000,640000,310,67
