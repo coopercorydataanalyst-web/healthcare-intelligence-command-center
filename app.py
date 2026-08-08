@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -68,23 +69,32 @@ def title_label(value):
     """Professional title case for short UI labels while preserving key acronyms."""
     text=str(value).replace("_"," ").strip()
     keep={"ED","OR","ICU","CMS","AHRQ","CDC","HRSA","HHS","OCR","PHI","CIPP","CPHQ","PDSA","ROI","SVI","LWBS","Q4","UCL","LCL","HAI"}
-    words=[]
-    for word in text.split():
-        bare=word.strip("()/-")
-        if bare.upper() in keep:
-            words.append(word.replace(bare,bare.upper()))
-        elif word.lower() in {"and","or","to","by","of","the","in","per","versus","with"} and words:
-            words.append(word.lower())
-        else:
-            words.append(word[:1].upper()+word[1:])
-    return " ".join(words)
+    minor={"and","or","to","by","of","the","in","per","versus","with"}
+    output=[]; word_count=0; after_dash=False
+    for token in re.split(r"(\s+|—)",text):
+        if not token: continue
+        if token.isspace(): output.append(token); continue
+        if token=="—": output.append(token); after_dash=True; continue
+        pieces=re.split(r"([/-])",token)
+        styled=[]
+        for piece in pieces:
+            if piece in {"/","-"}: styled.append(piece); continue
+            bare=piece.strip("(),:;")
+            prefix=piece[:len(piece)-len(piece.lstrip("("))]
+            suffix=piece[len(piece.rstrip("),:;")):]
+            if bare.upper() in keep: core=bare.upper()
+            elif bare.lower() in minor and word_count>0 and not after_dash: core=bare.lower()
+            else: core=bare[:1].upper()+bare[1:]
+            styled.append(prefix+core+suffix); word_count+=1; after_dash=False
+        output.append("".join(styled))
+    return "".join(output)
 def hero(title,sub): st.markdown(f'<div class="hero"><h1>{title}</h1><p>{sub}</p></div>',unsafe_allow_html=True)
 def evidence():
     st.markdown('<div class="sourcebar"><span class="badge">PUBLIC BENCHMARK</span><span class="badge synthetic">SYNTHETIC RESULT</span><span class="badge model">MODELED ESTIMATE</span><span class="badge validate">VALIDATION REQUIRED</span> Selected Range: <b>'+start.strftime('%b %d, %Y')+'–'+end.strftime('%b %d, %Y')+'</b></div>',unsafe_allow_html=True)
 def cards(items):
     cs=st.columns(len(items))
     for c,(label,value,note) in zip(cs,items):
-        c.markdown(f'<div class="kpi"><div class="label">{title_label(label)}</div><div class="value">{value}</div><div class="note">{note}</div></div>',unsafe_allow_html=True)
+        c.markdown(f'<div class="kpi"><div class="label">{title_label(label)}</div><div class="value">{value}</div><div class="note">{title_label(note)}</div></div>',unsafe_allow_html=True)
 def callout(title,text,kind=""):
     st.markdown(f'<div class="insight {kind}"><b>{title_label(title)}</b><br>{text}</div>',unsafe_allow_html=True)
 def plot(fig):
