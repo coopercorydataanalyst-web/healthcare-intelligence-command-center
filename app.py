@@ -24,6 +24,9 @@ CSS="""
 [data-testid="stSidebar"] input,[data-testid="stSidebar"] textarea{color:#172033!important;background:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="select"]>div{background:#fff!important;color:#172033!important}
 [data-testid="stSidebar"] [data-baseweb="select"] *{color:#172033!important}
+[data-testid="stSidebar"] [data-baseweb="tag"]{background:#0f766e!important}
+[data-testid="stSidebar"] [data-baseweb="tag"] *{color:#fff!important}
+[data-testid="stSidebar"] [data-baseweb="tag"] svg{fill:#fff!important;color:#fff!important}
 .hero{padding:28px 34px;border-radius:22px;background:linear-gradient(120deg,#082f49,#0369a1 68%,#0f766e);color:#fff;margin-bottom:18px}
 .hero h1{font-size:2.15rem;margin:0 0 8px}.hero p{font-size:1.02rem;margin:0;color:#e8f6fb}
 .badge{display:inline-block;padding:5px 10px;border-radius:99px;background:#dff5ef;color:#07594f;font-weight:700;font-size:.75rem;margin:4px 5px 4px 0}
