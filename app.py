@@ -64,20 +64,42 @@ fp=p[p.hospital.isin(hospitals)&p.date.between(start,end)].copy()
 
 def money(x): return f"${x:,.0f}"
 def pct(x): return f"{100*x:.1f}%"
+def title_label(value):
+    """Professional title case for short UI labels while preserving key acronyms."""
+    text=str(value).replace("_"," ").strip()
+    keep={"ED","OR","ICU","CMS","AHRQ","CDC","HRSA","HHS","OCR","PHI","CIPP","CPHQ","PDSA","ROI","SVI","LWBS","Q4","UCL","LCL","HAI"}
+    words=[]
+    for word in text.split():
+        bare=word.strip("()/-")
+        if bare.upper() in keep:
+            words.append(word.replace(bare,bare.upper()))
+        elif word.lower() in {"and","or","to","by","of","the","in","per","versus","with"} and words:
+            words.append(word.lower())
+        else:
+            words.append(word[:1].upper()+word[1:])
+    return " ".join(words)
 def hero(title,sub): st.markdown(f'<div class="hero"><h1>{title}</h1><p>{sub}</p></div>',unsafe_allow_html=True)
 def evidence():
-    st.markdown('<div class="sourcebar"><span class="badge">PUBLIC BENCHMARK</span><span class="badge synthetic">SYNTHETIC RESULT</span><span class="badge model">MODELED ESTIMATE</span><span class="badge validate">VALIDATION REQUIRED</span> Selected range: <b>'+start.strftime('%b %d, %Y')+'–'+end.strftime('%b %d, %Y')+'</b></div>',unsafe_allow_html=True)
+    st.markdown('<div class="sourcebar"><span class="badge">PUBLIC BENCHMARK</span><span class="badge synthetic">SYNTHETIC RESULT</span><span class="badge model">MODELED ESTIMATE</span><span class="badge validate">VALIDATION REQUIRED</span> Selected Range: <b>'+start.strftime('%b %d, %Y')+'–'+end.strftime('%b %d, %Y')+'</b></div>',unsafe_allow_html=True)
 def cards(items):
     cs=st.columns(len(items))
     for c,(label,value,note) in zip(cs,items):
-        c.markdown(f'<div class="kpi"><div class="label">{label}</div><div class="value">{value}</div><div class="note">{note}</div></div>',unsafe_allow_html=True)
+        c.markdown(f'<div class="kpi"><div class="label">{title_label(label)}</div><div class="value">{value}</div><div class="note">{note}</div></div>',unsafe_allow_html=True)
 def callout(title,text,kind=""):
-    st.markdown(f'<div class="insight {kind}"><b>{title}</b><br>{text}</div>',unsafe_allow_html=True)
+    st.markdown(f'<div class="insight {kind}"><b>{title_label(title)}</b><br>{text}</div>',unsafe_allow_html=True)
 def plot(fig):
+    for trace in fig.data:
+        if getattr(trace,"name",None): trace.name=title_label(trace.name)
+        if getattr(trace,"legendgroup",None): trace.legendgroup=title_label(trace.legendgroup)
+    for axis in [fig.layout.xaxis,fig.layout.yaxis]:
+        if axis.title and axis.title.text: axis.title.text=title_label(axis.title.text)
+    if fig.layout.coloraxis and fig.layout.coloraxis.colorbar and fig.layout.coloraxis.colorbar.title and fig.layout.coloraxis.colorbar.title.text:
+        fig.layout.coloraxis.colorbar.title.text=title_label(fig.layout.coloraxis.colorbar.title.text)
     fig.update_layout(template="plotly_white",font=dict(color="#172033"),title_font=dict(color="#082f49"),margin=dict(l=20,r=20,t=55,b=20),legend_title_text="")
     st.plotly_chart(fig,use_container_width=True)
 def table(df):
-    st.dataframe(df,use_container_width=True,hide_index=True,column_config={c:st.column_config.NumberColumn(format="%.1f") for c in df.select_dtypes("number").columns})
+    shown=df.rename(columns={c:title_label(c) for c in df.columns})
+    st.dataframe(shown,use_container_width=True,hide_index=True,column_config={c:st.column_config.NumberColumn(format="%.1f") for c in shown.select_dtypes("number").columns})
 def monthly():
     return fd.set_index("date").resample("MS").agg(revenue=("revenue","sum"),cost=("cost","sum"),admissions=("admissions","sum"),ed=("ed_arrivals","sum"),census=("census","mean"),readmission=("readmission_rate","mean"),mortality=("mortality_rate","mean"),boarding=("boarding_hours","mean"),overtime=("overtime_hours","sum"),denials=("denials","sum"),falls=("falls","sum"),hai=("hai","sum")).reset_index()
 
@@ -86,14 +108,14 @@ if page.startswith("1 —"):
     margin=(fd.revenue.sum()-fd.cost.sum())/max(fd.revenue.sum(),1); occ=fd.census.sum()/max(fd.staffed_beds.sum(),1)
     risk=int(np.clip(38+120*(occ-.78)+150*(fd.readmission_rate.mean()-.12)+3*fd.boarding_hours.mean(),0,100))
     integrity=int(np.clip(88-10*(len(fe)<100)-6*(len(hospitals)<2),0,100))
-    cards([("Enterprise Risk Signal",f"{risk}/100","Modeled composite; higher means more intervention urgency"),("Operating Margin",pct(margin),"Synthetic result; before capital allocation"),("Average Occupancy",pct(occ),"Staffed-bed utilization"),("Decision Integrity",f"{integrity}/100","Evidence, completeness, freshness, and validation score")])
+    cards([("Enterprise Risk Signal",f"{risk}/100","Modeled Composite; Higher Means More Intervention Urgency"),("Operating Margin",pct(margin),"Synthetic Result; Before Capital Allocation"),("Average Occupancy",pct(occ),"Staffed-Bed Utilization"),("Decision Integrity",f"{integrity}/100","Evidence, Completeness, Freshness, and Validation Score")])
     m=monthly(); c1,c2=st.columns([1.5,1])
     with c1:
-        fig=go.Figure(); fig.add_bar(x=m.date,y=m.revenue-m.cost,name="Operating contribution",marker_color="#0f766e"); fig.add_scatter(x=m.date,y=m.boarding*100000,name="Boarding pressure (indexed)",line=dict(color="#d97706",width=3)); fig.update_layout(title="Margin and Flow Pressure by Month",yaxis_title="Dollars / indexed pressure"); plot(fig)
+        fig=go.Figure(); fig.add_bar(x=m.date,y=m.revenue-m.cost,name="Operating Contribution",marker_color="#0f766e"); fig.add_scatter(x=m.date,y=m.boarding*100000,name="Boarding Pressure (Indexed)",line=dict(color="#d97706",width=3)); fig.update_layout(title="Margin and Flow Pressure by Month",yaxis_title="Dollars / Indexed Pressure"); plot(fig)
     with c2:
-        drivers=pd.DataFrame({"Driver":["ED boarding","Readmission exposure","Denial leakage","Overtime","Preventable harm"],"Impact":[fd.boarding_hours.mean()*240000,fe.readmission_30d.mean()*1800000,fd.denials.sum()/max((end-start).days/30,1),fd.overtime_hours.sum()*38/max((end-start).days/30,1),(fe.harm.sum()*28000)]}).sort_values("Impact")
+        drivers=pd.DataFrame({"Driver":["ED Boarding","Readmission Exposure","Denial Leakage","Overtime","Preventable Harm"],"Impact":[fd.boarding_hours.mean()*240000,fe.readmission_30d.mean()*1800000,fd.denials.sum()/max((end-start).days/30,1),fd.overtime_hours.sum()*38/max((end-start).days/30,1),(fe.harm.sum()*28000)]}).sort_values("Impact")
         plot(px.bar(drivers,x="Impact",y="Driver",orientation="h",title="Modeled Monthly Opportunity by Driver",color="Impact",color_continuous_scale="Teal"))
-    callout("CEO call",f"Flow is the dominant near-term constraint: average boarding is {fd.boarding_hours.mean():.1f} hours while occupancy is {pct(occ)}. Launch a 30-day discharge reliability sprint at the highest-pressure hospital; pair it with denial prevention so capacity gains convert to margin. Confidence: {integrity}/100.")
+    callout("CEO Call",f"Flow is the dominant near-term constraint: average boarding is {fd.boarding_hours.mean():.1f} hours while occupancy is {pct(occ)}. Launch a 30-day discharge reliability sprint at the highest-pressure hospital; pair it with denial prevention so capacity gains convert to margin. Confidence: {integrity}/100.")
 
 elif page.startswith("2 —"):
     hero("Patient Flow Digital Twin","See where beds, discharges, and ED demand create bottlenecks—and test the capacity released by operational changes."); evidence()
@@ -204,7 +226,7 @@ elif page.startswith("13 —"):
 
 else:
     hero("Quality Improvement & Reliability Lab — CPHQ Lens","Turn variation into disciplined improvement using control charts, Pareto prioritization, PDSA governance, and sustainment evidence."); evidence()
-    measure=st.selectbox("Quality Measure",["readmission","mortality","boarding","falls","hai"])
+    measure=st.selectbox("Quality Measure",["readmission","mortality","boarding","falls","hai"],format_func=title_label)
     m=monthly(); y=m[measure].astype(float); mean=y.mean(); sd=y.std(ddof=1); ucl=mean+3*sd; lcl=max(0,mean-3*sd)
     cards([("Selected Measure",measure.replace("_"," ").title(),"Synthetic result"),("Center Line",f"{mean:.3f}","Selected-range mean"),("Upper Control Limit",f"{ucl:.3f}","Three-sigma analytic limit"),("Special-Cause Months",f"{((y>ucl)|(y<lcl)).sum()}","Screening signal")])
     fig=go.Figure(); fig.add_scatter(x=m.date,y=y,mode="lines+markers",name=measure,line=dict(color="#0369a1",width=3)); fig.add_hline(y=mean,line_color="#0f766e",annotation_text="Center line"); fig.add_hline(y=ucl,line_dash="dash",line_color="#b91c1c",annotation_text="UCL"); fig.add_hline(y=lcl,line_dash="dash",line_color="#b91c1c",annotation_text="LCL"); fig.update_layout(title=f"Statistical Process Control: {measure.title()}"); plot(fig)
