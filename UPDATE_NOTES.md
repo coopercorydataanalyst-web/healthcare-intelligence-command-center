@@ -55,6 +55,7 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 35. Replaced the full-width contextual Q&A section with a fixed lower-right **Ask this visual** launcher on all 14 analytical sheets.
 36. Added a compact 430-pixel-wide, independently scrollable popover so users can ask while keeping the selected visual substantially visible; added responsive mobile positioning.
 37. Visually verified fixed positioning, compact dimensions, popover scrolling, and non-expanded page layout in the running Streamlit application.
+38. Added Streamlit Cloud compatibility for the newer `stLayoutWrapper` container so the visual-Q&A launcher remains fixed in both local and deployed runtimes.
 
 ## Validation completed
 - Python syntax compilation: passed.
