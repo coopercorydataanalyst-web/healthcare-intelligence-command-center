@@ -218,3 +218,28 @@ def test_every_documented_improvement_family_has_specific_action():
         result = answer_visual_question(page, visual, f"how can we improve {alias}", daily, encounters)
         assert entries[0][1] in result["answer"], (visual, alias, result["answer"])
         assert "not a causal or patient-care recommendation" in result["answer"]
+
+
+def test_named_hospital_low_position_uses_actual_scatter_values():
+    result = answer_visual_question(
+        "2 — Flow", "Discharge Delay and ED Boarding",
+        "why is gulfstar north so low?", daily, encounters,
+    )
+    assert "GulfStar North is the lowest point" in result["answer"]
+    assert "ED Boarding value is 5.84 hours" in result["answer"]
+    assert "Discharge Order-to-Exit: 2.26 hours" in result["answer"]
+    assert "Bubble size represents" in result["answer"]
+    assert "does not identify the cause" in result["answer"]
+    assert "Upper-right, large-volume points" not in result["answer"]
+    assert result["display"]["action_heading"] == "What Leadership Should Validate"
+
+
+def test_hospital_position_questions_are_data_aware_across_metric_visuals():
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            if not spec["metrics"]:
+                continue
+            result = answer_visual_question(page, visual, "why is GulfStar North so low", daily, encounters)
+            assert "GulfStar North" in result["answer"], (page, visual, result["answer"])
+            assert result.get("display"), (page, visual)
+            assert "descriptive" in result["limitation"].lower() or "cannot explain" in result["limitation"].lower()

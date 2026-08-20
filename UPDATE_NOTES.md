@@ -82,6 +82,8 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 62. Removed hospital/service-line/date recitals from the answer narrative; active filters remain visible in the dashboard controls and evidence bar.
 63. Moved evidence type, calculation logic, and full limitations into a collapsed details expander to keep the default answer scannable.
 64. Added a compact bold `Filters:` callout, separate rendered lines for every finding and numbered action, sentence capitalization, and `All Hospitals` / `All Service Lines` summaries for full selections.
+65. Added named-hospital position intent for high/low/why questions across every metric-backed visual, using actual filtered hospital values instead of generic focus text.
+66. Added chart-specific interpretation for Discharge Delay and ED Boarding: actual x/y values, peer comparison, bubble-size meaning, validation steps, and an explicit non-causal boundary.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -99,3 +101,5 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Exact domain-score result validated: filtered Patient Experience returned its current value, threshold gap, weakest hospital, related guardrails, Chief Experience Officer ownership, and a non-causal improvement sequence.
 - Composite reconciliation validated: Patient Experience improvement now leads with 63/100, identifies 76.8% as the underlying KPI, and explains why both values are correct.
 - Structured presentation validated: no scope recital, three concise decision signals, four numbered actions, and one short non-causal caution.
+- Entity-position validation: GulfStar North returned 5.84 boarding hours, 2.26 discharge-delay hours, 52,940 selected ED arrivals, peer comparisons, and no fabricated causal explanation.
+- Combined automated suite: 32 tests passed, including named-hospital questions across every metric-backed visual.

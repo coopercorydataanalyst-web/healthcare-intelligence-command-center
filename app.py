@@ -948,7 +948,7 @@ if not page.startswith("15 —"):
                             st.markdown("**What matters**")
                             for item in display["what_matters"]:
                                 st.markdown(f"- {item}")
-                        st.markdown("**What leadership should do**")
+                        st.markdown(f"**{display.get('action_heading', 'What Leadership Should Do')}**")
                         for number, action in enumerate(display.get("actions", []), 1):
                             st.markdown(f"{number}. {action}")
                         st.caption(display["limitation"])

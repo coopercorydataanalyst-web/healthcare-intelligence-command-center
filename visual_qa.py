@@ -380,6 +380,99 @@ def _metric_by_key(key):
     return next((metric for metric in METRICS if metric.key == key), None)
 
 
+def _selected_filter_summary(daily, encounters):
+    hospitals = sorted(daily.hospital.unique()) if not daily.empty else sorted(encounters.hospital.unique())
+    services = sorted(encounters.service_line.unique()) if not encounters.empty and "service_line" in encounters else []
+    dates = daily.date if not daily.empty and "date" in daily else encounters.admit_date
+    hospital_filter = "All Hospitals" if len(hospitals) == 3 else (", ".join(hospitals) if hospitals else "Selected Hospitals")
+    service_filter = "All Service Lines" if len(services) == 6 else (", ".join(services) if services else "Selected Service Lines")
+    return f"{hospital_filter} • {service_filter} • {dates.min():%b %-d, %Y}–{dates.max():%b %-d, %Y}"
+
+
+def _entity_position_interpretation(visual, spec, question, daily, encounters):
+    """Explain a named hospital's plotted position without inventing a cause."""
+    q = normalized_text(question)
+    hospitals = sorted(set(daily.hospital.unique()) | set(encounters.hospital.unique()))
+    hospital = next((name for name in hospitals if normalized_text(name) in q), None)
+    if hospital is None or not spec.get("metrics") or not ({"why", "low", "high", "bottom", "top"} & flexible_tokens(question)):
+        return None
+
+    if visual == "Discharge Delay and ED Boarding":
+        grouped = daily.groupby("hospital").agg(
+            boarding=("boarding_hours", "mean"),
+            delay=("discharge_order_to_exit_hours", "mean"),
+            arrivals=("ed_arrivals", "sum"),
+        )
+        if hospital not in grouped.index:
+            return None
+        row = grouped.loc[hospital]
+        boarding_order = grouped.boarding.sort_values()
+        delay_order = grouped.delay.sort_values()
+        boarding_peers = ", ".join(f"{name.replace('GulfStar ', '')} {value:.2f}" for name, value in boarding_order.items() if name != hospital)
+        delay_peers = ", ".join(f"{name.replace('GulfStar ', '')} {value:.2f}" for name, value in delay_order.items() if name != hospital)
+        answer = (
+            f"{hospital} is the lowest point because its ED Boarding value is {row.boarding:.2f} hours. "
+            "That describes its position on the vertical axis; the visual does not identify the cause."
+        )
+        what_matters = [
+            f"ED Boarding: {row.boarding:.2f} hours versus {boarding_peers} hours.",
+            f"Discharge Order-to-Exit: {row.delay:.2f} hours versus {delay_peers} hours.",
+            f"Bubble size represents {row.arrivals:,.0f} selected ED arrivals—not performance severity.",
+        ]
+        actions = [
+            "Confirm that the lower position persists by month, day, and operating shift.",
+            "Validate admission-decision, bed-ready, placement, discharge-order, and exit timestamps.",
+            "Compare demand, staffed capacity, pending admissions, and discharge reliability before attributing the difference.",
+        ]
+        limitation = "The chart shows a descriptive difference; it cannot explain why GulfStar North is lower or establish causality."
+        return {
+            "answer": answer + " " + " ".join(what_matters) + " " + limitation,
+            "calculation": "Hospital means for discharge_order_to_exit_hours and boarding_hours; bubble size = total selected ed_arrivals.",
+            "evidence": "Synthetic Result",
+            "limitation": limitation,
+            "display": {
+                "title": f"{hospital} — Visual Position",
+                "filters": _selected_filter_summary(daily, encounters),
+                "answer": answer,
+                "what_matters": what_matters,
+                "actions": actions,
+                "action_heading": "What Leadership Should Validate",
+                "limitation": limitation,
+            },
+        }
+
+    comparisons = []
+    for key in spec.get("metrics", ()):
+        metric = _metric_by_key(key)
+        if metric is None:
+            continue
+        values = []
+        for name in hospitals:
+            value = _value(metric, daily[daily.hospital == name], encounters[encounters.hospital == name])
+            if not pd.isna(value):
+                values.append((name, value))
+        entity_value = next((value for name, value in values if name == hospital), None)
+        if entity_value is None:
+            continue
+        ordered = sorted(values, key=lambda item: item[1])
+        rank = next(index for index, item in enumerate(ordered, 1) if item[0] == hospital)
+        comparisons.append(f"{metric.label}: {_format(entity_value, metric.unit)}; rank {rank} of {len(ordered)} from low to high.")
+    if not comparisons:
+        return None
+    answer = f"{hospital}'s position reflects the values plotted for the selected visual. It does not, by itself, explain why those values differ."
+    limitation = "This is a descriptive comparison. Validate underlying definitions, denominators, timing, and operating context before attributing cause."
+    return {
+        "answer": answer + " " + " ".join(comparisons),
+        "calculation": spec["calculation"], "evidence": "Synthetic Result", "limitation": limitation,
+        "display": {
+            "title": f"{hospital} — Visual Position", "filters": _selected_filter_summary(daily, encounters),
+            "answer": answer, "what_matters": comparisons,
+            "actions": ["Validate the underlying data and operating context before assigning a cause."],
+            "action_heading": "What Leadership Should Validate", "limitation": limitation,
+        },
+    }
+
+
 def _weakest_visual_metric(spec, daily, encounters):
     candidates = []
     for key in spec.get("metrics", ()):
@@ -406,11 +499,7 @@ def _metric_improvement(metric, daily, encounters, visual=None):
         ("accountable operational executive", metric.calculation, "run a time-bounded validation and improvement cycle"),
     )
     hospitals = sorted(daily.hospital.unique()) if not daily.empty else sorted(encounters.hospital.unique())
-    services = sorted(encounters.service_line.unique()) if not encounters.empty and "service_line" in encounters else []
-    dates = daily.date if not daily.empty and "date" in daily else encounters.admit_date
-    hospital_filter = "All Hospitals" if len(hospitals) == 3 else (", ".join(hospitals) if hospitals else "Selected Hospitals")
-    service_filter = "All Service Lines" if len(services) == 6 else (", ".join(services) if services else "Selected Service Lines")
-    filter_summary = f"{hospital_filter} • {service_filter} • {dates.min():%b %-d, %Y}–{dates.max():%b %-d, %Y}"
+    filter_summary = _selected_filter_summary(daily, encounters)
     hospital_values = []
     for hospital in hospitals:
         hd = daily[daily.hospital == hospital]
@@ -656,11 +745,12 @@ def answer_visual_question(page, visual, question, daily, encounters):
     if not q:
         return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
     signal = _current_signal(spec, daily, encounters)
+    entity_position = _entity_position_interpretation(visual, spec, question, daily, encounters)
     explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
     dynamic = (
-        _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        entity_position or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
         if explicit_metrics else
-        _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
+        entity_position or _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
     )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
@@ -674,12 +764,15 @@ def answer_visual_question(page, visual, question, daily, encounters):
     wants_action = forward_language and (improvement_word or wants_negative or asks_next_step)
     wants_focus = bool(tokens & {"focus", "important", "interest", "attention", "priority", "matter", "why", "care", "outlier"}) or {"stand", "out"}.issubset(tokens)
     wants_meaning = bool(tokens & {"tell", "mean", "explain", "summarize", "show", "happen", "understand", "interpret", "read"})
+    if entity_position:
+        wants_meaning = True
+        wants_focus = False
     # A broad what/how/why question about a selected visual should receive a
     # useful contextual explanation even without a memorized phrase.
     if not any((wants_callout, wants_calculation, wants_limits, wants_action, wants_positive, wants_negative, wants_focus, wants_meaning)) and tokens & {"what", "how", "why"}:
         wants_meaning = True
     sections = []
-    answer_display = None
+    answer_display = dynamic.get("display") if dynamic else None
     if wants_meaning:
         if dynamic:
             sections.append(dynamic["answer"])

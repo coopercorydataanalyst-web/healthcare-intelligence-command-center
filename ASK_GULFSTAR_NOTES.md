@@ -66,6 +66,8 @@ For composite visuals, responses distinguish the displayed modeled score from it
 
 The contextual popover now renders structured executive answers. It removes the long filter recital, avoids bolding the entire response, separates key signals from actions, and moves technical evidence/calculation/limitations into a collapsed expander. The selected controls remain the source of scope context without being repeated in every answer.
 
+Hospital-position intent now resolves questions such as **“Why is GulfStar North so low?”** against the selected visual's filtered values. On the Discharge Delay and ED Boarding scatter, the response reports the hospital's x-axis, y-axis, and bubble-size values, peer comparisons, and validation steps without inventing a causal explanation. The same deterministic entity-position contract applies across every metric-backed visual.
+
 The desktop popover is capped at 430 pixels wide and 76% of viewport height with independent vertical scrolling. The closed launcher is a small pill, and mobile screens use reduced edge spacing. The dedicated Sheet 15 remains unchanged for cross-dashboard questions.
 
 The launcher is intentionally translucent while idle (`rgba` background plus backdrop blur), becomes slightly stronger on hover, and turns fully solid when clicked/focused or when Streamlit reports the popover as open.
