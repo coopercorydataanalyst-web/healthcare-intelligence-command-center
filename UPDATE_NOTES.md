@@ -69,6 +69,10 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 49. Guaranteed exact reconciliation to the original hospital-day data when all service lines are selected. Subset selections now visibly change every applicable CEO KPI, including health score, margin, utilization, boarding, readmission, RN vacancy, agency share, patient experience, and effective capacity.
 50. Added visible service-scope disclosure and explicit non-applicability language for privacy events, source/governance facts, and intervention assumptions, which lack defensible service-line attribution.
 51. Added service-line reconciliation, subset-sensitivity, completeness, and live Streamlit interaction tests.
+52. Replaced generic visual-improvement advice with metric-specific, filter-aware executive guidance: current result, selected scope, threshold gap, hospital concentration, related guardrails, accountable executive, validation checklist, bounded intervention options, PDSA monitoring, and non-causal limitation.
+53. Added ER-to-ED language normalization so `how can I improve the er boarding` resolves safely to ED Boarding.
+54. Added weakest-metric selection for general improvement questions about a multi-metric visual, while preserving documented visual-level actions where no safe metric mapping exists.
+55. Added exact regression and calculation validation for the COPD 6.7-hour ED Boarding example and general visual-improvement intent.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -80,3 +84,5 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Automated Q&A suite: 22 tests passed, including exact Patient Experience and RN Vacancy questions, every metric-to-visual mapping, and every documented modeled/governance content family.
 - Combined automated suite: 25 tests passed, including exact full-portfolio reconciliation and service-line subset sensitivity.
 - Live Streamlit interaction: changing Service Line(s) from all lines to COPD changed every displayed CEO performance KPI without exceptions.
+- Combined automated suite: 27 tests passed after the tailored improvement-response upgrade.
+- Exact contextual result validated: COPD ED Boarding returned 6.7 hours, a 2.7-hour illustrative threshold gap, GulfStar Medical Center concentration, related filtered flow signals, COO ownership, and a non-causal action sequence.

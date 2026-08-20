@@ -31,6 +31,7 @@ ALIASES = {
     "worried": "concern", "cares": "care", "outliers": "outlier", "stands": "stand",
     "profit": "margin", "profits": "margin", "financial": "margin", "money": "margin",
     "nurses": "workforce", "nursing": "workforce", "staffing": "workforce",
+    "er": "ed", "emergency": "ed",
 }
 
 VOCABULARY = {
@@ -45,7 +46,7 @@ VOCABULARY = {
     "limit", "trust", "reliable", "confidence", "bias", "missing", "executive", "summary",
     "leadership", "ceo", "performance", "trend", "recent", "month", "day", "dashboard",
     "about", "overview", "help", "work", "working", "not", "well", "care", "flag", "stand", "out", "outlier", "most", "please", "current", "prior",
-    "margin", "workforce", "nurse", "staff", "quality", "flow", "finance", "access", "experience", "privacy", "equity", "roi",
+    "margin", "workforce", "nurse", "staff", "quality", "flow", "finance", "access", "experience", "privacy", "equity", "roi", "ed", "boarding",
 }
 
 STOPWORDS = {"the", "a", "an", "is", "are", "was", "were", "this", "that", "these", "those", "i", "we", "me", "my", "our", "it", "in", "on", "of", "to", "for", "and", "or", "about", "please"}

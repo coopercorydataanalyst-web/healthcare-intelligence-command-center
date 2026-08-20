@@ -58,6 +58,8 @@ This precedence rule now applies across every analytical page and every cataloge
 
 The global service-line filter now applies to the synthetic hospital-day operating layer through a deterministic service-line allocation. Q&A receives the same filtered and rolled-up operations frame as the visuals, so its answers reconcile with the selected service-line KPI cards. All-line selection reproduces original totals. Subset selection is labeled as a modeled allocation. Privacy, registry/governance, and intervention assumptions remain explicitly outside service-line attribution.
 
+Improvement intent now uses a shared metric-specific executive response framework. It includes current result, active service-line/hospital/date scope, illustrative threshold gap, worst hospital concentration, related guardrail metrics, accountable executive role, validation checklist, bounded improvement options, monitoring plan, and a non-causal limitation. ER/ED language is normalized. When no metric is named, the assistant chooses the weakest safely scored metric mapped to the selected visual rather than returning generic advice.
+
 The desktop popover is capped at 430 pixels wide and 76% of viewport height with independent vertical scrolling. The closed launcher is a small pill, and mobile screens use reduced edge spacing. The dedicated Sheet 15 remains unchanged for cross-dashboard questions.
 
 The launcher is intentionally translucent while idle (`rgba` background plus backdrop blur), becomes slightly stronger on hover, and turns fully solid when clicked/focused or when Streamlit reports the popover as open.

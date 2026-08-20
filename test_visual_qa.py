@@ -153,3 +153,30 @@ def test_documented_modeled_and_governance_content_is_explained_specifically():
         assert result["answer"] == entries[0][1], (visual, alias, result["answer"])
         assert result["calculation"] == entries[0][2]
         assert "operational validation" in result["limitation"]
+
+
+def test_er_boarding_improvement_is_metric_filter_and_hospital_aware():
+    copd_daily = daily.copy()
+    copd_encounters = encounters[encounters.service_line == "COPD"].copy()
+    result = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards",
+        "how can I improve the er boarding", copd_daily, copd_encounters,
+    )
+    assert "Improvement opportunity — ED Boarding" in result["answer"]
+    assert "COPD" in result["answer"]
+    assert "Strongest pressure:" in result["answer"]
+    assert "Staffed-Bed Utilization" in result["answer"]
+    assert "Discharge-Order-to-Exit Time" in result["answer"]
+    assert "Chief Operating Officer" in result["answer"]
+    assert "does not claim" in result["answer"]
+    assert "Validate the underlying denominator" not in result["answer"]
+
+
+def test_generic_improvement_question_uses_weakest_mapped_metric():
+    result = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards",
+        "what should we do to improve this visual", daily, encounters,
+    )
+    assert "Improvement opportunity —" in result["answer"]
+    assert "current filtered result" in result["answer"]
+    assert "Leadership response:" in result["answer"]

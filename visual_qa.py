@@ -326,6 +326,115 @@ METRIC_DETAIL = {
 }
 
 
+IMPROVEMENT_PATHS = {
+    "boarding": ("Chief Operating Officer", "arrival, admission-decision, bed-ready, placement, discharge-order, and physical-exit timestamps", "test discharge-readiness coordination, admission-placement escalation, and demand-capacity huddles"),
+    "ed_provider": ("Chief Operating Officer", "arrival, triage, provider-contact, fast-track, and staffing timestamps", "test demand-matched coverage, triage streaming, and fast-track reliability"),
+    "bed_utilization": ("Chief Operating Officer", "staffed-bed definitions, census, unit type, isolation constraints, and shift-level peaks", "test staffed-capacity alignment, discharge reliability, and inter-unit placement escalation"),
+    "available_beds": ("Chief Operating Officer", "whether the available beds match the required hospital, unit, acuity, and time", "test real-time bed-type visibility and placement escalation"),
+    "discharge_delay": ("Chief Operating Officer", "discharge order, clinical readiness, pharmacy, transport, placement, and physical-exit timestamps", "test earlier readiness identification and barrier-specific discharge coordination"),
+    "pending_admissions": ("Chief Operating Officer", "queue definitions, bed type, placement timing, and demand peaks", "test admission-placement escalation and demand-capacity huddles"),
+    "readmission": ("Chief Clinical Officer", "cohort eligibility, discharge disposition, follow-up, barriers, and risk adjustment", "test transition calls, follow-up reliability, medication access, and barrier-specific navigation"),
+    "mortality": ("Chief Medical Officer", "event definitions, case mix, severity, expected mortality, and rescue-process data", "conduct governed case review and test escalation or rescue-process reliability"),
+    "falls": ("Chief Nursing Officer", "event reporting, patient-days, location, severity, and contributing conditions", "test unit-specific prevention reliability after governed event review"),
+    "hai": ("Chief Quality Officer", "infection definitions, device or procedure denominators, attribution windows, and surveillance completeness", "test the relevant prevention bundle and audit process reliability"),
+    "harm": ("Chief Quality Officer", "harm definitions, denominator stability, event severity, and reporting completeness", "conduct governed event review and test the most frequent validated process gap"),
+    "deterioration": ("Chief Medical Officer", "deterioration definitions, escalation timing, rescue response, acuity, and documentation", "test recognition and escalation reliability through clinical governance"),
+    "rn_vacancy": ("Chief Nursing Officer", "approved positions, filled FTEs, leave, recruiting pipeline, unit, shift, and skill mix", "prioritize the highest-pressure units for retention, recruiting, scheduling, and workload redesign"),
+    "agency_share": ("Chief Nursing Officer", "productive, agency, overtime, unit, shift, vacancy, and demand hours", "test internal staffing-pool coverage and vacancy-focused workforce actions"),
+    "overtime_share": ("Chief Nursing Officer", "productive and overtime hours by unit, shift, vacancy, demand, and scheduling practice", "test schedule redesign, internal coverage, and vacancy-focused actions"),
+    "experience": ("Chief Experience Officer", "survey eligibility, response mix, domain composition, service recovery, and unit-level variation", "test communication, responsiveness, discharge information, and service-recovery reliability"),
+    "margin": ("Chief Financial Officer", "revenue, cost allocation, payer mix, volume, labor, and claims adjudication", "test the largest validated labor, throughput, denial, or service-line contribution opportunity"),
+    "denial_rate": ("Chief Financial Officer", "denial definitions, adjudication status, payer, reason code, authorization, coding, and documentation", "test prevention work queues for the largest validated denial categories"),
+    "denials": ("Chief Financial Officer", "denied dollars, final adjudication, payer, reason code, and recoverability", "test prevention and recovery workflows for the largest validated denial categories"),
+    "or_utilization": ("Chief Operating Officer", "available room time, block ownership, case duration, first-case starts, turnover, cancellations, and staffing", "test first-case reliability, block release, turnover, and schedule matching before adding capacity"),
+    "specialty_wait": ("Chief Operating Officer", "referral completeness, urgency, specialty, template supply, cancellations, and patient preference", "test centralized scheduling, referral navigation, template release, and cancellation recovery"),
+    "lwbs": ("Chief Operating Officer", "arrival, triage, departure, provider-contact, demand, and fast-track definitions", "test demand-matched staffing, streaming, fast track, and waiting-room communication"),
+    "followup": ("Chief Clinical Officer", "booking status, appointment timing, attendance, specialty, barriers, and discharge cohort", "test confirmed scheduling and barrier-specific navigation before discharge"),
+    "hppd": ("Chief Nursing Officer", "worked hours, patient-days, acuity, unit, shift, skill mix, and assignments", "test acuity- and demand-aligned staffing with workforce and clinical guardrails"),
+    "contribution": ("Chief Financial Officer", "encounter revenue, cost allocation, payer, service line, volume, and claims status", "test the largest validated contract, denial, documentation, throughput, or cost opportunity"),
+}
+
+RELATED_METRICS = {
+    "boarding": ("bed_utilization", "discharge_delay", "pending_admissions", "ed_provider"),
+    "bed_utilization": ("available_beds", "boarding", "discharge_delay"),
+    "margin": ("denial_rate", "agency_share", "overtime_share"),
+    "readmission": ("followup", "los"),
+    "rn_vacancy": ("agency_share", "overtime_share", "hppd"),
+    "agency_share": ("rn_vacancy", "overtime_share"),
+    "experience": ("boarding", "lwbs", "rn_vacancy"),
+    "or_utilization": ("or_cases",),
+    "specialty_wait": ("lwbs", "boarding"),
+    "harm": ("deterioration", "mortality", "falls", "hai"),
+}
+
+
+def _metric_by_key(key):
+    return next((metric for metric in METRICS if metric.key == key), None)
+
+
+def _weakest_visual_metric(spec, daily, encounters):
+    candidates = []
+    for key in spec.get("metrics", ()):
+        metric = _metric_by_key(key)
+        detail = METRIC_DETAIL.get(key, {})
+        if metric is None or not {"target", "bad", "direction"}.issubset(detail):
+            continue
+        value = _value(metric, daily, encounters)
+        if pd.isna(value):
+            continue
+        score = _higher_score(value, detail["target"], detail["bad"]) if detail["direction"] == "high" else _lower_score(value, detail["target"], detail["bad"])
+        candidates.append((score, metric))
+    if candidates:
+        return min(candidates, key=lambda item: item[0])[1]
+    return _metric_by_key(spec.get("metrics", (None,))[0]) if spec.get("metrics") else None
+
+
+def _metric_improvement(metric, daily, encounters):
+    value = _value(metric, daily, encounters)
+    if pd.isna(value):
+        return None
+    owner, validation, intervention = IMPROVEMENT_PATHS.get(
+        metric.key,
+        ("accountable operational executive", metric.calculation, "run a time-bounded validation and improvement cycle"),
+    )
+    hospitals = sorted(daily.hospital.unique()) if not daily.empty else sorted(encounters.hospital.unique())
+    services = sorted(encounters.service_line.unique()) if not encounters.empty and "service_line" in encounters else []
+    dates = daily.date if not daily.empty and "date" in daily else encounters.admit_date
+    scope = f"{', '.join(services) if services else 'selected service lines'} • {', '.join(hospitals)} • {dates.min():%b %d, %Y}–{dates.max():%b %d, %Y}"
+    hospital_values = []
+    for hospital in hospitals:
+        hd = daily[daily.hospital == hospital]
+        he = encounters[encounters.hospital == hospital]
+        hospital_value = _value(metric, hd, he)
+        if not pd.isna(hospital_value):
+            hospital_values.append((hospital, hospital_value))
+    concentration = ""
+    if hospital_values:
+        worst = min(hospital_values, key=lambda item: item[1]) if metric.better == "high" else max(hospital_values, key=lambda item: item[1])
+        concentration = f" Strongest pressure: {worst[0]} at {_format(worst[1], metric.unit)}."
+    detail = METRIC_DETAIL.get(metric.key, {})
+    threshold = ""
+    if "target" in detail:
+        gap = value - detail["target"]
+        gap_text = f"{100 * abs(gap):.1f} percentage points" if metric.unit == "percent" else _format(abs(gap), metric.unit)
+        relation = "above" if gap > 0 else "below" if gap < 0 else "at"
+        threshold = f" It is {gap_text} {relation} the dashboard's illustrative favorable threshold."
+    related = []
+    for key in RELATED_METRICS.get(metric.key, ()):
+        related_metric = _metric_by_key(key)
+        related_value = _value(related_metric, daily, encounters)
+        if not pd.isna(related_value):
+            related.append(f"{related_metric.label} {_format(related_value, related_metric.unit)}")
+    related_text = f" Related filtered signals: {', '.join(related)}." if related else ""
+    return (
+        f"Improvement opportunity — {metric.label}: current filtered result is {_format(value, metric.unit)}. "
+        f"Scope: {scope}.{threshold}{concentration}{related_text} "
+        f"Leadership response: 1) assign the {owner}; 2) validate {validation}; "
+        f"3) {intervention}; and 4) monitor {metric.label} with the related guardrail signals through a time-bounded PDSA cycle. "
+        "This prioritizes investigation and does not claim that the related signals caused the result."
+    )
+
+
 DOCUMENTED_CONTENT = {
     "Executive Priority Queue": (
         (("severity", "priority score"), "Severity is the dashboard's modeled size of the validated performance gap; it orders the queue before exposure is used as a tie-breaker.", "Modeled domain-gap logic; severity descending, then modeled exposure descending.", "Modeled Estimate"),
@@ -490,7 +599,9 @@ def answer_visual_question(page, visual, question, daily, encounters):
         negative = _visual_movements(spec, daily, encounters, "negative")
         sections.append("Negative movement: " + (negative if negative else "No safely mapped negative movement is available for this visual under the current filtered 30-day comparison. This does not prove that every underlying subgroup improved."))
     if wants_action:
-        sections.append("Possible improvement response: " + spec["action"])
+        action_metric = explicit_metrics[0] if explicit_metrics else _weakest_visual_metric(spec, daily, encounters)
+        tailored_action = _metric_improvement(action_metric, daily, encounters) if action_metric else None
+        sections.append("Possible improvement response: " + (tailored_action or spec["action"]))
     if wants_callout:
         sections.append("Callout: " + spec["callout"])
     if wants_calculation:

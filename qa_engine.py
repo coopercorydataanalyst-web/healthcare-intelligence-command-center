@@ -87,9 +87,13 @@ def _norm(text):
 
 def _metrics_in(question):
     q = _norm(question)
+    question_tokens = flexible_tokens(question)
     found = []
     for metric in METRICS:
-        if any(_norm(alias) in q for alias in metric.aliases):
+        if any(
+            _norm(alias) in q or flexible_tokens(alias).issubset(question_tokens)
+            for alias in metric.aliases
+        ):
             found.append(metric)
     # Prefer the more specific denial-rate interpretation.
     if any(m.key == "denial_rate" for m in found):
