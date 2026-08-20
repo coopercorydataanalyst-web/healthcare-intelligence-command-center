@@ -2,6 +2,9 @@
 
 ## Files to replace
 - `app.py`
+- `qa_engine.py`
+- `test_qa_engine.py`
+- `ASK_GULFSTAR_NOTES.md`
 - `generate_data.py`
 - `data/daily_operations.csv.gz`
 - `data/synthetic_encounters.csv.gz`
@@ -27,8 +30,14 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 13. Date-range repair: the control now defaults to the complete dataset range, resets stale out-of-range session values, remains bounded by the loaded data, and displays the available minimum and maximum dates.
 14. Sidebar control repair: outer select and multiselect surfaces now use dark green with white text/icons on every page.
 15. Streamlit Cloud compatibility repair: directly styles the newer `stDateInputField` control, restores white sidebar headings/captions, and versions the date widget key so an older browser-side selection cannot override the full-range default.
+16. Added Analysis Sheet 15, **Ask GulfStar Intelligence**, with a deterministic local semantic/query layer and no external LLM or API-key requirement.
+17. Added safe allowlisted hospital comparisons, highest/lowest queries, current values, prior/change queries, intervention ROI, executive priority rationale, and modeled exposure queries.
+18. Added calculation transparency, evidence labels, limitations, unsupported-question refusal, filter-scope disclosure, and visible synthetic/no-PHI/not-patient-care guardrails.
+19. Added focused automated tests for required example questions, every supported metric, filter exclusions, refusal behavior, and distinct priority/exposure logic.
 
 ## Validation completed
 - Python syntax compilation: passed.
-- Streamlit runtime smoke-test harness: all 14 analysis sheets executed without exceptions.
+- Streamlit runtime smoke-test harness: all 15 analysis sheets executed without exceptions.
 - CEO-page assertions: priority ranks render in #1–#5 sequence, the #1 emphasis class is present, stable wording is present, and no directional `0.0` language is rendered.
+- Q&A unit tests: all required examples, documented metrics, refusal paths, filter exclusions, and modeled intents passed.
+- Q&A form runtime: a submitted hospital-ranking question rendered an answer without exceptions.

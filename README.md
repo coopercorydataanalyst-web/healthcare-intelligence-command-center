@@ -25,7 +25,7 @@ The first two analysis sheets are designed as operating command centers rather t
    - Modeled patient-flow funnel
    - What-if bed-day release scenario
 
-The application contains 14 analysis sheets in total, including dedicated demonstrations of:
+The application contains 15 analysis sheets in total, including dedicated demonstrations of:
 
 - Clinical deterioration and rescue surveillance
 - Preventable harm and modeled financial exposure
@@ -39,6 +39,20 @@ The application contains 14 analysis sheets in total, including dedicated demons
 - Methods, governance, evidence confidence, and lineage
 - CIPP-informed privacy governance and responsible analytics
 - CPHQ-informed statistical process control, Pareto prioritization, PDSA learning cycles, and reliability management
+- **Ask GulfStar Intelligence**, a deterministic natural-language Q&A layer over the active dashboard filters
+
+## Ask GulfStar Intelligence
+
+Analysis Sheet 15 lets an end user ask supported plain-language questions without an external LLM, paid API, or API key. The local query layer maps intent and metric synonyms to an allowlist of pandas aggregations. Every answer displays:
+
+- The direct answer and supporting hospital values
+- The calculation or metric definition used
+- The evidence type (Synthetic Result, Modeled Estimate, or Validation Required)
+- A limitation statement and visible synthetic/no-PHI/not-patient-care guardrails
+
+Supported intents include hospital comparisons, highest/lowest metrics, current-period values, comparable prior-period changes, last-N-day changes within the selected date range, intervention ROI, executive priority rationale, and modeled priority exposure. Supported measures include readmission, mortality, falls, HAI, ED boarding, ED-to-provider time, LWBS, staffed-bed utilization, available staffed beds, RN vacancy, agency labor share, patient experience, operating margin, denials and denial rate, OR utilization, and specialty wait.
+
+Hospital and date filters apply to all Q&A results. The service-line filter applies to encounter-based readmission answers. Intervention scenarios are system-level modeled inputs and therefore do not change with hospital, service-line, or date filters. Unsupported or ambiguous questions are refused with examples rather than guessed.
 
 ## Evidence model
 

@@ -6,6 +6,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from qa_engine import answer_question
+
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 
@@ -31,6 +33,7 @@ NAV = [
     "12 — Methods, Governance & Confidence",
     "13 — Privacy, Ethics & Responsible Analytics (CIPP)",
     "14 — Quality Improvement & Reliability Lab (CPHQ)",
+    "15 — Ask GulfStar Intelligence",
 ]
 
 CSS = """
@@ -732,7 +735,7 @@ elif page.startswith("13 —"):
     ],columns=["gate","executive_question","accountable_owner"]))
     callout("Privacy Action",f"A {minimum}% reduction in unnecessary access is modeled to prevent exposure of {prevent:,} records. This is a scenario, not a breach determination; legal and privacy review remains required.")
 
-else:
+elif page.startswith("14 —"):
     hero("Quality Improvement & Reliability Lab — CPHQ Lens","Turn variation into disciplined improvement using control charts, Pareto prioritization, PDSA governance, and sustainment evidence."); evidence()
     measure=st.selectbox("Quality Measure",["readmission","mortality","boarding","falls","hai"],format_func=title_label)
     m=monthly()
@@ -747,6 +750,73 @@ else:
         st.subheader("PDSA Learning System")
         table(pd.DataFrame([["Plan","Define aim, population, measure, prediction"],["Do","Test on small scale; document deviations"],["Study","Compare result with prediction; examine variation"],["Act","Adopt, adapt, or abandon; define next cycle"]],columns=["phase","evidence_required"]))
     callout("Quality Action","Treat points beyond limits as investigation signals, not proof of performance failure. Confirm denominator stability, coding changes, seasonality, and workflow context before intervention.")
+
+else:
+    hero(
+        "Ask GulfStar Intelligence",
+        "Ask plain-language questions of the currently filtered synthetic data using a deterministic, auditable local query layer—no external LLM or API key."
+    )
+    evidence()
+
+    st.info(
+        "Every answer is restricted to predefined metrics and safe aggregations. It will not invent a metric, "
+        "infer a cause, or make a patient-care recommendation. Hospital and date filters apply to all answers; "
+        "the service-line filter applies to encounter-based 30-day readmission results."
+    )
+
+    with st.expander("Question help and examples", expanded=True):
+        st.markdown(
+            "- Which hospital has the highest readmission rate?\n"
+            "- What changed in ED boarding over the last 90 days?\n"
+            "- Which hospital has the highest RN vacancy?\n"
+            "- Why is GulfStar Medical Center the top priority?\n"
+            "- Which intervention has the highest modeled ROI?\n"
+            "- Compare hospitals on operating margin and patient experience.\n"
+            "- What is GulfStar North's current OR utilization?\n"
+            "- Which hospital has the lowest available staffed beds?"
+        )
+        st.caption(
+            "Supported measures: readmission, mortality, falls, HAI, ED boarding, ED-to-provider, LWBS, "
+            "staffed-bed utilization, available staffed beds, RN vacancy, agency labor share, patient experience, "
+            "operating margin, denials/denial rate, OR utilization, specialty wait, intervention ROI, and priority exposure."
+        )
+
+    with st.form("gulfstar_question_form"):
+        question = st.text_input(
+            "Ask a question about the filtered dashboard data",
+            placeholder="Example: Compare hospitals on operating margin and patient experience.",
+        )
+        submitted = st.form_submit_button("Ask GulfStar Intelligence", type="primary")
+
+    if submitted:
+        result = answer_question(
+            question, fd, fe, pdaily, penc, iv, priority_queue(),
+            all_hospitals=sorted(d.hospital.unique()),
+        )
+        st.session_state["gulfstar_last_answer"] = result
+        st.session_state["gulfstar_last_question"] = question
+
+    result = st.session_state.get("gulfstar_last_answer")
+    asked = st.session_state.get("gulfstar_last_question")
+    if result:
+        st.subheader("Answer")
+        if asked:
+            st.caption(f"Question: {asked}")
+        st.markdown(f'<div class="brief"><b>{result["answer"]}</b></div>', unsafe_allow_html=True)
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            st.markdown(f"**Evidence type:** {result['evidence']}")
+        with c2:
+            st.markdown("**Scope:** Current global filters")
+        st.markdown(f"**Calculation / metric used:** {result['calculation']}")
+        st.warning(f"**Limitation:** {result['limitation']}")
+        if isinstance(result.get("data"), pd.DataFrame) and not result["data"].empty:
+            st.subheader("Supporting values")
+            table(result["data"])
+
+    st.caption(
+        "Synthetic data only • No PHI • Not patient-care decision support • Descriptive and modeled outputs require validation before operational use"
+    )
 
 st.markdown("---")
 st.caption(
