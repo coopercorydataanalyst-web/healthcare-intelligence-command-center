@@ -188,6 +188,9 @@ def test_domain_score_patient_experience_improvement_uses_metric_path():
         "how can I improve patient experience", daily, encounters,
     )
     assert "Improvement opportunity — Patient Experience" in result["answer"]
+    assert "displayed Patient Experience domain score is 63/100" in result["answer"]
+    assert "underlying filtered synthetic Patient Experience KPI of 76.8%" in result["answer"]
+    assert "different scales, not conflicting results" in result["answer"]
     assert "Chief Experience Officer" in result["answer"]
     assert "Related filtered signals:" in result["answer"]
     assert "Review the component metrics behind the weakest domain" not in result["answer"]

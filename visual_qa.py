@@ -367,6 +367,14 @@ RELATED_METRICS = {
     "harm": ("deterioration", "mortality", "falls", "hai"),
 }
 
+METRIC_DOMAINS = {
+    "readmission": "Quality & Safety", "mortality": "Quality & Safety", "harm": "Quality & Safety",
+    "boarding": "Patient Flow", "bed_utilization": "Patient Flow", "discharge_delay": "Patient Flow",
+    "margin": "Financial", "denial_rate": "Financial",
+    "rn_vacancy": "Workforce", "overtime_share": "Workforce", "agency_share": "Workforce",
+    "lwbs": "Access", "specialty_wait": "Access", "experience": "Patient Experience",
+}
+
 
 def _metric_by_key(key):
     return next((metric for metric in METRICS if metric.key == key), None)
@@ -389,7 +397,7 @@ def _weakest_visual_metric(spec, daily, encounters):
     return _metric_by_key(spec.get("metrics", (None,))[0]) if spec.get("metrics") else None
 
 
-def _metric_improvement(metric, daily, encounters):
+def _metric_improvement(metric, daily, encounters, visual=None):
     value = _value(metric, daily, encounters)
     if pd.isna(value):
         return None
@@ -414,11 +422,26 @@ def _metric_improvement(metric, daily, encounters):
         concentration = f" Strongest pressure: {worst[0]} at {_format(worst[1], metric.unit)}."
     detail = METRIC_DETAIL.get(metric.key, {})
     threshold = ""
+    displayed_context = f"{metric.label}: current filtered result is {_format(value, metric.unit)}."
     if "target" in detail:
         gap = value - detail["target"]
         gap_text = f"{100 * abs(gap):.1f} percentage points" if metric.unit == "percent" else _format(abs(gap), metric.unit)
         relation = "above" if gap > 0 else "below" if gap < 0 else "at"
         threshold = f" It is {gap_text} {relation} the dashboard's illustrative favorable threshold."
+        if visual == "Executive Health Score by Domain":
+            component_score = _higher_score(value, detail["target"], detail["bad"]) if detail["direction"] == "high" else _lower_score(value, detail["target"], detail["bad"])
+            domain = METRIC_DOMAINS.get(metric.key, metric.label)
+            if metric.key == "experience":
+                displayed_context = (
+                    f"The displayed Patient Experience domain score is {component_score:.0f}/100. "
+                    f"It is derived from the underlying filtered synthetic Patient Experience KPI of {_format(value, metric.unit)}; "
+                    "76.8% and 63/100 are different scales, not conflicting results."
+                )
+            else:
+                displayed_context = (
+                    f"The underlying current filtered result for {metric.label} is {_format(value, metric.unit)} and maps to a modeled component score of {component_score:.0f}/100. "
+                    f"That component contributes to the displayed {domain} domain score together with the other documented domain components."
+                )
     related = []
     for key in RELATED_METRICS.get(metric.key, ()):
         related_metric = _metric_by_key(key)
@@ -427,7 +450,7 @@ def _metric_improvement(metric, daily, encounters):
             related.append(f"{related_metric.label} {_format(related_value, related_metric.unit)}")
     related_text = f" Related filtered signals: {', '.join(related)}." if related else ""
     return (
-        f"Improvement opportunity — {metric.label}: current filtered result is {_format(value, metric.unit)}. "
+        f"Improvement opportunity — {metric.label}: {displayed_context} "
         f"Scope: {scope}.{threshold}{concentration}{related_text} "
         f"Leadership response: 1) assign the {owner}; 2) validate {validation}; "
         f"3) {intervention}; and 4) monitor {metric.label} with the related guardrail signals through a time-bounded PDSA cycle. "
@@ -651,7 +674,7 @@ def answer_visual_question(page, visual, question, daily, encounters):
     if wants_action:
         documented_action = _documented_improvement(visual, question)
         action_metric = explicit_metrics[0] if explicit_metrics else (None if documented_action else _weakest_visual_metric(spec, daily, encounters))
-        tailored_action = _metric_improvement(action_metric, daily, encounters) if action_metric else None
+        tailored_action = _metric_improvement(action_metric, daily, encounters, visual) if action_metric else None
         sections.append("Possible improvement response: " + (tailored_action or documented_action or spec["action"]))
     if wants_callout:
         sections.append("Callout: " + spec["callout"])

@@ -76,6 +76,8 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 56. Connected every Executive Health Score and Executive Priority Queue component metric to the tailored improvement router, fixing generic answers such as `how can I improve patient experience` on the domain-score visual.
 57. Added deterministic improvement pathways for all non-standard content families: priority severity/exposure/ownership, modeled funnel and outcome pressure, intervention and portfolio assumptions, decision integrity, source registry, privacy, governance gates, SPC, Pareto, and PDSA.
 58. Added dashboard-wide tests requiring every metric-backed visual to return a filtered improvement response and every documented improvement family to return its own specific action.
+59. Corrected composite-scale communication: improvement answers on Executive Health Score by Domain now lead with the displayed modeled component/domain score and separately identify the underlying raw KPI and normalization logic.
+60. Added exact regression coverage for the Patient Experience reconciliation: 63/100 displayed score versus 76.8% underlying synthetic KPI, explicitly labeled as different scales rather than conflicting results.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -91,3 +93,4 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Exact contextual result validated: COPD ED Boarding returned 6.7 hours, a 2.7-hour illustrative threshold gap, GulfStar Medical Center concentration, related filtered flow signals, COO ownership, and a non-causal action sequence.
 - Combined automated suite: 30 tests passed after connecting composite and non-standard visuals to the improvement router.
 - Exact domain-score result validated: filtered Patient Experience returned its current value, threshold gap, weakest hospital, related guardrails, Chief Experience Officer ownership, and a non-causal improvement sequence.
+- Composite reconciliation validated: Patient Experience improvement now leads with 63/100, identifies 76.8% as the underlying KPI, and explains why both values are correct.
