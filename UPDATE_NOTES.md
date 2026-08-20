@@ -37,6 +37,7 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 20. Added executive-language intents: `positive_change`, `negative_change`, `executive_summary`, and `trend_summary`.
 21. Added auditable 30-day default summaries and explicit last-N-day comparisons, with current/prior values, directional classification, metric calculations, evidence labels, and non-causal limitations.
 22. Added proportional cross-metric ranking so unlike units are never compared by raw magnitude, plus stable-at-displayed-precision handling.
+23. Made executive intent recognition tolerant of conversational tense and grammar variants, including the exact end-user wording `what has happen positively in last 30 days`.
 
 ## Validation completed
 - Python syntax compilation: passed.

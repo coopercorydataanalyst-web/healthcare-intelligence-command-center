@@ -73,7 +73,11 @@ def test_priority_and_exposure_intents_are_distinct():
 def test_executive_language_intents_return_auditable_summaries():
     questions = {
         "What has happened positively in the last 30 days?": "Positive changes",
+        "what has happen positively in last 30 days": "Positive changes",
+        "What is happening positively over the last 30 days?": "Positive changes",
+        "What has improved in the last 30 days?": "Positive changes",
         "What got worse in the last 30 days?": "Negative changes",
+        "What has gotten worse over the last 30 days?": "Negative changes",
         "Give me the executive summary": "Executive trend summary",
         "What changed this month?": "Executive trend summary",
         "What should leadership celebrate?": "Positive changes",

@@ -118,6 +118,20 @@ def _response(answer, calculation, evidence="Synthetic Result", limitation=None,
 
 def _summary_intent(question):
     q = _norm(question)
+    # Executive questions are intentionally tolerant of conversational grammar
+    # and common tense variants (for example, "has happen positively").
+    positive_patterns = (
+        r"\bwhat\s+(?:has\s+|have\s+|is\s+|was\s+)?happen(?:ed|s|ing)?\s+positively\b",
+        r"\bwhat\s+(?:has\s+|have\s+)?improv(?:e|ed|es|ing)\b",
+        r"\bwhat\s+(?:has\s+|have\s+)?got(?:ten)?\s+better\b",
+        r"\bwhere\s+(?:are|have)\s+we\s+improv(?:e|ed|ing)\b",
+    )
+    negative_patterns = (
+        r"\bwhat\s+(?:has\s+|have\s+)?got(?:ten)?\s+worse\b",
+        r"\bwhat\s+(?:has\s+|have\s+)?worsen(?:ed|s|ing)?\b",
+        r"\bwhat\s+(?:has\s+|have\s+)?declin(?:e|ed|es|ing)\b",
+        r"\bwhere\s+(?:is|are|have)\s+(?:performance|we)\s+declin(?:e|ed|ing)\b",
+    )
     positive = (
         "what improved", "what got better", "happened positively", "changed positively",
         "good news", "our wins", "what are the wins", "where are we improving",
@@ -136,8 +150,8 @@ def _summary_intent(question):
         "what changed this month", "what has changed this month", "trend summary",
         "summarize trends", "how are we trending", "what changed recently",
     )
-    if any(phrase in q for phrase in positive): return "positive_change"
-    if any(phrase in q for phrase in negative): return "negative_change"
+    if any(re.search(pattern, q) for pattern in positive_patterns) or any(phrase in q for phrase in positive): return "positive_change"
+    if any(re.search(pattern, q) for pattern in negative_patterns) or any(phrase in q for phrase in negative): return "negative_change"
     if any(phrase in q for phrase in executive): return "executive_summary"
     if any(phrase in q for phrase in trend): return "trend_summary"
     return None
