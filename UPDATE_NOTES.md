@@ -95,6 +95,10 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 75. Replaced aggregate-only `Explain the output` responses on hospital-comparison visuals with an executive readout listing every selected hospital, each mapped value, and its relative high/middle/low position.
 76. Added a dedicated Deterioration-to-Harm Reliability Matrix readout covering every hospital's deterioration rate, harm rate, encounter volume, and highest combined-pressure service line, plus axis, bubble-size, governance, and non-causal interpretation.
 77. Added exact regression coverage for the Deterioration-to-Harm `explain the output` question and confirmed the structured answer does not fall back to aggregate current signals.
+78. Added a global grounded data-analyst contract to both Q&A surfaces: the floating assistant on all 14 analytical sheets and the dedicated Ask GulfStar Intelligence sheet.
+79. Standardized every rendered answer into explicit `What`, `When`, `Where`, `How`, and `Why` sections using the current filtered dates, hospitals, service lines, calculation, and documented interpretation.
+80. Added visible constraint enforcement: answers may use only visible filtered values and documented dashboard logic, with no outside knowledge, extrapolation, invented cause, or patient-care recommendation.
+81. Versioned the Q&A session state again so browser-cached pre-contract answers are cleared after deployment, and added regression checks for the required headings and both Q&A surfaces.
 
 ## Validation completed
 - Python syntax compilation: passed.

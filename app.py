@@ -102,7 +102,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_STATE_VERSION = "visual_qa_v4"
+APP_STATE_VERSION = "grounded_qa_v5"
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
         if state_key == "visual_qa" or state_key.startswith(("visual_qa_", "context_visual_", "context_question_", "visual_suggestion_")):
@@ -230,6 +230,33 @@ def title_label(value):
             after_dash = False
         output.append("".join(styled))
     return "".join(output)
+
+
+def grounded_scope(daily_frame, encounter_frame):
+    """Return visible When/Where language for the global Q&A contract."""
+    dates = daily_frame["date"] if not daily_frame.empty else encounter_frame["admit_date"]
+    when = f"{dates.min():%b %d, %Y} to {dates.max():%b %d, %Y}" if not dates.empty else "No selected dates"
+    hospitals = sorted(set(daily_frame.hospital.unique()) | set(encounter_frame.hospital.unique()))
+    service_lines = sorted(encounter_frame.service_line.unique()) if not encounter_frame.empty and "service_line" in encounter_frame else []
+    where_hospitals = "All selected hospitals" if len(hospitals) == 3 else ", ".join(hospitals) or "No selected hospitals"
+    where_services = "All selected service lines" if len(service_lines) == 6 else ", ".join(service_lines) or "No service-line attribution"
+    return when, f"{where_hospitals}; {where_services}"
+
+
+def render_grounded_contract(answer, calculation, limitation, daily_frame, encounter_frame, why=None):
+    """Render the same grounded analyst structure on every Q&A surface."""
+    when, where = grounded_scope(daily_frame, encounter_frame)
+    st.markdown("##### What")
+    st.markdown(answer)
+    st.markdown("##### When")
+    st.markdown(when)
+    st.markdown("##### Where")
+    st.markdown(where)
+    st.markdown("##### How")
+    st.markdown(calculation)
+    st.markdown("##### Why")
+    st.markdown(why or "This interpretation follows only from the displayed filtered values and documented calculation. The available evidence does not establish an operational or clinical cause.")
+    st.caption("Grounding constraint: Visible filtered data and documented dashboard logic only. No extrapolation or outside knowledge.")
 
 
 def hero(title, sub):
@@ -808,9 +835,9 @@ else:
     evidence()
 
     st.info(
-        "Every answer is restricted to predefined metrics and safe aggregations. It will not invent a metric, "
-        "infer a cause, or make a patient-care recommendation. Hospital and date filters apply to all answers; "
-        "the service-line filter applies to encounter-based 30-day readmission results."
+        "Grounded data-analyst role: Every answer uses only the visible filtered data, extracted values, and documented "
+        "dashboard calculations. It will not extrapolate, use outside knowledge, invent a metric, infer a cause, or make "
+        "a patient-care recommendation. Answers use a What, When, Where, How, and Why structure."
     )
 
     with st.expander("Question help and examples", expanded=True):
@@ -875,7 +902,11 @@ else:
         st.subheader("Answer")
         if asked:
             st.caption(f"Question: {asked}")
-        st.markdown(f'<div class="brief"><b>{result["answer"]}</b></div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            render_grounded_contract(
+                result["answer"], result["calculation"], result["limitation"], fd, fe,
+                why="The answer is supported by the predefined metric and aggregation shown above. It explains the measured result, not an unobserved cause.",
+            )
         c1, c2 = st.columns([1, 1])
         with c1:
             st.markdown(f"**Evidence type:** {result['evidence']}")
@@ -899,8 +930,8 @@ if not page.startswith("15 —"):
             with st.popover("💬 Ask this visual"):
                 st.markdown("#### Ask About This Sheet")
                 st.caption(
-                    "Select the visual currently in view, then ask naturally. Common misspellings, combined questions, "
-                    "and closest-match suggestions are supported."
+                    "Grounded data-analyst mode applies on every sheet. Answers use only the current filtered values and "
+                    "documented visual logic, with What, When, Where, How, and Why sections. No outside knowledge or extrapolation."
                 )
                 selected_visual = st.selectbox(
                     "Visual or section",
@@ -955,7 +986,13 @@ if not page.startswith("15 —"):
                         st.markdown(f"##### {display['title']}")
                         if display.get("filters"):
                             st.markdown(f"**Filters:** {display['filters']}")
-                        st.markdown(display["answer"])
+                        why_text = (
+                            "The interpretation follows from the values and relative positions listed under What matters. "
+                            "It does not establish why an operational difference occurred."
+                        )
+                        render_grounded_contract(
+                            display["answer"], visual_result["calculation"], visual_result["limitation"], fd, fe, why=why_text,
+                        )
                         if display.get("what_matters"):
                             st.markdown("**What matters**")
                             for item in display["what_matters"]:
@@ -965,7 +1002,9 @@ if not page.startswith("15 —"):
                             st.markdown(f"{number}. {action}")
                         st.caption(display["limitation"])
                     else:
-                        st.markdown(visual_result["answer"])
+                        render_grounded_contract(
+                            visual_result["answer"], visual_result["calculation"], visual_result["limitation"], fd, fe,
+                        )
                     with st.expander("Evidence, calculation, and limitations"):
                         st.markdown(f"**Evidence type:** {visual_result['evidence']}")
                         st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
