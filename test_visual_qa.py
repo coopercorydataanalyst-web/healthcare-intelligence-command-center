@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from qa_engine import METRICS
-from visual_qa import DOCUMENTED_CONTENT, VISUALS, answer_visual_question, resolve_visual, visual_options
+from visual_qa import DOCUMENTED_CONTENT, DOCUMENTED_IMPROVEMENTS, VISUALS, answer_visual_question, resolve_visual, visual_options
 
 
 ROOT = Path(__file__).resolve().parent
@@ -180,3 +180,34 @@ def test_generic_improvement_question_uses_weakest_mapped_metric():
     assert "Improvement opportunity —" in result["answer"]
     assert "current filtered result" in result["answer"]
     assert "Leadership response:" in result["answer"]
+
+
+def test_domain_score_patient_experience_improvement_uses_metric_path():
+    result = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "how can I improve patient experience", daily, encounters,
+    )
+    assert "Improvement opportunity — Patient Experience" in result["answer"]
+    assert "Chief Experience Officer" in result["answer"]
+    assert "Related filtered signals:" in result["answer"]
+    assert "Review the component metrics behind the weakest domain" not in result["answer"]
+
+
+def test_every_metric_backed_visual_has_filter_aware_generic_improvement():
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            if not spec["metrics"]:
+                continue
+            result = answer_visual_question(page, visual, "how can we improve this visual", daily, encounters)
+            assert "Improvement opportunity —" in result["answer"], (page, visual, result["answer"])
+            assert "current filtered result" in result["answer"]
+            assert "Leadership response:" in result["answer"]
+
+
+def test_every_documented_improvement_family_has_specific_action():
+    for visual, entries in DOCUMENTED_IMPROVEMENTS.items():
+        page = next(page for page, visuals in VISUALS.items() if visual in visuals)
+        alias = entries[0][0][0]
+        result = answer_visual_question(page, visual, f"how can we improve {alias}", daily, encounters)
+        assert entries[0][1] in result["answer"], (visual, alias, result["answer"])
+        assert "not a causal or patient-care recommendation" in result["answer"]

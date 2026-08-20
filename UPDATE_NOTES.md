@@ -73,6 +73,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 53. Added ER-to-ED language normalization so `how can I improve the er boarding` resolves safely to ED Boarding.
 54. Added weakest-metric selection for general improvement questions about a multi-metric visual, while preserving documented visual-level actions where no safe metric mapping exists.
 55. Added exact regression and calculation validation for the COPD 6.7-hour ED Boarding example and general visual-improvement intent.
+56. Connected every Executive Health Score and Executive Priority Queue component metric to the tailored improvement router, fixing generic answers such as `how can I improve patient experience` on the domain-score visual.
+57. Added deterministic improvement pathways for all non-standard content families: priority severity/exposure/ownership, modeled funnel and outcome pressure, intervention and portfolio assumptions, decision integrity, source registry, privacy, governance gates, SPC, Pareto, and PDSA.
+58. Added dashboard-wide tests requiring every metric-backed visual to return a filtered improvement response and every documented improvement family to return its own specific action.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -86,3 +89,5 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Live Streamlit interaction: changing Service Line(s) from all lines to COPD changed every displayed CEO performance KPI without exceptions.
 - Combined automated suite: 27 tests passed after the tailored improvement-response upgrade.
 - Exact contextual result validated: COPD ED Boarding returned 6.7 hours, a 2.7-hour illustrative threshold gap, GulfStar Medical Center concentration, related filtered flow signals, COO ownership, and a non-causal action sequence.
+- Combined automated suite: 30 tests passed after connecting composite and non-standard visuals to the improvement router.
+- Exact domain-score result validated: filtered Patient Experience returned its current value, threshold gap, weakest hospital, related guardrails, Chief Experience Officer ownership, and a non-causal improvement sequence.

@@ -19,9 +19,9 @@ def _v(purpose, focus, action, callout, limits, metrics=(), calculation="See the
 VISUALS = {
     "1": {
         "Executive KPI Cards": _v("Summarizes current system performance, capacity, workforce, experience, and evidence readiness.", "Start with the lowest-performing domain and whether its movement is material versus the comparable period.", "Validate the underlying denominator and operating context, assign an accountable owner, and use a time-bounded improvement cycle.", "Scores and targets are illustrative portfolio constructs; stable displayed deltas are not described as directional changes.", "The Executive Health Score is not a validated clinical score or forecast.", ("margin", "bed_utilization", "boarding", "readmission", "rn_vacancy", "experience")),
-        "Executive Health Score by Domain": _v("Compares Quality & Safety, Patient Flow, Financial, Workforce, Access, and Patient Experience on a 0–100 modeled portfolio scale. A higher bar means the selected synthetic results are closer to the dashboard's illustrative target thresholds; a lower bar means a larger modeled performance gap to validate.", "The shortest bar is the largest modeled performance gap and deserves validation first.", "Review the component metrics behind the weakest domain before selecting an intervention.", "Quality, flow, finance, workforce, access, and experience use transparent illustrative weights and thresholds.", "Bars compare a modeled composite, not certified external benchmarks.", calculation="Weighted higher/lower-is-better component scores on a 0–100 illustrative scale."),
+        "Executive Health Score by Domain": _v("Compares Quality & Safety, Patient Flow, Financial, Workforce, Access, and Patient Experience on a 0–100 modeled portfolio scale. A higher bar means the selected synthetic results are closer to the dashboard's illustrative target thresholds; a lower bar means a larger modeled performance gap to validate.", "The shortest bar is the largest modeled performance gap and deserves validation first.", "Review the component metrics behind the weakest domain before selecting an intervention.", "Quality, flow, finance, workforce, access, and experience use transparent illustrative weights and thresholds.", "Bars compare a modeled composite, not certified external benchmarks.", ("readmission", "mortality", "harm", "boarding", "bed_utilization", "discharge_delay", "margin", "denial_rate", "rn_vacancy", "overtime_share", "agency_share", "lwbs", "specialty_wait", "experience"), calculation="Weighted higher/lower-is-better component scores on a 0–100 illustrative scale."),
         "Margin and Flow Pressure by Month": _v("Shows monthly operating contribution beside an indexed ED-boarding pressure series.", "Look for months where contribution weakens while boarding pressure rises; treat this as a co-movement signal.", "Validate throughput timestamps, discharge constraints, staffing, volume, and payer mix before acting.", "Boarding is multiplied only to share a readable axis with dollars; it is not a dollar value.", "The dual-scale view does not establish that boarding caused margin movement.", ("margin", "boarding")),
-        "Executive Priority Queue": _v("Ranks hospital-domain priorities by modeled severity and then modeled exposure.", "Priority #1 is the first validation target; review its owner, severity components, and exposure assumptions.", "Assign the listed executive owner, validate inputs, and move an approved response into a PDSA cycle.", "The orange #1 treatment identifies the highest current modeled portfolio priority.", "The queue is not a clinical risk score or validated forecast.", calculation="Severity descending; modeled exposure descending as tie-breaker."),
+        "Executive Priority Queue": _v("Ranks hospital-domain priorities by modeled severity and then modeled exposure.", "Priority #1 is the first validation target; review its owner, severity components, and exposure assumptions.", "Assign the listed executive owner, validate inputs, and move an approved response into a PDSA cycle.", "The orange #1 treatment identifies the highest current modeled portfolio priority.", "The queue is not a clinical risk score or validated forecast.", ("readmission", "mortality", "harm", "boarding", "bed_utilization", "discharge_delay", "margin", "denial_rate", "rn_vacancy", "overtime_share", "agency_share", "lwbs", "specialty_wait", "experience"), calculation="Severity descending; modeled exposure descending as tie-breaker."),
     },
     "2": {
         "Capacity KPI Cards": _v("Summarizes licensed, staffed, occupied, and available bed capacity plus ED and discharge pressure.", "Focus on high utilization paired with boarding, pending admissions, or discharge delay.", "Validate bed-ready and discharge timestamps, staffing constraints, and unit-level demand before changing targets.", "Available staffed beds are staffed beds minus census, averaged across the selected period.", "System averages can hide unit and shift variation.", ("licensed_beds", "staffed_beds", "census", "bed_utilization", "available_beds", "boarding", "ed_provider", "pending_admissions", "expected_discharges", "discharge_delay")),
@@ -51,7 +51,7 @@ VISUALS = {
         "CIPP-Informed Governance Gates": _v("Lists privacy-by-design questions and accountable owners.", "Confirm each gate has an owner, evidence, and disposition before deployment.", "Document purpose limitation, minimum necessary, rights, vendor governance, and responsible-analytics controls.", "The gates turn privacy principles into operational review steps.", "They do not replace legal or privacy-officer judgment."),
     },
     "14": {
-        "Statistical Process Control Chart": _v("Plots the selected monthly quality measure against a center line and three-sigma analytic limits.", "Investigate points beyond limits and non-random patterns, but first confirm denominator and definition stability.", "Use a PDSA cycle to test a process change and monitor whether the signal sustains.", "A point beyond a limit is an investigation signal, not proof of failure.", "The simple limits do not adjust for seasonality, case mix, or changing denominators."),
+        "Statistical Process Control Chart": _v("Plots the selected monthly quality measure against a center line and three-sigma analytic limits.", "Investigate points beyond limits and non-random patterns, but first confirm denominator and definition stability.", "Use a PDSA cycle to test a process change and monitor whether the signal sustains.", "A point beyond a limit is an investigation signal, not proof of failure.", "The simple limits do not adjust for seasonality, case mix, or changing denominators.", ("readmission", "mortality", "boarding", "falls", "hai")),
         "Pareto: Discharge Barriers": _v("Ranks discharge barriers by frequency to show where a small number of categories may drive most recorded barriers.", "Start with the largest categories while checking severity and whether categories are consistently coded.", "Select one high-frequency barrier for a small test, then measure outcome and unintended effects.", "Frequency alone does not determine clinical or operational importance.", "Synthetic categories do not establish root cause."),
         "PDSA Learning System": _v("Defines the Plan-Do-Study-Act evidence cycle used to test and refine improvements.", "Focus on a specific aim, prediction, small-scale test, learning, and documented next decision.", "Adopt, adapt, or abandon based on measured results rather than preference.", "PDSA is a learning framework, not evidence that an intervention works.", "Production changes require governance and sustainment monitoring."),
     },
@@ -481,6 +481,56 @@ DOCUMENTED_CONTENT = {
 }
 
 
+DOCUMENTED_IMPROVEMENTS = {
+    "Executive Priority Queue": (
+        (("severity", "priority score"), "Validate the component metrics driving severity, confirm the accountable owner, and rerank only after corrected inputs are approved."),
+        (("exposure", "financial exposure"), "Validate volume, unit value, avoidable share, and timing assumptions; report a range and keep booked loss separate from modeled exposure."),
+        (("owner", "accountable owner"), "Confirm one accountable executive, named operational partners, a due date, and the evidence required for the next decision."),
+    ),
+    "System Patient-Flow Funnel": (
+        (("stage", "placement", "funnel"), "Validate patient-level stage timestamps, identify the largest confirmed queue, assign an operational owner, and test one stage-specific flow change with balancing measures."),
+    ),
+    "Staffing Intensity Versus Composite Outcome Pressure": (
+        (("outcome pressure", "pressure index", "trendline"), "Validate acuity, skill mix, unit, shift, and outcome definitions; investigate persistent outliers without treating the trendline as a staffing effect."),
+    ),
+    "Intervention Value Frontier": (
+        (("annual value", "value", "annual cost", "cost", "capacity days", "capacity", "confidence", "roi", "return"), "Revalidate cost, benefit, capacity, timing, and confidence assumptions; compare ranges, fund in stages, and use milestone-based stop/go decisions."),
+    ),
+    "Selected Portfolio Table": (
+        (("budget", "spend", "selected", "portfolio"), "Check concentration, feasibility, confidence, cumulative spend, and strategic coverage; stage funding and define stop/go milestones for every selected intervention."),
+    ),
+    "Decision Integrity Components": (
+        (("source authority", "completeness", "definitions", "timeliness", "causal confidence", "external validity", "component"), "Start with the lowest readiness component, assign its governance owner, document the missing evidence, and block production use until the approval criterion is met."),
+    ),
+    "Source and Evidence Registry": (
+        (("source", "evidence type", "registry", "limitation", "lineage"), "Add or repair the metric owner, definition, lineage, refresh date, validation status, and known limitation before using the source for an operational decision."),
+    ),
+    "Privacy Risk by Event Type and Severity": (
+        (("records affected", "severity", "event type", "privacy event"), "Validate event classification and affected-record counts, prioritize confirmed high-severity exposure, and assign privacy/legal review before determining notification or remediation."),
+    ),
+    "CIPP-Informed Governance Gates": (
+        (("gate", "privacy", "owner", "purpose limitation", "minimum necessary"), "Assign every open gate, document evidence and disposition, remediate the highest-risk gap, and require privacy/legal approval before deployment."),
+    ),
+    "Statistical Process Control Chart": (
+        (("center line", "ucl", "lcl", "control limit", "sigma", "spc"), "Confirm stable definitions and denominators, investigate special-cause signals, test one process change, and monitor for sustained shift rather than reacting to routine variation."),
+    ),
+    "Pareto: Discharge Barriers": (
+        (("barrier", "pareto", "count", "frequency"), "Validate category coding, select the highest-frequency actionable barrier, test a small barrier-specific response, and track both frequency and severity."),
+    ),
+    "PDSA Learning System": (
+        (("plan", "do", "study", "act", "pdsa"), "Define a specific aim and prediction, run the smallest safe test, compare results with the prediction, and explicitly adopt, adapt, or abandon based on evidence."),
+    ),
+}
+
+
+def _documented_improvement(visual, question):
+    q = normalized_text(question)
+    for aliases, action in DOCUMENTED_IMPROVEMENTS.get(visual, ()):
+        if any(normalized_text(alias) in q for alias in aliases):
+            return action + " This is a governance or operating response, not a causal or patient-care recommendation."
+    return None
+
+
 def _documented_content_interpretation(visual, question):
     q = normalized_text(question)
     for aliases, answer, calculation, evidence in DOCUMENTED_CONTENT.get(visual, ()):
@@ -599,9 +649,10 @@ def answer_visual_question(page, visual, question, daily, encounters):
         negative = _visual_movements(spec, daily, encounters, "negative")
         sections.append("Negative movement: " + (negative if negative else "No safely mapped negative movement is available for this visual under the current filtered 30-day comparison. This does not prove that every underlying subgroup improved."))
     if wants_action:
-        action_metric = explicit_metrics[0] if explicit_metrics else _weakest_visual_metric(spec, daily, encounters)
+        documented_action = _documented_improvement(visual, question)
+        action_metric = explicit_metrics[0] if explicit_metrics else (None if documented_action else _weakest_visual_metric(spec, daily, encounters))
         tailored_action = _metric_improvement(action_metric, daily, encounters) if action_metric else None
-        sections.append("Possible improvement response: " + (tailored_action or spec["action"]))
+        sections.append("Possible improvement response: " + (tailored_action or documented_action or spec["action"]))
     if wants_callout:
         sections.append("Callout: " + spec["callout"])
     if wants_calculation:
