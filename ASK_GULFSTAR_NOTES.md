@@ -16,7 +16,13 @@ The UI is Analysis Sheet 15 in `app.py`. It passes only the currently filtered o
 - Rank intervention scenarios by modeled ROI
 - Explain the mechanical reason for the #1 executive priority without claiming causality
 - Identify the highest or lowest modeled priority exposure
+- Summarize positive changes and leadership wins
+- Summarize negative changes and leadership concerns
+- Produce an executive summary of leading improvements, concerns, stable signals, and the #1 modeled portfolio priority
+- Produce a recent trend summary from broad language such as “What changed this month?”
 - Refuse unsupported or ambiguous questions and suggest answerable examples
+
+Broad executive questions default to the latest 30 days versus the preceding 30 days within the active filter. An explicit “last N days” request uses two equal N-day windows. Each supporting row displays the current value, prior value, change, direction, and metric calculation. Cross-metric ordering uses proportional movement so unlike units are not ranked by raw magnitude.
 
 ## Supported measures
 

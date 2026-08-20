@@ -68,3 +68,29 @@ def test_priority_and_exposure_intents_are_distinct():
     assert "#1 filtered priority" in top["answer"]
     assert "highest modeled-exposure item" in exposure["answer"]
     assert "GulfStar North" in exposure["answer"]
+
+
+def test_executive_language_intents_return_auditable_summaries():
+    questions = {
+        "What has happened positively in the last 30 days?": "Positive changes",
+        "What got worse in the last 30 days?": "Negative changes",
+        "Give me the executive summary": "Executive trend summary",
+        "What changed this month?": "Executive trend summary",
+        "What should leadership celebrate?": "Positive changes",
+        "What concerns should leadership know about?": "Negative changes",
+    }
+    for question, expected in questions.items():
+        result = ask(question)
+        assert expected in result["answer"], question
+        assert result["calculation"] != "No calculation run.", question
+        assert result["data"] is not None and not result["data"].empty, question
+        assert {"Metric", "Current", "Prior", "Change", "Direction", "Calculation"}.issubset(result["data"].columns)
+        assert "do not establish why" in result["limitation"]
+
+
+def test_executive_summary_requires_two_complete_filtered_windows():
+    last_ten = daily[daily.date > daily.date.max() - pd.Timedelta(days=10)]
+    last_ten_encounters = encounters[encounters.admit_date > daily.date.max() - pd.Timedelta(days=10)]
+    result = ask("What improved in the last 30 days?", last_ten, last_ten_encounters)
+    assert result["evidence"] == "Validation Required"
+    assert "two complete comparison windows" in result["answer"]

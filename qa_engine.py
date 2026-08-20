@@ -116,6 +116,143 @@ def _response(answer, calculation, evidence="Synthetic Result", limitation=None,
     }
 
 
+def _summary_intent(question):
+    q = _norm(question)
+    positive = (
+        "what improved", "what got better", "happened positively", "changed positively",
+        "good news", "our wins", "what are the wins", "where are we improving",
+        "leadership celebrate", "should we celebrate",
+    )
+    negative = (
+        "what got worse", "what worsened", "what declined", "performance declining",
+        "where are we declining", "leadership know about", "what are the concerns",
+        "concerns should", "bad news",
+    )
+    executive = (
+        "executive summary", "summarize performance", "summary of performance",
+        "what should the ceo know", "what should leadership know", "what should i know",
+    )
+    trend = (
+        "what changed this month", "what has changed this month", "trend summary",
+        "summarize trends", "how are we trending", "what changed recently",
+    )
+    if any(phrase in q for phrase in positive): return "positive_change"
+    if any(phrase in q for phrase in negative): return "negative_change"
+    if any(phrase in q for phrase in executive): return "executive_summary"
+    if any(phrase in q for phrase in trend): return "trend_summary"
+    return None
+
+
+def _summary_horizon(question, daily):
+    match = re.search(r"(?:last|past)\s+(\d+)\s+days?", _norm(question))
+    requested = max(int(match.group(1)), 1) if match else 30
+    if daily.empty:
+        return requested, daily, daily, pd.DataFrame(), pd.DataFrame()
+    active_end = daily.date.max()
+    current_start = active_end - pd.Timedelta(days=requested - 1)
+    prior_end = current_start - pd.Timedelta(days=1)
+    prior_start = prior_end - pd.Timedelta(days=requested - 1)
+    return (
+        requested,
+        daily[daily.date.between(current_start, active_end)],
+        daily[daily.date.between(prior_start, prior_end)],
+        (current_start, active_end),
+        (prior_start, prior_end),
+    )
+
+
+def _trend_delta_display(delta, unit):
+    if unit == "percent": return f"{100 * delta:+.1f} percentage points"
+    if unit == "currency": return f"{delta:+,.0f} dollars"
+    if unit == "count": return f"{delta:+,.0f} events"
+    return f"{delta:+.1f} {unit}"
+
+
+def _movement_is_visible(delta, unit):
+    display_delta = 100 * delta if unit == "percent" else delta
+    return f"{abs(display_delta):.1f}" != "0.0"
+
+
+def _executive_trends(question, intent, daily, encounters, priority):
+    days, current_daily, prior_daily, current_dates, prior_dates = _summary_horizon(question, daily)
+    if current_daily.empty or prior_daily.empty:
+        return _response(
+            f"A {days}-day executive trend summary is not available under the current date filter because two complete comparison windows are required.",
+            f"Attempted latest {days} filtered days versus the preceding {days} filtered days.",
+            "Validation Required",
+            "Expand the reporting range to at least two complete windows or ask for a current-period metric.",
+        )
+    cur_start, cur_end = current_dates
+    old_start, old_end = prior_dates
+    current_enc = encounters[encounters.admit_date.between(cur_start, cur_end)]
+    prior_enc = encounters[encounters.admit_date.between(old_start, old_end)]
+    rows = []
+    for metric in METRICS:
+        current = _value(metric, current_daily, current_enc)
+        prior = _value(metric, prior_daily, prior_enc)
+        if pd.isna(current) or pd.isna(prior):
+            continue
+        delta = current - prior
+        if not _movement_is_visible(delta, metric.unit):
+            direction = "Stable"
+        elif metric.better == "high":
+            direction = "Improved" if delta > 0 else "Worsened"
+        elif metric.better == "low":
+            direction = "Improved" if delta < 0 else "Worsened"
+        else:
+            direction = "Changed"
+        # Rank unlike units by proportional movement, never by raw dollars,
+        # counts, hours, or percentage points against one another.
+        magnitude = abs(delta) / max(abs(prior), 1e-9)
+        rows.append({
+            "Metric": metric.label,
+            "Current": _format(current, metric.unit),
+            "Prior": _format(prior, metric.unit),
+            "Change": _trend_delta_display(delta, metric.unit),
+            "Direction": direction,
+            "_magnitude": magnitude,
+            "Calculation": metric.calculation,
+        })
+    movements = pd.DataFrame(rows)
+    if movements.empty:
+        return _response("No comparable executive metrics are available for the requested windows.", f"Latest {days} filtered days versus the preceding {days} filtered days.", "Validation Required")
+    improved = movements[movements.Direction == "Improved"].sort_values("_magnitude", ascending=False)
+    worsened = movements[movements.Direction == "Worsened"].sort_values("_magnitude", ascending=False)
+    stable = movements[movements.Direction == "Stable"]
+
+    def describe(frame, limit=3):
+        return "; ".join(
+            f"{row.Metric} ({row.Prior} → {row.Current}; {row.Change})"
+            for row in frame.head(limit).itertuples()
+        )
+
+    if intent == "positive_change":
+        answer = f"Positive changes in the latest {days} days: {describe(improved)}." if not improved.empty else f"No supported metric improved beyond displayed reporting precision in the latest {days} days."
+        shown = improved
+    elif intent == "negative_change":
+        answer = f"Negative changes in the latest {days} days: {describe(worsened)}." if not worsened.empty else f"No supported metric worsened beyond displayed reporting precision in the latest {days} days."
+        shown = worsened
+    else:
+        parts = []
+        if not improved.empty: parts.append("Leading improvements: " + describe(improved, 2))
+        if not worsened.empty: parts.append("Leading concerns: " + describe(worsened, 2))
+        if stable.shape[0]: parts.append(f"{len(stable)} supported metrics were stable at displayed precision")
+        if intent == "executive_summary" and not priority.empty:
+            top = priority.iloc[0]
+            parts.append(f"#1 modeled portfolio priority: {top.domain} at {top.hospital} (severity {top.severity_score:.1f}/100)")
+        answer = f"Executive trend summary for the latest {days} days. " + ". ".join(parts) + "."
+        shown = pd.concat([improved.head(3), worsened.head(3), stable.head(3)])
+    shown = shown.drop(columns=["_magnitude"], errors="ignore")
+    evidence = "Synthetic Result / Modeled Estimate" if intent == "executive_summary" and not priority.empty else "Synthetic Result"
+    return _response(
+        answer,
+        f"Each metric compares the latest {days} days ({cur_start:%b %d}–{cur_end:%b %d, %Y}) with the preceding {days} days ({old_start:%b %d}–{old_end:%b %d, %Y}); direction uses the documented higher/lower-is-better rule, stable values use displayed precision, and movements across unlike units are ranked by proportional change.",
+        evidence,
+        "These are descriptive synthetic movements and an illustrative portfolio signal. They do not establish why performance changed; operational validation is required before attribution or action.",
+        shown,
+    )
+
+
 def answer_question(question, daily, encounters, prior_daily, prior_encounters, interventions, priority, all_hospitals=None):
     """Answer only recognized, predefined aggregations over already-filtered frames."""
     q = _norm(question)
@@ -128,6 +265,10 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
     if requested_hospital and requested_hospital not in hospitals:
         return _response(f"{requested_hospital} is excluded by the current Hospital filter.", "No calculation run.", "Validation Required", "Add that hospital to the global filter or ask about one of the currently selected hospitals.")
     named_hospital = requested_hospital
+
+    executive_intent = _summary_intent(question)
+    if executive_intent:
+        return _executive_trends(question, executive_intent, daily, encounters, priority)
 
     if any(term in q for term in ("intervention", "roi", "return on investment")):
         work = interventions.copy()

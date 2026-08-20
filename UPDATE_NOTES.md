@@ -34,10 +34,13 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 17. Added safe allowlisted hospital comparisons, highest/lowest queries, current values, prior/change queries, intervention ROI, executive priority rationale, and modeled exposure queries.
 18. Added calculation transparency, evidence labels, limitations, unsupported-question refusal, filter-scope disclosure, and visible synthetic/no-PHI/not-patient-care guardrails.
 19. Added focused automated tests for required example questions, every supported metric, filter exclusions, refusal behavior, and distinct priority/exposure logic.
+20. Added executive-language intents: `positive_change`, `negative_change`, `executive_summary`, and `trend_summary`.
+21. Added auditable 30-day default summaries and explicit last-N-day comparisons, with current/prior values, directional classification, metric calculations, evidence labels, and non-causal limitations.
+22. Added proportional cross-metric ranking so unlike units are never compared by raw magnitude, plus stable-at-displayed-precision handling.
 
 ## Validation completed
 - Python syntax compilation: passed.
 - Streamlit runtime smoke-test harness: all 15 analysis sheets executed without exceptions.
 - CEO-page assertions: priority ranks render in #1–#5 sequence, the #1 emphasis class is present, stable wording is present, and no directional `0.0` language is rendered.
-- Q&A unit tests: all required examples, documented metrics, refusal paths, filter exclusions, and modeled intents passed.
+- Q&A unit tests: all required examples, documented metrics, refusal paths, filter exclusions, modeled intents, executive-language summaries, and insufficient-window guardrails passed.
 - Q&A form runtime: a submitted hospital-ranking question rendered an answer without exceptions.

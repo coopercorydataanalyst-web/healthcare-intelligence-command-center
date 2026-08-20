@@ -772,13 +772,18 @@ else:
             "- Why is GulfStar Medical Center the top priority?\n"
             "- Which intervention has the highest modeled ROI?\n"
             "- Compare hospitals on operating margin and patient experience.\n"
+            "- What has happened positively in the last 30 days?\n"
+            "- What got worse in the last 30 days?\n"
+            "- Give me the executive summary.\n"
+            "- What should leadership celebrate?\n"
             "- What is GulfStar North's current OR utilization?\n"
             "- Which hospital has the lowest available staffed beds?"
         )
         st.caption(
             "Supported measures: readmission, mortality, falls, HAI, ED boarding, ED-to-provider, LWBS, "
             "staffed-bed utilization, available staffed beds, RN vacancy, agency labor share, patient experience, "
-            "operating margin, denials/denial rate, OR utilization, specialty wait, intervention ROI, and priority exposure."
+            "operating margin, denials/denial rate, OR utilization, specialty wait, intervention ROI, and priority exposure. "
+            "Executive intents include positive change, negative change, executive summary, and trend summary."
         )
 
     with st.form("gulfstar_question_form"):
