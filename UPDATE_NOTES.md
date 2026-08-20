@@ -56,6 +56,8 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 36. Added a compact 430-pixel-wide, independently scrollable popover so users can ask while keeping the selected visual substantially visible; added responsive mobile positioning.
 37. Visually verified fixed positioning, compact dimensions, popover scrolling, and non-expanded page layout in the running Streamlit application.
 38. Added Streamlit Cloud compatibility for the newer `stLayoutWrapper` container so the visual-Q&A launcher remains fixed in both local and deployed runtimes.
+39. Repositioned the floating launcher to the bottom center so Streamlit Cloud's lower-right management badge cannot cover it.
+40. Added a translucent glass-style idle launcher with a light hover state; the launcher becomes solid green while clicked/focused or while its popover reports an expanded state.
 
 ## Validation completed
 - Python syntax compilation: passed.
