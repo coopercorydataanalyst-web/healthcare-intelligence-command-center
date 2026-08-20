@@ -406,9 +406,6 @@ def _metric_improvement(metric, daily, encounters, visual=None):
         ("accountable operational executive", metric.calculation, "run a time-bounded validation and improvement cycle"),
     )
     hospitals = sorted(daily.hospital.unique()) if not daily.empty else sorted(encounters.hospital.unique())
-    services = sorted(encounters.service_line.unique()) if not encounters.empty and "service_line" in encounters else []
-    dates = daily.date if not daily.empty and "date" in daily else encounters.admit_date
-    scope = f"{', '.join(services) if services else 'selected service lines'} • {', '.join(hospitals)} • {dates.min():%b %d, %Y}–{dates.max():%b %d, %Y}"
     hospital_values = []
     for hospital in hospitals:
         hd = daily[daily.hospital == hospital]
@@ -416,30 +413,30 @@ def _metric_improvement(metric, daily, encounters, visual=None):
         hospital_value = _value(metric, hd, he)
         if not pd.isna(hospital_value):
             hospital_values.append((hospital, hospital_value))
-    concentration = ""
+    concentration = None
     if hospital_values:
         worst = min(hospital_values, key=lambda item: item[1]) if metric.better == "high" else max(hospital_values, key=lambda item: item[1])
-        concentration = f" Strongest pressure: {worst[0]} at {_format(worst[1], metric.unit)}."
+        concentration = f"Strongest pressure: {worst[0]} at {_format(worst[1], metric.unit)}."
     detail = METRIC_DETAIL.get(metric.key, {})
-    threshold = ""
-    displayed_context = f"{metric.label}: current filtered result is {_format(value, metric.unit)}."
+    threshold = None
+    displayed_context = f"Current result: {_format(value, metric.unit)}."
     if "target" in detail:
         gap = value - detail["target"]
         gap_text = f"{100 * abs(gap):.1f} percentage points" if metric.unit == "percent" else _format(abs(gap), metric.unit)
         relation = "above" if gap > 0 else "below" if gap < 0 else "at"
-        threshold = f" It is {gap_text} {relation} the dashboard's illustrative favorable threshold."
+        threshold = f"{gap_text} {relation} the dashboard's illustrative favorable threshold."
         if visual == "Executive Health Score by Domain":
             component_score = _higher_score(value, detail["target"], detail["bad"]) if detail["direction"] == "high" else _lower_score(value, detail["target"], detail["bad"])
             domain = METRIC_DOMAINS.get(metric.key, metric.label)
             if metric.key == "experience":
                 displayed_context = (
                     f"The displayed Patient Experience domain score is {component_score:.0f}/100. "
-                    f"It is derived from the underlying filtered synthetic Patient Experience KPI of {_format(value, metric.unit)}; "
+                    f"It is derived from the underlying synthetic Patient Experience KPI of {_format(value, metric.unit)}; "
                     "76.8% and 63/100 are different scales, not conflicting results."
                 )
             else:
                 displayed_context = (
-                    f"The underlying current filtered result for {metric.label} is {_format(value, metric.unit)} and maps to a modeled component score of {component_score:.0f}/100. "
+                    f"The underlying {metric.label} result is {_format(value, metric.unit)} and maps to a modeled component score of {component_score:.0f}/100. "
                     f"That component contributes to the displayed {domain} domain score together with the other documented domain components."
                 )
     related = []
@@ -448,14 +445,32 @@ def _metric_improvement(metric, daily, encounters, visual=None):
         related_value = _value(related_metric, daily, encounters)
         if not pd.isna(related_value):
             related.append(f"{related_metric.label} {_format(related_value, related_metric.unit)}")
-    related_text = f" Related filtered signals: {', '.join(related)}." if related else ""
-    return (
+    what_matters = [item for item in (threshold, concentration) if item]
+    if related:
+        what_matters.append("Related signals: " + ", ".join(related) + ".")
+    actions = [
+        f"Assign the {owner} as accountable executive.",
+        f"Validate {validation}.",
+        intervention[:1].upper() + intervention[1:] + ".",
+        f"Monitor {metric.label} and related guardrails through a time-bounded PDSA cycle.",
+    ]
+    limitation = "Use this to prioritize investigation—not to infer cause or make a patient-care decision."
+    text = (
         f"Improvement opportunity — {metric.label}: {displayed_context} "
-        f"Scope: {scope}.{threshold}{concentration}{related_text} "
-        f"Leadership response: 1) assign the {owner}; 2) validate {validation}; "
-        f"3) {intervention}; and 4) monitor {metric.label} with the related guardrail signals through a time-bounded PDSA cycle. "
-        "This prioritizes investigation and does not claim that the related signals caused the result."
+        + " ".join(what_matters)
+        + " Leadership response: " + " ".join(f"{i}) {action}" for i, action in enumerate(actions, 1))
+        + " " + limitation
     )
+    return {
+        "text": text,
+        "display": {
+            "title": metric.label,
+            "answer": displayed_context,
+            "what_matters": what_matters,
+            "actions": actions,
+            "limitation": limitation,
+        },
+    }
 
 
 DOCUMENTED_CONTENT = {
@@ -658,6 +673,7 @@ def answer_visual_question(page, visual, question, daily, encounters):
     if not any((wants_callout, wants_calculation, wants_limits, wants_action, wants_positive, wants_negative, wants_focus, wants_meaning)) and tokens & {"what", "how", "why"}:
         wants_meaning = True
     sections = []
+    answer_display = None
     if wants_meaning:
         if dynamic:
             sections.append(dynamic["answer"])
@@ -675,7 +691,9 @@ def answer_visual_question(page, visual, question, daily, encounters):
         documented_action = _documented_improvement(visual, question)
         action_metric = explicit_metrics[0] if explicit_metrics else (None if documented_action else _weakest_visual_metric(spec, daily, encounters))
         tailored_action = _metric_improvement(action_metric, daily, encounters, visual) if action_metric else None
-        sections.append("Possible improvement response: " + (tailored_action or documented_action or spec["action"]))
+        if tailored_action:
+            answer_display = tailored_action["display"]
+        sections.append("Possible improvement response: " + (tailored_action["text"] if tailored_action else documented_action or spec["action"]))
     if wants_callout:
         sections.append("Callout: " + spec["callout"])
     if wants_calculation:
@@ -702,4 +720,5 @@ def answer_visual_question(page, visual, question, daily, encounters):
         "limitation": ((dynamic.get("limitation") or spec["limits"]) if dynamic else spec["limits"]) + " The answer is descriptive and does not establish cause or support patient-care decisions.",
         "suggestions": [], "keywords": extracted_keywords(question),
         "resolved_visual": visual, "selection_note": selection_note,
+        "display": answer_display,
     }

@@ -938,10 +938,24 @@ if not page.startswith("15 —"):
                     if visual_result.get("selection_note"):
                         st.info(visual_result["selection_note"])
                     st.caption(f"Question: {saved_visual_result['question']}")
-                    st.markdown(f'<div class="brief"><b>{visual_result["answer"]}</b></div>', unsafe_allow_html=True)
-                    st.markdown(f"**Evidence type:** {visual_result['evidence']}")
-                    st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
-                    st.warning(f"**Limitation:** {visual_result['limitation']}")
+                    display = visual_result.get("display")
+                    if display:
+                        st.markdown(f"##### {display['title']}")
+                        st.markdown(display["answer"])
+                        if display.get("what_matters"):
+                            st.markdown("**What matters**")
+                            for item in display["what_matters"]:
+                                st.markdown(f"- {item}")
+                        st.markdown("**What leadership should do**")
+                        for number, action in enumerate(display.get("actions", []), 1):
+                            st.markdown(f"{number}. {action}")
+                        st.caption(display["limitation"])
+                    else:
+                        st.markdown(visual_result["answer"])
+                    with st.expander("Evidence, calculation, and limitations"):
+                        st.markdown(f"**Evidence type:** {visual_result['evidence']}")
+                        st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
+                        st.warning(f"**Limitation:** {visual_result['limitation']}")
 
 st.markdown("---")
 st.caption(

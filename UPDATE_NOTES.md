@@ -78,6 +78,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 58. Added dashboard-wide tests requiring every metric-backed visual to return a filtered improvement response and every documented improvement family to return its own specific action.
 59. Corrected composite-scale communication: improvement answers on Executive Health Score by Domain now lead with the displayed modeled component/domain score and separately identify the underlying raw KPI and normalization logic.
 60. Added exact regression coverage for the Patient Experience reconciliation: 63/100 displayed score versus 76.8% underlying synthetic KPI, explicitly labeled as different scales rather than conflicting results.
+61. Replaced dense contextual improvement paragraphs with a structured executive layout: direct answer, `What matters` bullets, numbered leadership actions, and a concise caution.
+62. Removed hospital/service-line/date recitals from the answer narrative; active filters remain visible in the dashboard controls and evidence bar.
+63. Moved evidence type, calculation logic, and full limitations into a collapsed details expander to keep the default answer scannable.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -94,3 +97,4 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Combined automated suite: 30 tests passed after connecting composite and non-standard visuals to the improvement router.
 - Exact domain-score result validated: filtered Patient Experience returned its current value, threshold gap, weakest hospital, related guardrails, Chief Experience Officer ownership, and a non-causal improvement sequence.
 - Composite reconciliation validated: Patient Experience improvement now leads with 63/100, identifies 76.8% as the underlying KPI, and explains why both values are correct.
+- Structured presentation validated: no scope recital, three concise decision signals, four numbered actions, and one short non-causal caution.

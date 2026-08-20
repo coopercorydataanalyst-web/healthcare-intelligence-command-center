@@ -163,12 +163,12 @@ def test_er_boarding_improvement_is_metric_filter_and_hospital_aware():
         "how can I improve the er boarding", copd_daily, copd_encounters,
     )
     assert "Improvement opportunity — ED Boarding" in result["answer"]
-    assert "COPD" in result["answer"]
+    assert "Scope:" not in result["answer"]
     assert "Strongest pressure:" in result["answer"]
     assert "Staffed-Bed Utilization" in result["answer"]
     assert "Discharge-Order-to-Exit Time" in result["answer"]
     assert "Chief Operating Officer" in result["answer"]
-    assert "does not claim" in result["answer"]
+    assert "not to infer cause" in result["answer"]
     assert "Validate the underlying denominator" not in result["answer"]
 
 
@@ -178,7 +178,7 @@ def test_generic_improvement_question_uses_weakest_mapped_metric():
         "what should we do to improve this visual", daily, encounters,
     )
     assert "Improvement opportunity —" in result["answer"]
-    assert "current filtered result" in result["answer"]
+    assert "Current result:" in result["answer"]
     assert "Leadership response:" in result["answer"]
 
 
@@ -189,10 +189,10 @@ def test_domain_score_patient_experience_improvement_uses_metric_path():
     )
     assert "Improvement opportunity — Patient Experience" in result["answer"]
     assert "displayed Patient Experience domain score is 63/100" in result["answer"]
-    assert "underlying filtered synthetic Patient Experience KPI of 76.8%" in result["answer"]
+    assert "underlying synthetic Patient Experience KPI of 76.8%" in result["answer"]
     assert "different scales, not conflicting results" in result["answer"]
     assert "Chief Experience Officer" in result["answer"]
-    assert "Related filtered signals:" in result["answer"]
+    assert "Related signals:" in result["answer"]
     assert "Review the component metrics behind the weakest domain" not in result["answer"]
 
 
@@ -203,7 +203,7 @@ def test_every_metric_backed_visual_has_filter_aware_generic_improvement():
                 continue
             result = answer_visual_question(page, visual, "how can we improve this visual", daily, encounters)
             assert "Improvement opportunity —" in result["answer"], (page, visual, result["answer"])
-            assert "current filtered result" in result["answer"]
+            assert "Current result:" in result["answer"] or "underlying" in result["answer"]
             assert "Leadership response:" in result["answer"]
 
 

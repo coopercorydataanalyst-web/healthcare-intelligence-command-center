@@ -64,6 +64,8 @@ The framework now includes composite, queue, modeled, and governance visuals. Ex
 
 For composite visuals, responses distinguish the displayed modeled score from its underlying raw KPI. Patient Experience therefore reports **63/100 displayed domain score**, **76.8% underlying synthetic KPI**, and the threshold-normalization relationship in that order.
 
+The contextual popover now renders structured executive answers. It removes the long filter recital, avoids bolding the entire response, separates key signals from actions, and moves technical evidence/calculation/limitations into a collapsed expander. The selected controls remain the source of scope context without being repeated in every answer.
+
 The desktop popover is capped at 430 pixels wide and 76% of viewport height with independent vertical scrolling. The closed launcher is a small pill, and mobile screens use reduced edge spacing. The dedicated Sheet 15 remains unchanged for cross-dashboard questions.
 
 The launcher is intentionally translucent while idle (`rgba` background plus backdrop blur), becomes slightly stronger on hover, and turns fully solid when clicked/focused or when Streamlit reports the popover as open.
