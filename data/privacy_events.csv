@@ -1,421 +1,421 @@
 date,hospital,event_type,records_affected,severity,status
-2025-08-05,GulfStar North,Excess Access,333,Low,Closed
-2026-01-18,GulfStar Medical Center,Third-Party Risk,150,Low,Closed
-2026-06-23,GulfStar Community,Minimum Necessary,202,Moderate,Closed
-2025-05-16,GulfStar North,Third-Party Risk,201,Low,Closed
-2026-05-22,GulfStar Community,Third-Party Risk,50,Low,Closed
-2025-04-01,GulfStar North,Excess Access,194,Moderate,Closed
-2025-10-01,GulfStar North,Misdirected Communication,186,Low,Remediation Open
-2026-05-17,GulfStar Medical Center,Misdirected Communication,153,Low,Closed
-2026-03-20,GulfStar Community,Unencrypted Device,261,Moderate,Closed
-2025-10-11,GulfStar Community,Unencrypted Device,143,High,Closed
-2026-04-14,GulfStar North,Excess Access,61,Low,Closed
-2025-04-06,GulfStar Medical Center,Minimum Necessary,30,Moderate,Monitoring
-2025-12-08,GulfStar North,Excess Access,150,Low,Closed
-2025-02-12,GulfStar Community,Unencrypted Device,315,Moderate,Closed
-2025-02-12,GulfStar Community,Excess Access,110,High,Closed
-2025-04-26,GulfStar Medical Center,Excess Access,320,Low,Monitoring
-2025-06-25,GulfStar North,Minimum Necessary,40,Low,Monitoring
-2026-02-03,GulfStar Medical Center,Excess Access,7,Moderate,Closed
-2025-07-24,GulfStar North,Excess Access,35,Low,Closed
-2025-11-28,GulfStar Medical Center,Misdirected Communication,117,Moderate,Closed
-2025-05-06,GulfStar Community,Excess Access,62,Low,Monitoring
-2026-06-09,GulfStar North,Third-Party Risk,278,High,Closed
-2025-12-28,GulfStar North,Misdirected Communication,307,Low,Closed
-2026-04-02,GulfStar North,Excess Access,104,Moderate,Closed
-2026-04-16,GulfStar North,Minimum Necessary,158,Low,Monitoring
-2026-03-13,GulfStar North,Excess Access,114,Low,Closed
-2026-04-21,GulfStar North,Minimum Necessary,16,Moderate,Closed
-2026-04-13,GulfStar Community,Misdirected Communication,18,High,Closed
-2025-09-12,GulfStar North,Excess Access,323,Low,Closed
-2026-02-23,GulfStar Medical Center,Minimum Necessary,321,Moderate,Closed
-2025-06-19,GulfStar North,Minimum Necessary,124,Moderate,Closed
-2026-06-17,GulfStar Community,Misdirected Communication,3,Low,Monitoring
-2025-05-12,GulfStar Medical Center,Excess Access,317,Low,Closed
-2025-04-01,GulfStar Community,Excess Access,266,High,Closed
-2026-04-14,GulfStar Medical Center,Excess Access,100,Low,Closed
-2026-06-23,GulfStar Medical Center,Minimum Necessary,346,Moderate,Monitoring
-2026-06-20,GulfStar Community,Excess Access,11,Low,Remediation Open
-2025-05-28,GulfStar Community,Minimum Necessary,87,Low,Closed
-2026-01-13,GulfStar Medical Center,Excess Access,47,Moderate,Closed
-2025-12-11,GulfStar North,Excess Access,137,Moderate,Closed
-2025-05-23,GulfStar Community,Misdirected Communication,145,Moderate,Remediation Open
-2025-12-08,GulfStar Medical Center,Misdirected Communication,201,Low,Closed
-2025-09-04,GulfStar Medical Center,Excess Access,14,Low,Closed
-2025-10-17,GulfStar Medical Center,Minimum Necessary,195,Low,Closed
-2026-04-23,GulfStar Community,Misdirected Communication,150,Moderate,Closed
-2025-11-13,GulfStar North,Minimum Necessary,296,Low,Closed
-2025-04-25,GulfStar North,Excess Access,143,Low,Monitoring
-2025-11-12,GulfStar North,Minimum Necessary,241,Low,Closed
-2026-05-23,GulfStar Medical Center,Minimum Necessary,278,Low,Monitoring
-2026-04-02,GulfStar Medical Center,Minimum Necessary,149,Moderate,Closed
-2026-05-09,GulfStar North,Misdirected Communication,305,High,Remediation Open
-2026-06-30,GulfStar Medical Center,Minimum Necessary,46,Moderate,Monitoring
-2025-01-07,GulfStar North,Misdirected Communication,217,Low,Monitoring
-2026-05-21,GulfStar Medical Center,Third-Party Risk,332,Low,Closed
-2025-01-22,GulfStar North,Excess Access,252,Low,Closed
-2025-09-08,GulfStar North,Minimum Necessary,60,Moderate,Closed
-2025-02-28,GulfStar Community,Excess Access,154,Moderate,Remediation Open
-2025-07-25,GulfStar Medical Center,Excess Access,334,Moderate,Monitoring
-2025-09-04,GulfStar North,Minimum Necessary,132,Low,Closed
-2025-05-05,GulfStar North,Misdirected Communication,147,Low,Closed
-2025-04-07,GulfStar Community,Excess Access,231,High,Closed
-2025-10-13,GulfStar North,Misdirected Communication,163,Low,Remediation Open
-2026-06-04,GulfStar Medical Center,Misdirected Communication,101,Moderate,Closed
-2026-06-20,GulfStar Community,Misdirected Communication,116,Low,Closed
-2025-08-09,GulfStar North,Misdirected Communication,234,Moderate,Monitoring
-2025-09-05,GulfStar Medical Center,Third-Party Risk,291,Low,Remediation Open
-2025-08-01,GulfStar Community,Excess Access,301,Low,Closed
-2025-03-30,GulfStar Medical Center,Minimum Necessary,108,Low,Monitoring
-2025-11-26,GulfStar Community,Unencrypted Device,248,Low,Closed
-2025-08-09,GulfStar North,Excess Access,4,Moderate,Closed
-2026-03-09,GulfStar Community,Excess Access,80,Low,Monitoring
-2025-02-14,GulfStar Medical Center,Unencrypted Device,111,Low,Closed
-2025-03-05,GulfStar Medical Center,Misdirected Communication,331,Low,Remediation Open
-2025-03-25,GulfStar North,Excess Access,304,Low,Closed
-2025-07-30,GulfStar Medical Center,Misdirected Communication,102,Low,Closed
-2025-01-07,GulfStar Medical Center,Misdirected Communication,159,Low,Closed
-2025-09-15,GulfStar North,Excess Access,42,Moderate,Closed
-2025-07-30,GulfStar North,Excess Access,243,Low,Closed
-2025-04-12,GulfStar North,Misdirected Communication,15,Low,Monitoring
-2026-06-13,GulfStar Medical Center,Third-Party Risk,134,Moderate,Closed
-2025-10-23,GulfStar Community,Excess Access,230,Low,Closed
-2026-02-17,GulfStar Medical Center,Third-Party Risk,214,Low,Closed
-2025-10-20,GulfStar Community,Excess Access,95,Low,Remediation Open
-2025-02-12,GulfStar Medical Center,Excess Access,342,Low,Closed
-2025-12-27,GulfStar Community,Misdirected Communication,293,Low,Closed
-2025-12-03,GulfStar North,Excess Access,144,High,Closed
-2026-02-23,GulfStar North,Unencrypted Device,82,Low,Closed
-2026-02-19,GulfStar Medical Center,Excess Access,305,Moderate,Remediation Open
-2025-07-19,GulfStar Medical Center,Excess Access,223,Moderate,Monitoring
-2026-08-06,GulfStar North,Excess Access,78,Low,Closed
-2025-02-01,GulfStar Community,Excess Access,310,Low,Closed
-2026-04-25,GulfStar Medical Center,Excess Access,334,Low,Closed
-2025-11-07,GulfStar Medical Center,Excess Access,168,Moderate,Closed
-2025-10-29,GulfStar Community,Excess Access,251,Moderate,Closed
-2026-05-09,GulfStar Community,Unencrypted Device,85,Moderate,Remediation Open
-2025-11-03,GulfStar Medical Center,Excess Access,49,High,Closed
-2026-03-11,GulfStar North,Third-Party Risk,138,Low,Remediation Open
-2026-06-19,GulfStar North,Excess Access,306,Moderate,Closed
-2025-01-24,GulfStar North,Minimum Necessary,44,Low,Closed
-2026-01-18,GulfStar Medical Center,Third-Party Risk,173,Low,Monitoring
-2025-06-08,GulfStar Medical Center,Excess Access,106,Low,Monitoring
-2026-04-11,GulfStar Community,Excess Access,269,Low,Remediation Open
-2025-04-14,GulfStar Community,Misdirected Communication,118,Low,Closed
-2025-12-22,GulfStar North,Excess Access,349,Low,Closed
-2025-12-27,GulfStar Medical Center,Third-Party Risk,291,Low,Closed
-2026-05-30,GulfStar Medical Center,Minimum Necessary,63,Low,Closed
-2026-04-12,GulfStar North,Unencrypted Device,166,Moderate,Closed
-2025-12-11,GulfStar Medical Center,Excess Access,253,Low,Closed
-2025-10-24,GulfStar Community,Excess Access,172,Low,Closed
-2025-03-15,GulfStar Community,Excess Access,104,Moderate,Closed
-2025-11-12,GulfStar Medical Center,Minimum Necessary,138,Low,Monitoring
-2026-05-12,GulfStar Medical Center,Unencrypted Device,100,Low,Remediation Open
-2025-06-17,GulfStar Medical Center,Excess Access,212,Low,Closed
-2025-03-25,GulfStar Medical Center,Minimum Necessary,317,Low,Closed
-2026-04-07,GulfStar Community,Excess Access,189,Low,Closed
-2026-02-17,GulfStar Medical Center,Minimum Necessary,204,Low,Closed
-2026-01-20,GulfStar Community,Misdirected Communication,318,Low,Monitoring
-2026-06-01,GulfStar Community,Minimum Necessary,291,Low,Closed
-2026-03-13,GulfStar North,Unencrypted Device,73,Low,Closed
-2026-06-12,GulfStar Community,Excess Access,345,Low,Monitoring
-2025-07-21,GulfStar Community,Minimum Necessary,215,Moderate,Closed
-2026-02-27,GulfStar Medical Center,Excess Access,228,High,Closed
-2026-07-18,GulfStar Medical Center,Misdirected Communication,71,Moderate,Closed
-2026-03-07,GulfStar Community,Misdirected Communication,98,Moderate,Closed
-2026-02-03,GulfStar Medical Center,Excess Access,232,Low,Monitoring
-2025-06-27,GulfStar Medical Center,Excess Access,106,Low,Closed
-2025-05-28,GulfStar Medical Center,Excess Access,321,Low,Monitoring
-2026-04-08,GulfStar Medical Center,Minimum Necessary,265,Low,Remediation Open
-2026-07-13,GulfStar North,Misdirected Communication,259,Low,Closed
-2025-02-24,GulfStar Community,Third-Party Risk,146,Moderate,Closed
-2025-05-06,GulfStar Community,Unencrypted Device,26,High,Closed
-2025-08-18,GulfStar North,Excess Access,80,Low,Closed
-2026-05-16,GulfStar North,Excess Access,11,Low,Closed
-2025-01-27,GulfStar Community,Excess Access,103,Low,Monitoring
-2026-03-03,GulfStar Medical Center,Minimum Necessary,268,Low,Closed
-2025-11-22,GulfStar North,Excess Access,318,Low,Closed
-2026-01-22,GulfStar North,Misdirected Communication,184,Low,Closed
-2025-06-13,GulfStar Medical Center,Third-Party Risk,221,Low,Remediation Open
-2025-09-01,GulfStar Community,Excess Access,182,Low,Closed
-2025-09-20,GulfStar Medical Center,Misdirected Communication,225,Low,Closed
-2025-03-07,GulfStar Community,Excess Access,216,Low,Closed
-2026-02-02,GulfStar Medical Center,Excess Access,228,Low,Closed
-2025-01-18,GulfStar Community,Third-Party Risk,60,Low,Closed
-2026-07-11,GulfStar Medical Center,Minimum Necessary,244,High,Monitoring
-2025-06-27,GulfStar Community,Excess Access,25,Low,Monitoring
-2025-06-10,GulfStar Medical Center,Excess Access,317,Moderate,Closed
-2025-04-23,GulfStar Medical Center,Excess Access,120,Moderate,Monitoring
-2025-05-10,GulfStar Community,Minimum Necessary,32,Low,Closed
-2026-04-04,GulfStar Community,Third-Party Risk,56,Low,Monitoring
-2025-03-04,GulfStar Community,Misdirected Communication,24,Low,Closed
-2025-12-13,GulfStar North,Excess Access,220,Low,Closed
-2025-02-13,GulfStar Medical Center,Misdirected Communication,57,Low,Monitoring
-2025-02-07,GulfStar North,Minimum Necessary,88,Low,Monitoring
-2025-02-17,GulfStar North,Excess Access,119,Low,Closed
-2025-10-27,GulfStar Medical Center,Excess Access,130,Low,Remediation Open
-2025-07-07,GulfStar Medical Center,Excess Access,95,High,Closed
-2026-03-22,GulfStar North,Misdirected Communication,154,High,Closed
-2025-01-18,GulfStar Medical Center,Misdirected Communication,228,Low,Closed
-2025-01-25,GulfStar Community,Minimum Necessary,176,Moderate,Closed
-2025-10-28,GulfStar Community,Misdirected Communication,285,High,Closed
-2025-09-28,GulfStar North,Misdirected Communication,63,Moderate,Closed
-2025-04-12,GulfStar North,Misdirected Communication,254,Moderate,Closed
-2026-07-03,GulfStar Medical Center,Excess Access,243,Low,Monitoring
-2025-06-16,GulfStar Community,Misdirected Communication,46,Low,Closed
-2025-05-02,GulfStar Community,Excess Access,31,Moderate,Monitoring
-2026-04-30,GulfStar North,Excess Access,197,Moderate,Remediation Open
-2025-04-27,GulfStar Medical Center,Misdirected Communication,342,Moderate,Monitoring
-2026-06-07,GulfStar North,Misdirected Communication,239,Low,Closed
-2025-12-14,GulfStar Medical Center,Excess Access,219,Low,Closed
-2025-06-18,GulfStar Community,Excess Access,128,Low,Closed
-2025-05-21,GulfStar Medical Center,Excess Access,285,Moderate,Closed
-2025-01-19,GulfStar North,Misdirected Communication,180,Low,Closed
-2026-02-15,GulfStar Community,Excess Access,125,High,Closed
-2026-07-02,GulfStar Community,Excess Access,27,Moderate,Remediation Open
-2026-04-29,GulfStar Community,Misdirected Communication,4,Moderate,Closed
-2025-11-17,GulfStar North,Misdirected Communication,326,Moderate,Remediation Open
-2026-06-28,GulfStar Community,Third-Party Risk,163,Moderate,Remediation Open
-2026-04-24,GulfStar Community,Excess Access,59,Low,Closed
-2026-01-15,GulfStar North,Unencrypted Device,298,Low,Remediation Open
-2026-06-01,GulfStar Medical Center,Excess Access,143,Low,Closed
-2025-10-17,GulfStar Community,Excess Access,6,Low,Closed
-2025-10-27,GulfStar Community,Minimum Necessary,183,Low,Closed
-2025-06-29,GulfStar Community,Excess Access,147,Moderate,Closed
-2026-03-25,GulfStar Medical Center,Unencrypted Device,215,Low,Closed
-2025-12-07,GulfStar Community,Misdirected Communication,75,Moderate,Monitoring
-2026-06-19,GulfStar North,Misdirected Communication,233,High,Closed
-2026-07-06,GulfStar Medical Center,Unencrypted Device,277,Low,Closed
-2025-09-16,GulfStar North,Excess Access,288,Low,Closed
-2026-04-13,GulfStar North,Excess Access,263,Moderate,Closed
-2026-06-15,GulfStar Medical Center,Unencrypted Device,138,Low,Monitoring
-2025-06-03,GulfStar Community,Excess Access,225,Low,Monitoring
-2025-08-01,GulfStar North,Excess Access,111,Moderate,Closed
-2026-07-18,GulfStar Community,Minimum Necessary,177,Low,Closed
-2025-02-22,GulfStar Medical Center,Excess Access,297,High,Closed
-2025-05-26,GulfStar Medical Center,Minimum Necessary,208,Low,Closed
-2025-01-04,GulfStar Community,Unencrypted Device,182,Low,Monitoring
-2026-02-04,GulfStar Medical Center,Excess Access,317,Low,Remediation Open
-2026-06-29,GulfStar Community,Excess Access,179,Low,Monitoring
-2025-12-10,GulfStar Community,Misdirected Communication,183,Low,Remediation Open
-2025-08-05,GulfStar North,Misdirected Communication,127,Low,Monitoring
-2026-03-20,GulfStar Community,Unencrypted Device,268,Low,Monitoring
-2026-05-05,GulfStar Medical Center,Misdirected Communication,149,Moderate,Closed
-2026-07-08,GulfStar Medical Center,Misdirected Communication,329,Moderate,Closed
-2025-05-03,GulfStar Medical Center,Minimum Necessary,296,Low,Closed
-2025-06-10,GulfStar Medical Center,Misdirected Communication,106,Moderate,Closed
-2026-07-10,GulfStar Medical Center,Excess Access,163,High,Closed
-2025-05-25,GulfStar Community,Misdirected Communication,53,Moderate,Closed
-2025-06-14,GulfStar Community,Third-Party Risk,198,Low,Monitoring
-2026-01-29,GulfStar Medical Center,Misdirected Communication,316,Moderate,Closed
-2025-06-28,GulfStar Medical Center,Minimum Necessary,152,High,Remediation Open
-2026-06-09,GulfStar North,Minimum Necessary,37,Moderate,Closed
-2026-03-26,GulfStar Community,Minimum Necessary,296,Low,Closed
-2025-12-10,GulfStar North,Unencrypted Device,230,Low,Closed
-2025-06-11,GulfStar North,Third-Party Risk,95,Moderate,Closed
-2025-10-26,GulfStar Medical Center,Excess Access,50,Low,Closed
-2025-12-16,GulfStar Community,Excess Access,316,Low,Closed
-2026-07-18,GulfStar Medical Center,Third-Party Risk,5,High,Closed
-2026-02-18,GulfStar North,Excess Access,298,Low,Closed
-2026-06-27,GulfStar North,Third-Party Risk,17,Low,Remediation Open
-2025-02-21,GulfStar North,Excess Access,69,Low,Closed
-2026-01-14,GulfStar Medical Center,Minimum Necessary,339,Low,Closed
-2026-05-05,GulfStar North,Misdirected Communication,57,Low,Closed
-2025-10-26,GulfStar North,Minimum Necessary,187,High,Monitoring
-2026-02-08,GulfStar Medical Center,Excess Access,38,Moderate,Closed
-2026-04-29,GulfStar Medical Center,Excess Access,42,Moderate,Closed
-2025-05-02,GulfStar Community,Misdirected Communication,80,Moderate,Closed
-2025-12-18,GulfStar North,Third-Party Risk,311,Low,Closed
-2025-07-18,GulfStar North,Excess Access,337,Moderate,Remediation Open
-2026-07-05,GulfStar Medical Center,Misdirected Communication,90,Low,Closed
-2026-07-05,GulfStar Medical Center,Excess Access,7,High,Closed
-2026-01-03,GulfStar North,Minimum Necessary,343,Low,Closed
-2026-07-30,GulfStar Medical Center,Third-Party Risk,132,Moderate,Closed
-2026-07-19,GulfStar North,Unencrypted Device,319,Moderate,Closed
-2026-05-23,GulfStar Community,Misdirected Communication,15,Moderate,Closed
-2025-09-17,GulfStar North,Misdirected Communication,190,Moderate,Closed
-2026-06-20,GulfStar North,Misdirected Communication,4,Low,Closed
-2026-02-17,GulfStar North,Excess Access,103,Moderate,Closed
-2025-07-07,GulfStar Medical Center,Excess Access,21,Low,Closed
-2025-08-29,GulfStar North,Minimum Necessary,123,Low,Closed
-2025-02-12,GulfStar Medical Center,Misdirected Communication,284,Low,Closed
-2026-07-22,GulfStar North,Third-Party Risk,281,Low,Closed
-2025-03-04,GulfStar Community,Minimum Necessary,155,Moderate,Monitoring
-2025-12-03,GulfStar North,Misdirected Communication,102,Low,Remediation Open
-2025-11-21,GulfStar Community,Excess Access,232,Moderate,Closed
-2026-06-12,GulfStar Community,Misdirected Communication,172,High,Closed
-2026-04-28,GulfStar Community,Misdirected Communication,343,Low,Closed
-2025-09-06,GulfStar Community,Excess Access,94,Low,Closed
-2026-02-02,GulfStar North,Excess Access,152,High,Closed
-2025-03-18,GulfStar North,Misdirected Communication,65,Moderate,Monitoring
-2025-12-29,GulfStar Medical Center,Unencrypted Device,220,Moderate,Remediation Open
-2025-12-16,GulfStar Community,Excess Access,195,Low,Closed
-2025-11-21,GulfStar Medical Center,Misdirected Communication,13,Low,Closed
-2025-06-24,GulfStar Medical Center,Minimum Necessary,33,Moderate,Monitoring
-2025-02-28,GulfStar Medical Center,Excess Access,98,Low,Closed
-2025-03-10,GulfStar Community,Minimum Necessary,132,Low,Closed
-2025-12-13,GulfStar Community,Excess Access,309,Moderate,Closed
-2026-01-04,GulfStar Medical Center,Excess Access,5,Low,Closed
-2026-07-19,GulfStar Community,Excess Access,134,Low,Closed
-2025-10-08,GulfStar Medical Center,Excess Access,196,Moderate,Monitoring
-2026-08-07,GulfStar Medical Center,Minimum Necessary,320,Low,Closed
-2025-06-20,GulfStar Medical Center,Excess Access,40,Low,Closed
-2025-12-26,GulfStar Community,Excess Access,196,Low,Closed
-2026-07-22,GulfStar Medical Center,Misdirected Communication,239,Low,Remediation Open
-2025-05-31,GulfStar Community,Excess Access,209,Low,Closed
-2025-03-21,GulfStar Community,Unencrypted Device,78,Low,Monitoring
-2026-07-08,GulfStar Community,Third-Party Risk,144,Low,Closed
-2025-10-13,GulfStar North,Misdirected Communication,104,Moderate,Closed
-2026-07-24,GulfStar Community,Excess Access,232,Low,Monitoring
-2025-12-26,GulfStar Community,Excess Access,258,High,Monitoring
-2026-04-23,GulfStar Medical Center,Misdirected Communication,292,Low,Monitoring
-2025-12-06,GulfStar Community,Third-Party Risk,257,Moderate,Closed
-2025-06-15,GulfStar Medical Center,Excess Access,54,Low,Closed
-2025-05-04,GulfStar Community,Minimum Necessary,258,Moderate,Closed
-2025-12-31,GulfStar Medical Center,Excess Access,281,Low,Monitoring
-2025-12-14,GulfStar Community,Excess Access,105,Moderate,Monitoring
-2025-04-14,GulfStar North,Third-Party Risk,256,Low,Closed
-2025-08-21,GulfStar North,Excess Access,170,Low,Monitoring
-2026-03-29,GulfStar Community,Excess Access,45,Moderate,Closed
-2025-04-02,GulfStar North,Excess Access,344,Low,Closed
-2025-12-27,GulfStar Medical Center,Third-Party Risk,113,Low,Closed
-2025-09-26,GulfStar Medical Center,Misdirected Communication,248,Moderate,Closed
-2025-04-15,GulfStar North,Minimum Necessary,99,Moderate,Closed
-2025-04-24,GulfStar Medical Center,Unencrypted Device,137,Low,Monitoring
-2025-07-27,GulfStar Community,Excess Access,346,Low,Closed
-2025-04-25,GulfStar North,Excess Access,232,Low,Closed
-2026-04-12,GulfStar Medical Center,Excess Access,158,Moderate,Remediation Open
-2026-05-07,GulfStar Medical Center,Unencrypted Device,192,Low,Remediation Open
-2025-12-05,GulfStar North,Excess Access,58,Moderate,Monitoring
-2025-05-01,GulfStar North,Excess Access,194,High,Closed
-2025-06-25,GulfStar Medical Center,Excess Access,222,Moderate,Monitoring
-2025-04-03,GulfStar Community,Minimum Necessary,145,High,Closed
-2025-10-17,GulfStar Community,Third-Party Risk,280,Low,Monitoring
-2026-03-18,GulfStar Community,Third-Party Risk,14,Low,Closed
-2025-07-22,GulfStar Medical Center,Minimum Necessary,243,High,Closed
-2025-09-26,GulfStar Medical Center,Misdirected Communication,38,Low,Closed
-2026-05-26,GulfStar Medical Center,Excess Access,100,Low,Closed
-2026-05-11,GulfStar Medical Center,Excess Access,266,Low,Closed
-2025-05-01,GulfStar Community,Misdirected Communication,43,Moderate,Closed
-2025-12-06,GulfStar North,Misdirected Communication,194,Low,Remediation Open
-2026-01-22,GulfStar Community,Unencrypted Device,312,Low,Closed
-2025-02-18,GulfStar Community,Excess Access,166,Low,Closed
-2025-08-21,GulfStar Community,Unencrypted Device,279,Moderate,Closed
-2025-12-04,GulfStar North,Excess Access,181,Low,Closed
-2025-06-16,GulfStar Medical Center,Minimum Necessary,53,Low,Closed
-2025-07-13,GulfStar North,Minimum Necessary,168,Low,Monitoring
-2025-07-01,GulfStar Medical Center,Misdirected Communication,326,High,Closed
-2026-04-23,GulfStar North,Misdirected Communication,228,Low,Closed
-2026-02-02,GulfStar Community,Third-Party Risk,323,Low,Closed
-2026-03-10,GulfStar North,Misdirected Communication,31,Low,Closed
-2025-01-29,GulfStar Medical Center,Unencrypted Device,69,Low,Remediation Open
-2025-01-22,GulfStar Community,Excess Access,167,Low,Remediation Open
-2025-09-01,GulfStar Community,Minimum Necessary,123,Moderate,Monitoring
-2025-03-24,GulfStar Medical Center,Minimum Necessary,103,Low,Remediation Open
-2026-08-07,GulfStar Medical Center,Misdirected Communication,256,Moderate,Closed
-2025-10-27,GulfStar Medical Center,Minimum Necessary,94,Low,Monitoring
-2026-03-30,GulfStar Medical Center,Unencrypted Device,158,Low,Closed
-2025-11-29,GulfStar Community,Excess Access,171,Low,Closed
-2026-06-24,GulfStar Community,Misdirected Communication,79,Moderate,Closed
-2025-11-16,GulfStar North,Excess Access,307,Low,Closed
-2025-09-09,GulfStar Medical Center,Minimum Necessary,211,Moderate,Closed
-2026-03-04,GulfStar North,Excess Access,275,Low,Closed
-2026-02-13,GulfStar Medical Center,Excess Access,258,Low,Monitoring
-2026-04-27,GulfStar Medical Center,Misdirected Communication,281,Low,Closed
-2025-04-15,GulfStar North,Excess Access,194,Moderate,Closed
-2025-08-29,GulfStar Medical Center,Third-Party Risk,218,Low,Remediation Open
-2025-03-20,GulfStar Medical Center,Misdirected Communication,65,Low,Closed
-2026-04-27,GulfStar North,Third-Party Risk,167,High,Closed
-2026-05-31,GulfStar North,Excess Access,132,Low,Closed
-2025-03-25,GulfStar Medical Center,Third-Party Risk,30,Moderate,Closed
-2026-06-10,GulfStar Community,Misdirected Communication,91,Low,Closed
-2025-06-28,GulfStar North,Minimum Necessary,170,Moderate,Remediation Open
-2025-12-27,GulfStar Medical Center,Third-Party Risk,291,Low,Closed
-2025-02-22,GulfStar Community,Excess Access,203,Low,Remediation Open
-2025-04-22,GulfStar North,Minimum Necessary,256,Moderate,Closed
-2025-11-19,GulfStar Community,Excess Access,300,Low,Monitoring
-2025-11-17,GulfStar Community,Minimum Necessary,321,Low,Monitoring
-2026-06-13,GulfStar North,Excess Access,29,Low,Closed
-2025-02-20,GulfStar Community,Misdirected Communication,313,High,Closed
-2026-04-14,GulfStar Medical Center,Third-Party Risk,348,Moderate,Closed
-2025-04-27,GulfStar Community,Excess Access,204,Moderate,Closed
-2025-01-27,GulfStar North,Excess Access,116,Low,Remediation Open
-2026-03-05,GulfStar Community,Misdirected Communication,95,Low,Remediation Open
-2026-01-10,GulfStar Community,Misdirected Communication,344,Low,Monitoring
-2026-01-24,GulfStar Medical Center,Excess Access,211,Moderate,Closed
-2025-03-22,GulfStar North,Excess Access,169,Low,Closed
-2026-02-08,GulfStar Community,Misdirected Communication,331,Low,Closed
-2025-02-10,GulfStar North,Excess Access,317,Low,Closed
-2025-09-19,GulfStar North,Misdirected Communication,207,Moderate,Closed
-2025-03-23,GulfStar North,Minimum Necessary,162,Moderate,Remediation Open
-2026-07-01,GulfStar North,Minimum Necessary,242,Low,Remediation Open
-2025-07-25,GulfStar Community,Excess Access,33,High,Closed
-2025-03-30,GulfStar Community,Third-Party Risk,45,Low,Closed
-2026-07-30,GulfStar Medical Center,Excess Access,298,High,Monitoring
-2025-03-07,GulfStar North,Minimum Necessary,137,High,Closed
-2025-02-18,GulfStar Medical Center,Misdirected Communication,39,Moderate,Closed
-2025-07-08,GulfStar Community,Minimum Necessary,30,Low,Monitoring
-2025-05-24,GulfStar North,Unencrypted Device,125,Moderate,Closed
-2025-03-20,GulfStar Community,Minimum Necessary,104,Low,Closed
-2025-07-10,GulfStar North,Unencrypted Device,266,Moderate,Monitoring
-2025-07-30,GulfStar Community,Unencrypted Device,84,Low,Closed
-2026-01-12,GulfStar North,Minimum Necessary,42,Low,Closed
-2026-03-22,GulfStar Medical Center,Third-Party Risk,125,Low,Monitoring
-2026-04-03,GulfStar North,Misdirected Communication,96,High,Closed
-2025-06-05,GulfStar North,Excess Access,1,Moderate,Closed
-2025-09-27,GulfStar Community,Excess Access,106,Low,Closed
-2025-12-03,GulfStar Community,Excess Access,259,Moderate,Closed
-2026-01-15,GulfStar Medical Center,Excess Access,291,High,Closed
-2026-02-02,GulfStar Medical Center,Third-Party Risk,226,Low,Closed
-2025-12-29,GulfStar Community,Unencrypted Device,301,High,Monitoring
-2026-05-25,GulfStar North,Minimum Necessary,212,High,Closed
-2025-10-29,GulfStar North,Excess Access,306,Moderate,Remediation Open
-2025-04-09,GulfStar Community,Unencrypted Device,163,Moderate,Closed
-2026-06-20,GulfStar Community,Misdirected Communication,159,Low,Remediation Open
-2025-06-27,GulfStar North,Third-Party Risk,97,Moderate,Closed
-2026-01-26,GulfStar Community,Excess Access,135,High,Closed
-2025-06-30,GulfStar North,Minimum Necessary,218,High,Closed
-2025-06-24,GulfStar Community,Minimum Necessary,272,Moderate,Monitoring
-2025-01-16,GulfStar North,Excess Access,186,Low,Closed
-2025-12-01,GulfStar North,Unencrypted Device,326,Moderate,Closed
-2026-03-05,GulfStar Medical Center,Excess Access,65,Moderate,Closed
-2026-02-09,GulfStar Medical Center,Excess Access,47,Low,Closed
-2025-09-08,GulfStar North,Unencrypted Device,12,Moderate,Closed
-2025-01-21,GulfStar North,Excess Access,157,Low,Remediation Open
-2025-10-29,GulfStar North,Misdirected Communication,217,Moderate,Remediation Open
-2026-03-24,GulfStar North,Excess Access,22,Low,Remediation Open
-2025-09-14,GulfStar Community,Misdirected Communication,105,Low,Closed
-2025-06-20,GulfStar Community,Third-Party Risk,107,Low,Closed
-2025-07-16,GulfStar North,Misdirected Communication,10,Low,Monitoring
-2025-08-04,GulfStar Community,Third-Party Risk,34,Low,Closed
-2025-09-01,GulfStar Community,Third-Party Risk,235,Moderate,Remediation Open
-2025-01-30,GulfStar Community,Minimum Necessary,236,Low,Monitoring
-2025-01-11,GulfStar Community,Misdirected Communication,191,Low,Closed
-2025-12-26,GulfStar Medical Center,Excess Access,64,Low,Closed
-2025-06-24,GulfStar Medical Center,Excess Access,87,Low,Closed
-2025-09-09,GulfStar North,Excess Access,234,Low,Closed
-2025-11-13,GulfStar Community,Unencrypted Device,347,Moderate,Monitoring
-2026-04-25,GulfStar Community,Misdirected Communication,312,Low,Closed
-2025-07-14,GulfStar North,Unencrypted Device,336,Low,Closed
-2025-02-01,GulfStar North,Excess Access,237,Low,Closed
-2026-06-06,GulfStar Medical Center,Excess Access,89,Moderate,Closed
-2026-07-12,GulfStar North,Excess Access,228,Low,Closed
-2026-06-12,GulfStar North,Minimum Necessary,166,Low,Monitoring
-2026-01-23,GulfStar Community,Excess Access,205,Moderate,Closed
-2026-01-14,GulfStar Medical Center,Excess Access,78,Low,Closed
-2025-10-23,GulfStar Medical Center,Third-Party Risk,47,Moderate,Closed
-2025-06-21,GulfStar Community,Third-Party Risk,192,Low,Closed
-2025-09-26,GulfStar North,Minimum Necessary,5,Moderate,Remediation Open
-2026-05-11,GulfStar Medical Center,Misdirected Communication,303,Moderate,Monitoring
-2026-06-21,GulfStar Community,Minimum Necessary,198,Low,Closed
-2025-08-01,GulfStar Medical Center,Excess Access,120,Moderate,Closed
-2026-01-21,GulfStar North,Excess Access,317,Low,Closed
-2025-11-17,GulfStar Medical Center,Excess Access,14,Moderate,Closed
-2026-03-22,GulfStar North,Minimum Necessary,24,Low,Closed
-2026-06-20,GulfStar North,Excess Access,146,Low,Closed
-2025-01-08,GulfStar Community,Misdirected Communication,51,Low,Monitoring
-2025-11-04,GulfStar Medical Center,Misdirected Communication,218,Moderate,Closed
-2026-02-17,GulfStar North,Third-Party Risk,165,Moderate,Closed
-2025-07-16,GulfStar Community,Excess Access,196,Low,Closed
-2026-06-13,GulfStar Medical Center,Third-Party Risk,186,Moderate,Remediation Open
-2025-04-03,GulfStar Community,Third-Party Risk,107,Low,Closed
+2025-01-19,GulfStar North,Excess Access,26,Low,Closed
+2025-10-23,GulfStar Community,Excess Access,309,Low,Closed
+2026-02-28,GulfStar Medical Center,Minimum Necessary,268,Low,Closed
+2026-04-24,GulfStar Community,Excess Access,250,Moderate,Closed
+2026-02-01,GulfStar North,Unencrypted Device,239,Moderate,Closed
+2025-02-24,GulfStar North,Excess Access,309,Low,Closed
+2025-03-30,GulfStar Community,Excess Access,268,High,Closed
+2025-10-23,GulfStar North,Excess Access,13,Low,Closed
+2026-03-09,GulfStar North,Third-Party Risk,98,High,Remediation Open
+2025-03-26,GulfStar Medical Center,Excess Access,278,High,Closed
+2025-11-29,GulfStar North,Excess Access,54,High,Closed
+2025-03-10,GulfStar North,Excess Access,67,Low,Closed
+2025-09-25,GulfStar North,Misdirected Communication,157,Low,Closed
+2026-04-04,GulfStar Community,Misdirected Communication,75,Moderate,Closed
+2025-09-14,GulfStar Community,Excess Access,120,Moderate,Remediation Open
+2025-12-06,GulfStar Community,Excess Access,340,Moderate,Closed
+2026-07-18,GulfStar North,Excess Access,323,Moderate,Remediation Open
+2025-12-08,GulfStar Community,Minimum Necessary,125,Moderate,Closed
+2025-10-14,GulfStar North,Third-Party Risk,63,High,Closed
+2025-12-07,GulfStar North,Minimum Necessary,33,Low,Closed
+2026-07-22,GulfStar Medical Center,Unencrypted Device,56,High,Closed
+2025-06-24,GulfStar North,Misdirected Communication,51,Moderate,Closed
+2025-07-21,GulfStar North,Excess Access,155,Low,Closed
+2025-11-25,GulfStar Community,Minimum Necessary,86,Low,Monitoring
+2026-06-18,GulfStar North,Third-Party Risk,293,Low,Closed
+2026-06-13,GulfStar Medical Center,Excess Access,303,Low,Closed
+2026-03-27,GulfStar North,Excess Access,322,Low,Closed
+2025-10-07,GulfStar Medical Center,Excess Access,286,Moderate,Monitoring
+2026-08-07,GulfStar Community,Third-Party Risk,232,Moderate,Closed
+2026-03-27,GulfStar North,Unencrypted Device,187,Low,Closed
+2025-02-18,GulfStar Medical Center,Minimum Necessary,90,Low,Closed
+2026-06-01,GulfStar North,Excess Access,191,Low,Closed
+2025-09-20,GulfStar North,Excess Access,254,Low,Closed
+2025-03-25,GulfStar Medical Center,Minimum Necessary,31,High,Closed
+2025-06-06,GulfStar North,Excess Access,260,Low,Monitoring
+2026-02-14,GulfStar Community,Misdirected Communication,29,Low,Monitoring
+2026-02-06,GulfStar Community,Minimum Necessary,205,Moderate,Closed
+2025-07-26,GulfStar Community,Unencrypted Device,37,Low,Monitoring
+2025-11-29,GulfStar Community,Misdirected Communication,28,Low,Closed
+2025-12-22,GulfStar Medical Center,Misdirected Communication,123,Low,Closed
+2025-08-12,GulfStar Community,Misdirected Communication,342,Low,Closed
+2026-05-07,GulfStar Community,Misdirected Communication,51,Low,Closed
+2025-04-27,GulfStar Community,Minimum Necessary,85,Low,Closed
+2026-07-17,GulfStar Medical Center,Excess Access,45,Low,Closed
+2025-01-22,GulfStar Community,Third-Party Risk,307,Moderate,Remediation Open
+2025-08-28,GulfStar North,Misdirected Communication,87,Moderate,Remediation Open
+2025-08-28,GulfStar Community,Excess Access,93,Moderate,Closed
+2026-06-28,GulfStar Medical Center,Excess Access,77,Moderate,Remediation Open
+2025-12-20,GulfStar Medical Center,Excess Access,325,Low,Closed
+2026-01-07,GulfStar North,Excess Access,3,Moderate,Closed
+2025-09-15,GulfStar Community,Excess Access,283,Moderate,Closed
+2026-06-26,GulfStar Community,Excess Access,140,Moderate,Closed
+2025-06-26,GulfStar Medical Center,Excess Access,84,Low,Closed
+2025-04-01,GulfStar Medical Center,Excess Access,136,Low,Remediation Open
+2025-03-20,GulfStar Community,Third-Party Risk,65,Moderate,Closed
+2025-04-02,GulfStar Community,Excess Access,299,Low,Closed
+2026-03-15,GulfStar Medical Center,Minimum Necessary,179,Moderate,Closed
+2025-04-15,GulfStar Community,Unencrypted Device,77,Low,Closed
+2025-12-10,GulfStar Medical Center,Unencrypted Device,101,Moderate,Monitoring
+2025-08-12,GulfStar Medical Center,Third-Party Risk,170,Low,Monitoring
+2025-06-22,GulfStar Medical Center,Unencrypted Device,313,Low,Closed
+2025-12-29,GulfStar Community,Excess Access,109,Moderate,Closed
+2026-07-18,GulfStar Medical Center,Misdirected Communication,211,Low,Closed
+2026-01-26,GulfStar Community,Minimum Necessary,252,Moderate,Closed
+2025-02-14,GulfStar Medical Center,Excess Access,150,Low,Closed
+2025-06-01,GulfStar North,Excess Access,266,Low,Closed
+2025-10-26,GulfStar North,Third-Party Risk,54,Low,Closed
+2025-06-06,GulfStar Medical Center,Excess Access,31,High,Closed
+2025-12-01,GulfStar North,Misdirected Communication,101,Moderate,Monitoring
+2025-02-20,GulfStar Medical Center,Excess Access,45,Low,Closed
+2026-01-08,GulfStar Medical Center,Excess Access,274,Moderate,Closed
+2025-05-28,GulfStar Medical Center,Misdirected Communication,179,Low,Remediation Open
+2026-05-29,GulfStar North,Excess Access,119,Moderate,Monitoring
+2026-01-30,GulfStar Community,Unencrypted Device,276,Low,Closed
+2025-11-17,GulfStar Community,Misdirected Communication,226,Low,Monitoring
+2025-03-31,GulfStar Community,Excess Access,74,Moderate,Remediation Open
+2025-09-16,GulfStar Medical Center,Excess Access,109,Low,Closed
+2025-01-28,GulfStar North,Misdirected Communication,24,Moderate,Closed
+2026-01-22,GulfStar Medical Center,Minimum Necessary,205,Low,Closed
+2026-02-05,GulfStar Medical Center,Excess Access,308,Low,Closed
+2025-03-21,GulfStar Medical Center,Misdirected Communication,291,Low,Closed
+2025-10-25,GulfStar Community,Excess Access,301,Low,Monitoring
+2025-05-12,GulfStar Community,Unencrypted Device,42,Low,Closed
+2025-12-19,GulfStar North,Misdirected Communication,80,Moderate,Closed
+2025-04-24,GulfStar North,Excess Access,124,Low,Remediation Open
+2025-01-10,GulfStar Medical Center,Excess Access,197,Low,Closed
+2026-06-12,GulfStar North,Minimum Necessary,136,Low,Closed
+2025-04-11,GulfStar North,Third-Party Risk,135,High,Remediation Open
+2025-05-18,GulfStar Community,Excess Access,138,Moderate,Closed
+2025-07-10,GulfStar North,Excess Access,131,Low,Closed
+2026-07-24,GulfStar Community,Misdirected Communication,191,Moderate,Closed
+2025-06-01,GulfStar Community,Excess Access,293,Low,Closed
+2026-06-04,GulfStar Medical Center,Misdirected Communication,147,Low,Closed
+2026-01-20,GulfStar North,Third-Party Risk,328,Moderate,Closed
+2025-06-24,GulfStar Community,Third-Party Risk,231,Moderate,Closed
+2025-09-24,GulfStar Community,Excess Access,200,Moderate,Monitoring
+2026-06-02,GulfStar North,Excess Access,339,Moderate,Closed
+2026-05-31,GulfStar North,Misdirected Communication,123,High,Closed
+2026-05-03,GulfStar Medical Center,Excess Access,206,Moderate,Monitoring
+2026-07-14,GulfStar Medical Center,Misdirected Communication,182,Low,Closed
+2025-11-26,GulfStar North,Third-Party Risk,100,Low,Closed
+2025-09-22,GulfStar North,Excess Access,184,Low,Monitoring
+2026-02-18,GulfStar North,Excess Access,49,Moderate,Closed
+2025-08-09,GulfStar Community,Excess Access,125,Moderate,Closed
+2025-06-03,GulfStar Community,Misdirected Communication,303,Low,Closed
+2025-05-09,GulfStar North,Excess Access,317,Low,Closed
+2025-10-16,GulfStar Medical Center,Excess Access,245,Low,Closed
+2025-08-07,GulfStar Community,Third-Party Risk,151,Low,Closed
+2025-01-18,GulfStar North,Excess Access,254,Low,Closed
+2026-04-09,GulfStar Community,Excess Access,181,Low,Closed
+2025-07-11,GulfStar North,Third-Party Risk,74,Low,Closed
+2026-07-30,GulfStar Medical Center,Minimum Necessary,165,Low,Closed
+2025-05-18,GulfStar Community,Minimum Necessary,210,Low,Closed
+2025-07-09,GulfStar North,Minimum Necessary,61,Low,Closed
+2025-10-17,GulfStar Medical Center,Minimum Necessary,58,Low,Closed
+2025-09-05,GulfStar North,Excess Access,45,Moderate,Remediation Open
+2025-12-04,GulfStar Community,Minimum Necessary,170,Low,Closed
+2025-12-03,GulfStar North,Minimum Necessary,261,Moderate,Closed
+2025-08-30,GulfStar Community,Misdirected Communication,228,Moderate,Closed
+2026-05-03,GulfStar Medical Center,Excess Access,197,Low,Monitoring
+2025-12-09,GulfStar North,Excess Access,145,Low,Closed
+2025-07-23,GulfStar Medical Center,Excess Access,109,Moderate,Closed
+2026-05-02,GulfStar Community,Minimum Necessary,31,Low,Closed
+2026-05-21,GulfStar Community,Excess Access,44,Low,Closed
+2025-12-05,GulfStar Medical Center,Excess Access,181,Moderate,Closed
+2025-08-08,GulfStar Community,Misdirected Communication,49,Low,Closed
+2026-01-21,GulfStar Community,Excess Access,209,Low,Closed
+2026-03-06,GulfStar North,Misdirected Communication,181,Low,Closed
+2026-04-09,GulfStar North,Misdirected Communication,58,Moderate,Closed
+2025-06-29,GulfStar North,Minimum Necessary,260,Moderate,Closed
+2025-04-27,GulfStar North,Misdirected Communication,292,Low,Closed
+2026-05-16,GulfStar North,Unencrypted Device,131,High,Closed
+2026-02-09,GulfStar North,Excess Access,27,Low,Closed
+2026-03-26,GulfStar Community,Excess Access,335,Low,Closed
+2025-05-27,GulfStar Medical Center,Excess Access,200,High,Closed
+2025-06-16,GulfStar North,Excess Access,203,Low,Remediation Open
+2025-09-01,GulfStar North,Excess Access,339,Moderate,Monitoring
+2025-01-16,GulfStar Community,Minimum Necessary,124,Low,Monitoring
+2025-09-05,GulfStar Medical Center,Misdirected Communication,132,Low,Monitoring
+2025-06-29,GulfStar Community,Minimum Necessary,41,Moderate,Remediation Open
+2025-07-11,GulfStar North,Excess Access,206,Low,Closed
+2026-05-06,GulfStar Medical Center,Misdirected Communication,14,Moderate,Closed
+2026-05-08,GulfStar Community,Excess Access,134,Low,Remediation Open
+2025-07-31,GulfStar Medical Center,Unencrypted Device,74,Moderate,Closed
+2026-02-17,GulfStar Community,Excess Access,190,High,Monitoring
+2025-04-20,GulfStar North,Third-Party Risk,239,Low,Monitoring
+2026-01-13,GulfStar Medical Center,Misdirected Communication,153,Low,Closed
+2025-05-27,GulfStar North,Misdirected Communication,18,Moderate,Closed
+2025-08-22,GulfStar Community,Minimum Necessary,194,Low,Closed
+2025-11-01,GulfStar Community,Misdirected Communication,95,Low,Remediation Open
+2026-01-15,GulfStar North,Excess Access,77,Low,Closed
+2025-11-09,GulfStar Medical Center,Misdirected Communication,158,Moderate,Monitoring
+2026-03-29,GulfStar Medical Center,Misdirected Communication,108,High,Closed
+2026-06-19,GulfStar North,Excess Access,90,High,Closed
+2025-08-09,GulfStar Community,Minimum Necessary,197,Moderate,Monitoring
+2026-05-08,GulfStar Medical Center,Third-Party Risk,9,Moderate,Monitoring
+2025-05-28,GulfStar Medical Center,Misdirected Communication,168,Low,Monitoring
+2026-07-06,GulfStar Medical Center,Minimum Necessary,286,High,Closed
+2025-01-22,GulfStar North,Third-Party Risk,223,Moderate,Closed
+2025-01-29,GulfStar Medical Center,Misdirected Communication,284,Moderate,Closed
+2026-07-27,GulfStar Community,Third-Party Risk,305,Low,Closed
+2026-08-01,GulfStar Medical Center,Excess Access,133,Low,Closed
+2026-07-12,GulfStar Medical Center,Third-Party Risk,79,Moderate,Remediation Open
+2026-02-04,GulfStar North,Excess Access,44,Low,Closed
+2025-01-27,GulfStar Medical Center,Minimum Necessary,111,Moderate,Closed
+2025-03-23,GulfStar Medical Center,Excess Access,82,Moderate,Closed
+2026-05-05,GulfStar North,Minimum Necessary,221,High,Closed
+2025-03-07,GulfStar Community,Excess Access,314,Moderate,Remediation Open
+2025-12-03,GulfStar North,Excess Access,204,Low,Monitoring
+2025-12-16,GulfStar North,Excess Access,50,Low,Monitoring
+2025-10-29,GulfStar Medical Center,Minimum Necessary,121,Low,Closed
+2025-01-29,GulfStar North,Unencrypted Device,154,High,Closed
+2025-10-24,GulfStar North,Excess Access,73,Low,Closed
+2025-10-31,GulfStar Community,Excess Access,18,Low,Closed
+2026-06-03,GulfStar Medical Center,Excess Access,329,Low,Closed
+2025-04-20,GulfStar North,Misdirected Communication,55,Moderate,Monitoring
+2026-08-02,GulfStar North,Minimum Necessary,92,Low,Monitoring
+2026-05-14,GulfStar Community,Excess Access,186,High,Monitoring
+2025-10-09,GulfStar Medical Center,Misdirected Communication,246,High,Closed
+2025-05-20,GulfStar North,Excess Access,88,Moderate,Remediation Open
+2026-07-02,GulfStar Community,Excess Access,333,Low,Closed
+2025-01-28,GulfStar Community,Third-Party Risk,133,Moderate,Closed
+2026-02-15,GulfStar Medical Center,Excess Access,5,Low,Closed
+2025-03-08,GulfStar Medical Center,Misdirected Communication,307,Low,Closed
+2025-11-28,GulfStar Community,Third-Party Risk,159,Low,Closed
+2026-07-03,GulfStar North,Excess Access,79,Low,Closed
+2025-12-27,GulfStar Community,Misdirected Communication,56,Moderate,Closed
+2026-04-25,GulfStar Medical Center,Misdirected Communication,264,Low,Closed
+2026-01-05,GulfStar Community,Minimum Necessary,148,Moderate,Closed
+2026-06-26,GulfStar Medical Center,Minimum Necessary,248,Low,Closed
+2025-11-29,GulfStar North,Minimum Necessary,213,Low,Closed
+2025-10-19,GulfStar North,Misdirected Communication,331,Moderate,Closed
+2025-08-24,GulfStar Community,Misdirected Communication,217,Moderate,Closed
+2026-05-06,GulfStar North,Minimum Necessary,118,Low,Monitoring
+2025-09-21,GulfStar Community,Misdirected Communication,101,Low,Closed
+2025-05-16,GulfStar Medical Center,Minimum Necessary,190,Moderate,Closed
+2025-02-05,GulfStar Community,Excess Access,6,Low,Monitoring
+2026-08-07,GulfStar Medical Center,Misdirected Communication,279,Low,Closed
+2025-01-21,GulfStar Community,Minimum Necessary,303,Moderate,Closed
+2026-01-20,GulfStar Community,Misdirected Communication,175,Low,Closed
+2026-05-15,GulfStar North,Excess Access,102,Low,Closed
+2025-11-07,GulfStar Community,Excess Access,143,Low,Closed
+2025-10-12,GulfStar Medical Center,Third-Party Risk,291,Moderate,Closed
+2026-01-08,GulfStar Community,Third-Party Risk,275,Moderate,Closed
+2026-04-18,GulfStar Medical Center,Excess Access,2,Low,Closed
+2025-08-16,GulfStar North,Misdirected Communication,323,Low,Remediation Open
+2025-12-09,GulfStar Medical Center,Unencrypted Device,111,Low,Closed
+2026-07-21,GulfStar Community,Excess Access,213,Low,Remediation Open
+2026-01-05,GulfStar North,Excess Access,41,Low,Closed
+2025-01-08,GulfStar Medical Center,Third-Party Risk,147,Moderate,Closed
+2025-10-07,GulfStar Community,Minimum Necessary,165,Moderate,Closed
+2025-05-12,GulfStar Community,Third-Party Risk,220,Low,Closed
+2026-07-02,GulfStar Community,Misdirected Communication,157,High,Closed
+2025-04-09,GulfStar Community,Misdirected Communication,154,Moderate,Closed
+2026-06-22,GulfStar North,Misdirected Communication,47,Moderate,Closed
+2025-10-07,GulfStar Medical Center,Excess Access,348,Moderate,Monitoring
+2025-08-17,GulfStar Medical Center,Misdirected Communication,187,Low,Closed
+2025-05-07,GulfStar Medical Center,Minimum Necessary,244,Low,Closed
+2025-02-02,GulfStar Community,Third-Party Risk,306,Low,Closed
+2026-04-16,GulfStar North,Excess Access,67,High,Closed
+2026-05-31,GulfStar North,Excess Access,78,Moderate,Remediation Open
+2025-10-20,GulfStar North,Minimum Necessary,17,Low,Closed
+2025-03-26,GulfStar Community,Minimum Necessary,281,Low,Closed
+2025-05-04,GulfStar Community,Excess Access,10,Low,Monitoring
+2026-07-06,GulfStar North,Misdirected Communication,63,Low,Closed
+2026-02-06,GulfStar Medical Center,Misdirected Communication,133,Low,Closed
+2025-04-23,GulfStar North,Minimum Necessary,27,Low,Monitoring
+2025-07-15,GulfStar Medical Center,Excess Access,202,Low,Closed
+2026-04-20,GulfStar Community,Misdirected Communication,161,Low,Remediation Open
+2025-05-04,GulfStar Medical Center,Misdirected Communication,219,Moderate,Monitoring
+2025-03-27,GulfStar Medical Center,Minimum Necessary,308,Low,Closed
+2026-02-11,GulfStar North,Excess Access,341,Low,Closed
+2026-06-24,GulfStar North,Misdirected Communication,166,High,Closed
+2025-06-01,GulfStar North,Unencrypted Device,184,Low,Closed
+2025-02-16,GulfStar North,Excess Access,19,Moderate,Closed
+2025-05-16,GulfStar Medical Center,Unencrypted Device,113,Moderate,Closed
+2025-08-26,GulfStar North,Excess Access,76,Low,Closed
+2025-06-29,GulfStar North,Third-Party Risk,209,Moderate,Monitoring
+2025-12-15,GulfStar Medical Center,Excess Access,209,Moderate,Closed
+2025-06-14,GulfStar Community,Excess Access,97,Low,Closed
+2026-06-26,GulfStar Community,Excess Access,141,Moderate,Closed
+2025-01-04,GulfStar Community,Minimum Necessary,64,Low,Closed
+2025-07-25,GulfStar Community,Excess Access,283,High,Closed
+2025-03-11,GulfStar Community,Minimum Necessary,170,Low,Closed
+2025-05-05,GulfStar Medical Center,Misdirected Communication,234,Moderate,Closed
+2025-06-05,GulfStar North,Excess Access,28,Low,Monitoring
+2025-06-25,GulfStar Community,Excess Access,194,Low,Monitoring
+2025-03-11,GulfStar Community,Excess Access,256,Low,Closed
+2026-01-24,GulfStar Medical Center,Misdirected Communication,240,Moderate,Monitoring
+2025-06-01,GulfStar Community,Minimum Necessary,266,Moderate,Closed
+2025-11-24,GulfStar North,Misdirected Communication,17,Moderate,Closed
+2026-05-07,GulfStar Community,Misdirected Communication,113,High,Closed
+2026-04-06,GulfStar Community,Excess Access,261,Low,Remediation Open
+2025-03-11,GulfStar Medical Center,Excess Access,197,Low,Closed
+2026-06-10,GulfStar North,Misdirected Communication,136,Low,Closed
+2026-02-25,GulfStar Medical Center,Excess Access,318,Low,Remediation Open
+2025-02-07,GulfStar North,Misdirected Communication,344,Low,Monitoring
+2025-09-16,GulfStar Medical Center,Third-Party Risk,111,High,Closed
+2025-06-19,GulfStar Medical Center,Excess Access,53,Low,Closed
+2025-07-04,GulfStar North,Excess Access,288,Low,Closed
+2026-07-19,GulfStar Medical Center,Misdirected Communication,98,Moderate,Closed
+2025-04-16,GulfStar Medical Center,Minimum Necessary,71,Low,Closed
+2025-11-28,GulfStar Medical Center,Minimum Necessary,289,Moderate,Closed
+2026-03-15,GulfStar Community,Third-Party Risk,260,Moderate,Closed
+2025-08-30,GulfStar North,Excess Access,187,Low,Closed
+2026-02-04,GulfStar Medical Center,Minimum Necessary,326,Low,Closed
+2026-03-19,GulfStar Medical Center,Unencrypted Device,39,Moderate,Monitoring
+2026-04-11,GulfStar North,Excess Access,189,Low,Monitoring
+2025-12-10,GulfStar Medical Center,Excess Access,254,High,Closed
+2025-09-02,GulfStar Community,Third-Party Risk,47,Low,Closed
+2025-08-27,GulfStar Community,Misdirected Communication,278,Low,Closed
+2025-04-29,GulfStar Medical Center,Unencrypted Device,340,High,Closed
+2025-12-21,GulfStar Medical Center,Third-Party Risk,127,Low,Closed
+2025-10-28,GulfStar Medical Center,Misdirected Communication,179,Low,Closed
+2025-11-18,GulfStar Medical Center,Excess Access,168,Low,Monitoring
+2026-01-22,GulfStar Community,Minimum Necessary,337,Low,Closed
+2025-06-04,GulfStar Medical Center,Excess Access,144,Low,Monitoring
+2026-02-01,GulfStar Medical Center,Excess Access,81,Moderate,Closed
+2026-03-13,GulfStar Community,Misdirected Communication,182,Low,Closed
+2026-03-23,GulfStar Medical Center,Excess Access,240,Moderate,Closed
+2025-05-10,GulfStar North,Third-Party Risk,179,Moderate,Closed
+2025-05-28,GulfStar Community,Third-Party Risk,3,High,Closed
+2025-03-20,GulfStar North,Third-Party Risk,45,Moderate,Closed
+2025-08-26,GulfStar North,Misdirected Communication,21,Low,Closed
+2025-03-26,GulfStar Medical Center,Minimum Necessary,170,Moderate,Closed
+2025-09-28,GulfStar North,Excess Access,281,Low,Remediation Open
+2026-06-30,GulfStar Medical Center,Misdirected Communication,269,High,Monitoring
+2026-01-11,GulfStar Medical Center,Misdirected Communication,205,Low,Closed
+2025-06-13,GulfStar Medical Center,Misdirected Communication,283,Low,Closed
+2025-03-23,GulfStar North,Minimum Necessary,258,Moderate,Closed
+2026-05-09,GulfStar Community,Excess Access,175,Moderate,Closed
+2025-07-21,GulfStar North,Excess Access,75,Moderate,Closed
+2026-05-07,GulfStar North,Minimum Necessary,2,Moderate,Closed
+2025-11-03,GulfStar Community,Excess Access,178,Moderate,Closed
+2025-08-09,GulfStar North,Excess Access,41,Moderate,Closed
+2025-05-14,GulfStar Community,Minimum Necessary,323,Moderate,Closed
+2025-02-28,GulfStar Medical Center,Third-Party Risk,274,Moderate,Closed
+2025-11-28,GulfStar North,Unencrypted Device,108,Moderate,Closed
+2025-09-27,GulfStar Medical Center,Excess Access,319,Moderate,Closed
+2025-07-27,GulfStar Medical Center,Third-Party Risk,277,High,Monitoring
+2026-03-11,GulfStar Community,Excess Access,330,Moderate,Closed
+2026-06-13,GulfStar Medical Center,Excess Access,317,Moderate,Remediation Open
+2026-07-18,GulfStar North,Excess Access,146,Moderate,Remediation Open
+2025-12-04,GulfStar Community,Third-Party Risk,268,Low,Monitoring
+2025-01-03,GulfStar North,Third-Party Risk,302,Low,Closed
+2026-04-13,GulfStar Medical Center,Minimum Necessary,209,Moderate,Closed
+2025-07-23,GulfStar Community,Misdirected Communication,267,Low,Remediation Open
+2025-08-11,GulfStar Medical Center,Misdirected Communication,183,Moderate,Closed
+2026-06-11,GulfStar North,Excess Access,195,High,Closed
+2025-08-21,GulfStar North,Excess Access,166,Low,Closed
+2026-02-12,GulfStar North,Misdirected Communication,81,Moderate,Monitoring
+2025-02-22,GulfStar Medical Center,Minimum Necessary,311,Low,Remediation Open
+2025-02-07,GulfStar Medical Center,Unencrypted Device,168,Moderate,Monitoring
+2026-07-19,GulfStar North,Excess Access,282,Moderate,Closed
+2026-01-09,GulfStar Community,Misdirected Communication,16,High,Monitoring
+2025-03-19,GulfStar Medical Center,Minimum Necessary,252,Moderate,Closed
+2025-08-09,GulfStar Medical Center,Misdirected Communication,120,Low,Closed
+2026-02-21,GulfStar Medical Center,Misdirected Communication,318,Moderate,Closed
+2025-07-05,GulfStar Community,Misdirected Communication,209,Low,Closed
+2025-03-14,GulfStar North,Excess Access,161,Low,Closed
+2025-12-31,GulfStar North,Excess Access,271,Low,Closed
+2026-07-07,GulfStar Community,Misdirected Communication,50,Low,Closed
+2025-02-23,GulfStar Medical Center,Excess Access,144,Low,Closed
+2025-01-03,GulfStar Medical Center,Minimum Necessary,18,Moderate,Closed
+2025-02-12,GulfStar North,Minimum Necessary,86,Low,Monitoring
+2026-04-01,GulfStar Medical Center,Misdirected Communication,271,Low,Closed
+2025-04-16,GulfStar North,Misdirected Communication,103,High,Closed
+2025-01-01,GulfStar Community,Excess Access,60,Low,Remediation Open
+2025-04-15,GulfStar North,Third-Party Risk,259,Moderate,Closed
+2025-02-08,GulfStar North,Minimum Necessary,293,Moderate,Closed
+2025-05-10,GulfStar North,Third-Party Risk,205,High,Closed
+2025-10-06,GulfStar Community,Misdirected Communication,18,Low,Closed
+2025-06-19,GulfStar Medical Center,Excess Access,329,Low,Closed
+2025-12-26,GulfStar North,Minimum Necessary,243,Low,Closed
+2025-05-28,GulfStar Community,Third-Party Risk,125,Low,Closed
+2025-02-03,GulfStar North,Misdirected Communication,301,Moderate,Closed
+2025-10-22,GulfStar Medical Center,Excess Access,104,Low,Closed
+2026-03-10,GulfStar Medical Center,Excess Access,37,Low,Closed
+2026-05-02,GulfStar Community,Excess Access,50,High,Remediation Open
+2026-03-21,GulfStar Community,Third-Party Risk,287,Low,Closed
+2026-08-03,GulfStar Community,Third-Party Risk,226,Low,Closed
+2025-01-13,GulfStar Medical Center,Excess Access,210,Low,Closed
+2026-07-06,GulfStar Medical Center,Third-Party Risk,72,Moderate,Closed
+2025-07-09,GulfStar Medical Center,Excess Access,149,Moderate,Closed
+2026-08-01,GulfStar North,Third-Party Risk,271,Moderate,Closed
+2025-11-27,GulfStar Medical Center,Excess Access,109,Low,Remediation Open
+2025-03-13,GulfStar Community,Misdirected Communication,77,Moderate,Closed
+2025-12-13,GulfStar Community,Misdirected Communication,293,Low,Closed
+2025-12-02,GulfStar Medical Center,Excess Access,103,Moderate,Remediation Open
+2025-06-20,GulfStar Community,Unencrypted Device,142,Moderate,Closed
+2025-08-25,GulfStar North,Excess Access,165,Moderate,Closed
+2025-11-11,GulfStar Community,Third-Party Risk,324,Low,Closed
+2025-10-28,GulfStar Community,Unencrypted Device,160,Low,Closed
+2026-02-04,GulfStar Community,Excess Access,117,Moderate,Closed
+2025-01-09,GulfStar Medical Center,Third-Party Risk,196,Low,Remediation Open
+2026-01-12,GulfStar Community,Excess Access,286,Low,Closed
+2025-05-07,GulfStar Community,Minimum Necessary,179,Moderate,Monitoring
+2026-04-17,GulfStar Medical Center,Minimum Necessary,265,Moderate,Monitoring
+2025-11-28,GulfStar Medical Center,Minimum Necessary,73,Low,Remediation Open
+2025-11-07,GulfStar Community,Excess Access,133,Low,Closed
+2025-06-20,GulfStar North,Excess Access,322,Moderate,Closed
+2025-07-15,GulfStar North,Excess Access,204,Low,Closed
+2025-11-30,GulfStar North,Excess Access,81,Low,Remediation Open
+2025-01-19,GulfStar North,Minimum Necessary,229,Moderate,Remediation Open
+2026-02-02,GulfStar Community,Minimum Necessary,200,High,Monitoring
+2026-07-29,GulfStar Medical Center,Unencrypted Device,311,Low,Closed
+2026-01-28,GulfStar North,Excess Access,247,Low,Remediation Open
+2025-03-28,GulfStar Community,Third-Party Risk,205,Moderate,Closed
+2026-03-07,GulfStar Community,Third-Party Risk,263,Low,Closed
+2025-10-27,GulfStar Medical Center,Excess Access,196,Low,Closed
+2025-10-30,GulfStar Medical Center,Misdirected Communication,132,Low,Monitoring
+2025-02-05,GulfStar North,Misdirected Communication,195,Low,Closed
+2025-05-15,GulfStar Community,Excess Access,214,Moderate,Closed
+2025-10-20,GulfStar Medical Center,Misdirected Communication,76,Moderate,Closed
+2025-09-05,GulfStar Medical Center,Excess Access,11,Moderate,Closed
+2025-07-17,GulfStar Medical Center,Misdirected Communication,21,Low,Monitoring
+2025-12-23,GulfStar North,Minimum Necessary,235,Moderate,Closed
+2026-03-30,GulfStar Medical Center,Minimum Necessary,144,Moderate,Closed
+2025-07-17,GulfStar North,Unencrypted Device,262,Low,Closed
+2025-01-19,GulfStar Medical Center,Excess Access,317,Low,Closed
+2025-09-10,GulfStar North,Unencrypted Device,87,Low,Monitoring
+2025-08-01,GulfStar Community,Third-Party Risk,28,Moderate,Closed
+2025-02-08,GulfStar North,Excess Access,164,Moderate,Monitoring
+2026-05-25,GulfStar Medical Center,Excess Access,295,Moderate,Closed
+2025-03-22,GulfStar Medical Center,Excess Access,86,Low,Closed
+2025-10-15,GulfStar North,Third-Party Risk,103,Low,Closed
+2025-06-02,GulfStar Community,Excess Access,72,Moderate,Remediation Open
+2025-09-29,GulfStar Community,Excess Access,157,Low,Closed
+2025-11-18,GulfStar Medical Center,Unencrypted Device,345,Moderate,Closed
+2025-11-22,GulfStar North,Third-Party Risk,294,Low,Closed
+2026-02-11,GulfStar Community,Excess Access,309,Low,Closed
+2026-05-21,GulfStar Medical Center,Excess Access,124,Moderate,Closed
+2026-05-03,GulfStar North,Excess Access,131,Low,Closed
+2025-12-04,GulfStar Medical Center,Excess Access,217,Moderate,Monitoring
+2025-09-05,GulfStar Community,Minimum Necessary,163,Low,Closed
+2025-01-16,GulfStar Community,Excess Access,326,Moderate,Closed
+2025-02-07,GulfStar Community,Misdirected Communication,44,Low,Closed
+2025-09-23,GulfStar Community,Misdirected Communication,341,Moderate,Closed
+2025-11-30,GulfStar Community,Misdirected Communication,304,High,Closed
+2025-10-26,GulfStar North,Third-Party Risk,195,Moderate,Closed
+2025-08-16,GulfStar Medical Center,Minimum Necessary,338,Moderate,Closed
+2025-10-13,GulfStar North,Unencrypted Device,43,Low,Closed
+2025-06-29,GulfStar Medical Center,Excess Access,158,Moderate,Closed
+2026-03-22,GulfStar Community,Excess Access,198,Low,Closed
+2026-03-05,GulfStar North,Minimum Necessary,117,Low,Remediation Open
+2026-02-13,GulfStar Medical Center,Misdirected Communication,211,Low,Closed
+2026-07-21,GulfStar Medical Center,Unencrypted Device,230,Moderate,Monitoring
+2025-04-15,GulfStar Medical Center,Third-Party Risk,23,Moderate,Closed
+2025-11-20,GulfStar North,Misdirected Communication,246,Low,Remediation Open
+2025-12-26,GulfStar Community,Excess Access,116,Low,Monitoring
+2026-07-23,GulfStar Community,Misdirected Communication,134,Low,Closed
+2026-07-20,GulfStar North,Misdirected Communication,313,Low,Monitoring
+2026-01-19,GulfStar Medical Center,Minimum Necessary,289,Low,Closed
+2025-01-21,GulfStar Medical Center,Unencrypted Device,91,Moderate,Remediation Open
+2026-06-24,GulfStar Community,Misdirected Communication,121,Moderate,Closed
+2026-07-10,GulfStar Medical Center,Excess Access,64,Low,Monitoring
+2025-07-23,GulfStar Medical Center,Misdirected Communication,238,Low,Closed
+2025-02-10,GulfStar North,Misdirected Communication,314,Low,Closed
+2025-02-03,GulfStar Medical Center,Misdirected Communication,49,Low,Monitoring
+2025-11-04,GulfStar Community,Misdirected Communication,192,High,Closed
