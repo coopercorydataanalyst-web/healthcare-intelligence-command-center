@@ -50,7 +50,9 @@ Broad executive questions default to the latest 30 days versus the preceding 30 
 
 ## Contextual visual Q&A
 
-Every analytical sheet includes an **Ask About This Sheet** panel beneath its visuals. A required visual/section selector removes ambiguity when a sheet contains multiple charts, cards, tables, funnels, or governance sections. The catalog currently covers 26 visual contexts across Sheets 1–14.
+Every analytical sheet includes a fixed lower-right **Ask this visual** launcher. It stays available while the page scrolls and opens a compact popover on demand, preventing the full Q&A form from taking permanent dashboard space. A required visual/section selector removes ambiguity when a sheet contains multiple charts, cards, tables, funnels, or governance sections. The catalog currently covers 26 visual contexts across Sheets 1–14.
+
+The desktop popover is capped at 430 pixels wide and 76% of viewport height with independent vertical scrolling. The closed launcher is a small pill, and mobile screens use reduced edge spacing. The dedicated Sheet 15 remains unchanged for cross-dashboard questions.
 
 Supported visual-question intents are:
 

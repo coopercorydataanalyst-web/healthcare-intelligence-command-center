@@ -58,7 +58,7 @@ Hospital and date filters apply to all Q&A results. The service-line filter appl
 
 ### Contextual visual Q&A on every sheet
 
-Each of the 14 analytical sheets now includes an **Ask About This Sheet** panel. The user selects the visual or section they mean and can immediately ask:
+Each of the 14 analytical sheets now includes a floating **Ask this visual** control. It remains fixed in the lower-right corner while the dashboard scrolls. The closed state is a small pill that does not interrupt the page layout; clicking it opens a compact, independently scrollable popover. The user selects the visual or section currently in view and can immediately ask:
 
 - What is this visual telling me?
 - What happened on this visual?
@@ -69,6 +69,8 @@ Each of the 14 analytical sheets now includes an **Ask About This Sheet** panel.
 - What are the limitations?
 
 The contextual catalog covers 26 visuals and sections. Answers can combine multiple requested parts, use current filtered metric values where the selected visual has a direct safe metric mapping, and otherwise explain the documented visual logic. Improvement responses are predefined validation and process-improvement options—not generated clinical recommendations. Unsupported questions are refused rather than guessed.
+
+The floating interaction is responsive: desktop popovers are capped at 430 pixels wide and 76% of viewport height, while the launcher uses tighter mobile spacing. The dedicated Ask GulfStar sheet remains available for broader cross-dashboard questions.
 
 The local language layer normalizes conversational variants, common misspellings, shorthand, tense changes, and chart synonyms without an external model. For example, “anything gud or positve,” “what is not working,” “any red flags,” “how can we make this better,” “why should I care,” “what stands out,” and “how did you get this number” map to distinct safe intents. Retrospective positive/negative questions use the latest 30 filtered days versus the preceding 30 days when the selected visual has a direct metric mapping; forward-looking improvement questions return predefined process and validation options.
 

@@ -52,6 +52,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 32. Replaced unsupported-question dead ends with keyword extraction and three similarity-ranked safe suggestions on both the dedicated Q&A page and contextual visual panels.
 33. Added user-controlled **Ask Selected Suggestion** actions so the dashboard never silently rewrites or executes an uncertain interpretation.
 34. Added dashboard-domain weighting to keep workforce, margin, quality, flow, access, privacy, equity, ROI, callout, calculation, and limitation suggestions relevant.
+35. Replaced the full-width contextual Q&A section with a fixed lower-right **Ask this visual** launcher on all 14 analytical sheets.
+36. Added a compact 430-pixel-wide, independently scrollable popover so users can ask while keeping the selected visual substantially visible; added responsive mobile positioning.
+37. Visually verified fixed positioning, compact dimensions, popover scrolling, and non-expanded page layout in the running Streamlit application.
 
 ## Validation completed
 - Python syntax compilation: passed.

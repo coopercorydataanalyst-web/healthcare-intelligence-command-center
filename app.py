@@ -76,6 +76,13 @@ CSS = """
 .priority .meta{font-size:.80rem;color:#526071;margin-top:5px}
 h1,h2,h3{color:#082f49!important}.stTabs [data-baseweb="tab"]{font-weight:700}
 [data-testid="stDataFrame"]{border:1px solid #d8e2ea;border-radius:12px;overflow:hidden}
+#floating-visual-qa-marker{display:none}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker){position:fixed!important;right:1.25rem;bottom:1.25rem;z-index:999999;width:auto!important;max-width:calc(100vw - 2rem);margin:0!important;filter:drop-shadow(0 8px 22px rgba(8,47,73,.22))}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker)>div{background:transparent!important;border:0!important;padding:0!important}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker) button{border-radius:999px!important;background:#0f766e!important;color:#fff!important;border:1px solid #5eead4!important;font-weight:800!important;min-height:46px!important}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker) button:hover{background:#07594f!important;border-color:#99f6e4!important}
+[data-baseweb="popover"]:has(input[placeholder*="What is this visual"]){width:min(430px,calc(100vw - 1.5rem))!important;max-width:min(430px,calc(100vw - 1.5rem))!important;max-height:76vh!important;overflow-y:auto!important}
+@media(max-width:640px){div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker){right:.65rem;bottom:.75rem;max-width:calc(100vw - 1.3rem)}}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -846,59 +853,60 @@ else:
 if not page.startswith("15 —"):
     contextual_options = visual_options(page)
     if contextual_options:
-        st.markdown("---")
-        st.markdown("### Ask About This Sheet")
-        st.caption(
-            "Select the visual or section you mean, then ask what it shows, what changed, what matters most, "
-            "what its callouts mean, what may improve the result, how it is calculated, or what its limitations are. "
-            "Conversational wording, common misspellings, and combined questions are supported."
-        )
-        selected_visual = st.selectbox(
-            "Visual or section",
-            contextual_options,
-            key=f"context_visual_{page.split(' —')[0]}",
-        )
-        with st.form(f"context_question_form_{page.split(' —')[0]}"):
-            visual_question = st.text_input(
-                "Ask about the selected visual",
-                placeholder="Example: What is this visual telling me, and what should I focus on?",
-                key=f"context_question_{page.split(' —')[0]}",
-            )
-            visual_submitted = st.form_submit_button("Ask About This Visual")
-        if visual_submitted:
-            visual_result = answer_visual_question(page, selected_visual, visual_question, fd, fe)
-            st.session_state["visual_qa_result"] = {
-                "page": page, "visual": selected_visual, "question": visual_question, "result": visual_result,
-            }
-        saved_visual_result = st.session_state.get("visual_qa_result")
-        if (
-            saved_visual_result
-            and saved_visual_result.get("page") == page
-            and saved_visual_result.get("visual") == selected_visual
-        ):
-            visual_result = saved_visual_result["result"]
-            if visual_result.get("suggestions"):
-                st.markdown("#### Did you mean one of these?")
-                if visual_result.get("keywords"):
-                    st.caption("Keywords detected: " + ", ".join(visual_result["keywords"]))
-                visual_suggestion = st.selectbox(
-                    "Closest supported visual question",
-                    visual_result["suggestions"],
-                    key=f"visual_suggestion_{page.split(' —')[0]}",
+        with st.container(border=True):
+            st.markdown('<span id="floating-visual-qa-marker"></span>', unsafe_allow_html=True)
+            with st.popover("💬 Ask this visual"):
+                st.markdown("#### Ask About This Sheet")
+                st.caption(
+                    "Select the visual currently in view, then ask naturally. Common misspellings, combined questions, "
+                    "and closest-match suggestions are supported."
                 )
-                if st.button("Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
-                    visual_result = answer_visual_question(page, selected_visual, visual_suggestion, fd, fe)
-                    saved_visual_result = {
-                        "page": page, "visual": selected_visual,
-                        "question": visual_suggestion, "result": visual_result,
+                selected_visual = st.selectbox(
+                    "Visual or section",
+                    contextual_options,
+                    key=f"context_visual_{page.split(' —')[0]}",
+                )
+                with st.form(f"context_question_form_{page.split(' —')[0]}"):
+                    visual_question = st.text_input(
+                        "Ask about the selected visual",
+                        placeholder="What is this visual telling me, and what should I focus on?",
+                        key=f"context_question_{page.split(' —')[0]}",
+                    )
+                    visual_submitted = st.form_submit_button("Ask About This Visual")
+                if visual_submitted:
+                    visual_result = answer_visual_question(page, selected_visual, visual_question, fd, fe)
+                    st.session_state["visual_qa_result"] = {
+                        "page": page, "visual": selected_visual, "question": visual_question, "result": visual_result,
                     }
-                    st.session_state["visual_qa_result"] = saved_visual_result
-            st.markdown(f"**{selected_visual}**")
-            st.caption(f"Question: {saved_visual_result['question']}")
-            st.markdown(f'<div class="brief"><b>{visual_result["answer"]}</b></div>', unsafe_allow_html=True)
-            st.markdown(f"**Evidence type:** {visual_result['evidence']}")
-            st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
-            st.warning(f"**Limitation:** {visual_result['limitation']}")
+                saved_visual_result = st.session_state.get("visual_qa_result")
+                if (
+                    saved_visual_result
+                    and saved_visual_result.get("page") == page
+                    and saved_visual_result.get("visual") == selected_visual
+                ):
+                    visual_result = saved_visual_result["result"]
+                    if visual_result.get("suggestions"):
+                        st.markdown("##### Did you mean one of these?")
+                        if visual_result.get("keywords"):
+                            st.caption("Keywords detected: " + ", ".join(visual_result["keywords"]))
+                        visual_suggestion = st.selectbox(
+                            "Closest supported visual question",
+                            visual_result["suggestions"],
+                            key=f"visual_suggestion_{page.split(' —')[0]}",
+                        )
+                        if st.button("Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
+                            visual_result = answer_visual_question(page, selected_visual, visual_suggestion, fd, fe)
+                            saved_visual_result = {
+                                "page": page, "visual": selected_visual,
+                                "question": visual_suggestion, "result": visual_result,
+                            }
+                            st.session_state["visual_qa_result"] = saved_visual_result
+                    st.markdown(f"**{selected_visual}**")
+                    st.caption(f"Question: {saved_visual_result['question']}")
+                    st.markdown(f'<div class="brief"><b>{visual_result["answer"]}</b></div>', unsafe_allow_html=True)
+                    st.markdown(f"**Evidence type:** {visual_result['evidence']}")
+                    st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
+                    st.warning(f"**Limitation:** {visual_result['limitation']}")
 
 st.markdown("---")
 st.caption(
