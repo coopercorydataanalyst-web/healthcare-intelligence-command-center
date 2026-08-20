@@ -6,7 +6,7 @@ from difflib import SequenceMatcher
 import pandas as pd
 
 from language_utils import closest_suggestions, extracted_keywords, flexible_tokens, normalized_text
-from qa_engine import METRICS, _format, _value
+from qa_engine import METRICS, _format, _metrics_in, _value
 
 
 def _v(purpose, focus, action, callout, limits, metrics=(), calculation="See the visual axes, legend, and supporting table."):
@@ -24,20 +24,20 @@ VISUALS = {
         "Executive Priority Queue": _v("Ranks hospital-domain priorities by modeled severity and then modeled exposure.", "Priority #1 is the first validation target; review its owner, severity components, and exposure assumptions.", "Assign the listed executive owner, validate inputs, and move an approved response into a PDSA cycle.", "The orange #1 treatment identifies the highest current modeled portfolio priority.", "The queue is not a clinical risk score or validated forecast.", calculation="Severity descending; modeled exposure descending as tie-breaker."),
     },
     "2": {
-        "Capacity KPI Cards": _v("Summarizes licensed, staffed, occupied, and available bed capacity plus ED and discharge pressure.", "Focus on high utilization paired with boarding, pending admissions, or discharge delay.", "Validate bed-ready and discharge timestamps, staffing constraints, and unit-level demand before changing targets.", "Available staffed beds are staffed beds minus census, averaged across the selected period.", "System averages can hide unit and shift variation.", ("bed_utilization", "available_beds", "boarding", "ed_provider")),
+        "Capacity KPI Cards": _v("Summarizes licensed, staffed, occupied, and available bed capacity plus ED and discharge pressure.", "Focus on high utilization paired with boarding, pending admissions, or discharge delay.", "Validate bed-ready and discharge timestamps, staffing constraints, and unit-level demand before changing targets.", "Available staffed beds are staffed beds minus census, averaged across the selected period.", "System averages can hide unit and shift variation.", ("licensed_beds", "staffed_beds", "census", "bed_utilization", "available_beds", "boarding", "ed_provider", "pending_admissions", "expected_discharges", "discharge_delay")),
         "Occupancy and Boarding by Hospital": _v("Compares staffed-bed occupancy across hospitals while color encodes boarding hours.", "Hospitals that combine high occupancy with darker/high boarding values warrant throughput review.", "Examine discharge reliability, staffed capacity, pending admissions, and demand by day and unit.", "The visual identifies concurrent pressure; it does not prove one measure causes the other.", "Hospital averages hide within-hospital variation.", ("bed_utilization", "boarding")),
-        "Discharge Delay and ED Boarding": _v("Plots discharge-order-to-exit delay against ED boarding, sized by ED arrivals.", "Upper-right, large-volume points indicate the most consequential joint flow pressure.", "Validate timestamps and test discharge coordination, transport, pharmacy, and post-acute placement constraints.", "Bubble size represents demand, so small and large points should not be interpreted equally.", "Association is descriptive and non-causal.", ("boarding",)),
-        "Patient-Flow Operating Matrix": _v("Provides hospital-level demand, capacity, discharge, and delay values behind the flow visuals.", "Use it to confirm which hospital and metric drive the aggregate signal.", "Drill into daily and unit-level operations before assigning accountability.", "This table is the auditable supporting layer for the page.", "It contains synthetic hospital averages, not encounter-level timestamp validation.", ("boarding", "available_beds", "bed_utilization")),
+        "Discharge Delay and ED Boarding": _v("Plots discharge-order-to-exit delay against ED boarding, sized by ED arrivals.", "Upper-right, large-volume points indicate the most consequential joint flow pressure.", "Validate timestamps and test discharge coordination, transport, pharmacy, and post-acute placement constraints.", "Bubble size represents demand, so small and large points should not be interpreted equally.", "Association is descriptive and non-causal.", ("boarding", "discharge_delay")),
+        "Patient-Flow Operating Matrix": _v("Provides hospital-level demand, capacity, discharge, and delay values behind the flow visuals.", "Use it to confirm which hospital and metric drive the aggregate signal.", "Drill into daily and unit-level operations before assigning accountability.", "This table is the auditable supporting layer for the page.", "It contains synthetic hospital averages, not encounter-level timestamp validation.", ("boarding", "available_beds", "bed_utilization", "pending_admissions", "expected_discharges", "discharge_delay", "ed_provider")),
         "System Patient-Flow Funnel": _v("Illustrates how arrivals move through modeled admission and placement stages.", "The largest drop or queue indicates where modeled flow loss is concentrated.", "Validate real encounter timestamps before using the funnel to set operational targets.", "The placement split is a scenario derived from average boarding pressure.", "It is not an observed patient-level transition funnel.", ("boarding",)),
     },
-    "3": {"Deterioration-to-Harm Reliability Matrix": _v("Compares deterioration and harm rates by hospital and service line; bubble size is encounter volume.", "Prioritize large bubbles in the upper-right after confirming event definitions.", "Review rescue protocols, escalation reliability, staffing, and documentation with clinical governance.", "The chart is a surveillance-prioritization tool only.", "It cannot guide bedside care or prove causality.")},
-    "4": {"Harm Signal by Service Line": _v("Ranks service lines by synthetic harm rate while color reflects total cost.", "Consider harm rate together with encounter volume; a high rate from a small denominator can be unstable.", "Verify event definitions and denominators, then select an accountable quality-improvement pathway.", "Modeled financial exposure is illustrative and is not booked loss.", "Synthetic harm signals are not certified patient-safety measures.")},
+    "3": {"Deterioration-to-Harm Reliability Matrix": _v("Compares deterioration and harm rates by hospital and service line; bubble size is encounter volume.", "Prioritize large bubbles in the upper-right after confirming event definitions.", "Review rescue protocols, escalation reliability, staffing, and documentation with clinical governance.", "The chart is a surveillance-prioritization tool only.", "It cannot guide bedside care or prove causality.", ("deterioration", "harm"))},
+    "4": {"Harm Signal by Service Line": _v("Ranks service lines by synthetic harm rate while color reflects total cost.", "Consider harm rate together with encounter volume; a high rate from a small denominator can be unstable.", "Verify event definitions and denominators, then select an accountable quality-improvement pathway.", "Modeled financial exposure is illustrative and is not booked loss.", "Synthetic harm signals are not certified patient-safety measures.", ("harm",))},
     "5": {"Readmission Risk by Service Line and Discharge Barrier": _v("Shows readmission rate and cohort size for service-line/barrier groups.", "Large, high-rate groups are the strongest transition-reliability screening signals.", "Validate the cohort, then test confirmed follow-up, transition nursing, transportation, medication, or caregiver support.", "Observed group differences are not automatically equity disparities or causal effects.", "The chart is synthetic and not an individual risk model.", ("readmission",))},
-    "6": {"Staffing Intensity Versus Composite Outcome Pressure": _v("Plots hours per patient day against a composite outcome-pressure index by hospital.", "Look for persistent clusters or outliers, but do not interpret the fitted line as a staffing effect.", "Validate acuity, skill mix, vacancies, agency use, unit assignments, and workflow before redesigning staffing.", "The trendline is descriptive only; staffing should never be reduced from this chart alone.", "The outcome index is illustrative and the relationship is confounded.", ("rn_vacancy", "agency_share"))},
+    "6": {"Staffing Intensity Versus Composite Outcome Pressure": _v("Plots hours per patient day against a composite outcome-pressure index by hospital.", "Look for persistent clusters or outliers, but do not interpret the fitted line as a staffing effect.", "Validate acuity, skill mix, vacancies, agency use, unit assignments, and workflow before redesigning staffing.", "The trendline is descriptive only; staffing should never be reduced from this chart alone.", "The outcome index is illustrative and the relationship is confounded.", ("hppd", "rn_vacancy", "overtime_share", "agency_share", "mortality", "falls", "hai"))},
     "7": {"Access Leakage Signals by Hospital": _v("Compares hospital LWBS and specialty-wait signals.", "Focus on the hospital with the strongest combined wait, LWBS, and boarding pressure after checking demand volume.", "Test ED fast track, demand-capacity matching, centralized scheduling, referral navigation, and cancellation recovery.", "Recoverable value is an illustrative gross-revenue scenario.", "The measures use different units and should not be compared by raw bar height alone.", ("lwbs", "specialty_wait", "boarding"))},
-    "8": {"Procedural Volume and Utilization by Day": _v("Compares OR case volume and utilization by hospital and day of week.", "Find recurring low-utilization/high-demand mismatches and confirm whether they reflect block allocation or constraints.", "Review first-case starts, turnover, cancellations, block release, surgeon availability, and staffing before adding rooms.", "Unused-capacity value is illustrative and not fully recoverable.", "The data do not include surgeon availability or block ownership.", ("or_utilization",))},
-    "9": {"Outcomes by Social Vulnerability Quartile": _v("Compares readmission and follow-up across synthetic SVI quartiles.", "Look for consistent gaps while checking cohort size and whether results persist by service line and hospital.", "Validate access barriers and test navigation, transportation, and language support without using SVI to restrict care.", "Group-level differences are screening signals, not proof of inequity or individual risk.", "No patient-level geocoding is included.", ("readmission",))},
-    "10": {"Contribution by Service Line and Payer": _v("Shows encounter contribution by service line and payer.", "Start with negative or weak-contribution combinations that also have meaningful volume.", "Validate contracts and adjudication, then address authorization, documentation, coding, and denial workflow.", "Contribution is revenue minus cost in the synthetic encounter cohort.", "Contract terms and final claims outcomes are not included.", ("margin", "denial_rate"))},
+    "8": {"Procedural Volume and Utilization by Day": _v("Compares OR case volume and utilization by hospital and day of week.", "Find recurring low-utilization/high-demand mismatches and confirm whether they reflect block allocation or constraints.", "Review first-case starts, turnover, cancellations, block release, surgeon availability, and staffing before adding rooms.", "Unused-capacity value is illustrative and not fully recoverable.", "The data do not include surgeon availability or block ownership.", ("or_cases", "or_utilization"))},
+    "9": {"Outcomes by Social Vulnerability Quartile": _v("Compares readmission and follow-up across synthetic SVI quartiles.", "Look for consistent gaps while checking cohort size and whether results persist by service line and hospital.", "Validate access barriers and test navigation, transportation, and language support without using SVI to restrict care.", "Group-level differences are screening signals, not proof of inequity or individual risk.", "No patient-level geocoding is included.", ("readmission", "followup"))},
+    "10": {"Contribution by Service Line and Payer": _v("Shows encounter contribution by service line and payer.", "Start with negative or weak-contribution combinations that also have meaningful volume.", "Validate contracts and adjudication, then address authorization, documentation, coding, and denial workflow.", "Contribution is revenue minus cost in the synthetic encounter cohort.", "Contract terms and final claims outcomes are not included.", ("contribution", "margin", "denial_rate"))},
     "11": {
         "Intervention Value Frontier": _v("Compares modeled annual cost and annual value; bubble size is capacity days and color is confidence.", "Look for higher-value, lower-cost options with useful capacity release and stronger confidence, while considering strategic fit.", "Fund in stages, define milestones, and re-estimate benefits after implementation evidence is available.", "ROI is one input—not the sole decision rule.", "All benefits, costs, confidence, and capacity release are modeled and not guaranteed.", calculation="Net value = annual value - annual cost; ROI = net value / annual cost."),
         "Selected Portfolio Table": _v("Lists interventions that fit under the selected budget after priority sorting.", "Review cumulative spend, confidence, feasibility, and whether the portfolio is overly concentrated in one domain.", "Use milestone-based releases and stop/go governance rather than committing all funding at once.", "Selection changes with the budget slider and modeled priority score.", "This is a scenario, not an approved capital plan.", calculation="Priority score combines confidence-adjusted ROI and modeled capacity days; cumulative cost must remain within budget."),
@@ -241,6 +241,203 @@ def _dynamic_visual_interpretation(page, visual, daily, encounters):
     return None
 
 
+METRIC_DETAIL = {
+    "mortality": {"definition": "the mean synthetic daily mortality-event rate", "context": "This is not risk-adjusted, certified, or suitable for patient-level inference."},
+    "falls": {"definition": "the total synthetic falls recorded during the selected period", "context": "Counts require validated event definitions, reporting completeness, exposure days, and severity review."},
+    "hai": {"definition": "the total synthetic healthcare-associated infection events during the selected period", "context": "This is not a certified NHSN measure and does not apply device-day or procedure-specific denominators."},
+    "ed_provider": {"definition": "the mean synthetic minutes from ED arrival to first provider", "context": "Timestamp definitions and fast-track or triage workflows require operational validation."},
+    "available_beds": {"definition": "the average selected-day staffed-bed capacity remaining after census", "context": "A positive system average does not prove that the right bed type was available at the needed hospital, unit, or time."},
+    "denials": {"definition": "the total synthetic dollars flagged as denied during the selected period", "context": "This is not a final adjudicated or collectible-loss amount and requires finance validation."},
+    "or_utilization": {"definition": "the mean synthetic share of available OR time used", "context": "The data do not include block ownership, room availability, surgeon schedules, turnover definitions, or urgency."},
+    "experience": {
+        "definition": "the mean synthetic patient-experience composite across the selected hospitals and dates",
+        "context": "It is a portfolio demonstration measure and is not an official HCAHPS score.",
+        "target": .82, "bad": .68, "direction": "high",
+        "threshold_text": "The dashboard's illustrative favorable threshold is 82% and its lower scoring reference is 68%.",
+    },
+    "margin": {
+        "definition": "the share of gross operating revenue remaining after synthetic operating cost",
+        "context": "It is not audited operating income and excludes real contract and accounting adjustments.",
+        "target": .05, "bad": -.02, "direction": "high",
+        "threshold_text": "The illustrative favorable threshold is 5% and the unfavorable scoring reference is -2%.",
+    },
+    "bed_utilization": {
+        "definition": "selected-period census divided by staffed-bed capacity",
+        "context": "It measures use of staffed—not licensed—capacity and can hide unit, shift, and daily variation.",
+        "target": .85, "bad": .98, "direction": "low",
+        "threshold_text": "For pressure scoring, 85% is the illustrative favorable threshold and 98% is the high-pressure reference; lower is not automatically operationally optimal.",
+    },
+    "boarding": {
+        "definition": "the mean synthetic ED boarding hours across the selected hospitals and dates",
+        "context": "Validate real arrival, admission-decision, bed-ready, and placement timestamps before operational use.",
+        "target": 4.0, "bad": 10.0, "direction": "low",
+        "threshold_text": "The illustrative favorable threshold is 4 hours and the high-pressure reference is 10 hours.",
+    },
+    "readmission": {
+        "definition": "the share of selected synthetic encounters flagged for readmission within 30 days",
+        "context": "It is not a certified CMS measure and is not risk-adjusted for production comparison.",
+        "target": .12, "bad": .18, "direction": "low",
+        "threshold_text": "The illustrative favorable threshold is 12% and the unfavorable reference is 18%.",
+    },
+    "rn_vacancy": {
+        "definition": "the mean synthetic RN vacancy rate across selected hospitals and dates",
+        "context": "It does not include unit-level skill mix, recruiting pipeline, leave, or position-control validation.",
+        "target": .08, "bad": .18, "direction": "low",
+        "threshold_text": "The illustrative favorable threshold is 8% and the high-pressure reference is 18%.",
+    },
+    "agency_share": {
+        "definition": "total synthetic agency hours divided by total productive staff hours",
+        "context": "It does not establish whether agency coverage was avoidable or clinically inappropriate.",
+        "target": .04, "bad": .10, "direction": "low",
+        "threshold_text": "The illustrative favorable threshold is 4% and the high-use reference is 10%.",
+    },
+    "lwbs": {
+        "definition": "the mean synthetic share of ED arrivals leaving without being seen",
+        "context": "Validate arrival and disposition definitions before external comparison.",
+        "target": .02, "bad": .07, "direction": "low",
+        "threshold_text": "The illustrative favorable threshold is 2% and the unfavorable reference is 7%.",
+    },
+    "specialty_wait": {
+        "definition": "the mean synthetic specialty wait in days",
+        "context": "It does not distinguish urgency, specialty, referral completeness, or patient preference.",
+        "target": 10.0, "bad": 24.0, "direction": "low",
+        "threshold_text": "The illustrative favorable threshold is 10 days and the long-wait reference is 24 days.",
+    },
+    "denial_rate": {
+        "definition": "synthetic denied dollars divided by synthetic gross revenue",
+        "context": "It is not a final adjudicated claims denial rate and requires finance validation.",
+        "target": .04, "bad": .075, "direction": "low",
+        "threshold_text": "The illustrative favorable threshold is 4% and the unfavorable reference is 7.5%.",
+    },
+    "deterioration": {"definition": "the share of selected synthetic encounters flagged with a deterioration event", "context": "The flag is synthetic, is not a validated early-warning model, and cannot guide bedside care."},
+    "harm": {"definition": "the share of selected synthetic encounters flagged with the dashboard's composite harm indicator", "context": "The composite is synthetic, not a certified patient-safety measure, and does not identify cause."},
+    "followup": {"definition": "the share of selected synthetic encounters with follow-up recorded as booked", "context": "Booked follow-up does not prove attendance, timely access, appropriateness, or outcome improvement."},
+    "los": {"definition": "the mean synthetic encounter length of stay in days", "context": "The result is not case-mix or severity adjusted and should not be used for individual care decisions."},
+    "discharge_delay": {"definition": "the mean synthetic hours from discharge order to patient exit", "context": "Validate order, readiness, transport, pharmacy, placement, and physical-exit timestamps before operational use."},
+    "pending_admissions": {"definition": "the mean synthetic count of patients awaiting inpatient placement", "context": "This is a daily portfolio average and can hide hour, hospital, unit, and bed-type constraints."},
+    "expected_discharges": {"definition": "the mean synthetic number of discharges expected per selected day", "context": "Expected does not mean completed and depends on the dashboard's synthetic planning assumptions."},
+    "licensed_beds": {"definition": "the mean licensed-bed count represented in the selected daily records", "context": "Licensed capacity is not the same as staffed, available, clinically appropriate, or immediately usable capacity."},
+    "staffed_beds": {"definition": "the mean bed count staffed for operation in the selected daily records", "context": "A staffed bed may still be constrained by unit type, isolation, skill mix, or real-time placement conditions."},
+    "census": {"definition": "the mean occupied-bed census in the selected daily records", "context": "A portfolio average can hide peaks, unit-level crowding, transfers, and within-day variation."},
+    "overtime_share": {"definition": "total synthetic overtime hours divided by total productive staff hours", "context": "It does not establish whether overtime was avoidable, unsafe, or caused by a specific operating condition."},
+    "hppd": {"definition": "total synthetic productive staff hours divided by total census patient-days", "context": "It is an aggregate staffing-intensity measure without acuity, skill-mix, unit, assignment, or worked-hours validation."},
+    "or_cases": {"definition": "the total synthetic OR cases recorded during the selected period", "context": "Volume alone does not measure complexity, urgency, room availability, productivity, or appropriate capacity."},
+    "contribution": {"definition": "total synthetic encounter revenue minus total synthetic encounter cost", "context": "It is not audited contribution margin and omits real contracts, allocation methods, and final claims adjudication."},
+}
+
+
+DOCUMENTED_CONTENT = {
+    "Executive Priority Queue": (
+        (("severity", "priority score"), "Severity is the dashboard's modeled size of the validated performance gap; it orders the queue before exposure is used as a tie-breaker.", "Modeled domain-gap logic; severity descending, then modeled exposure descending.", "Modeled Estimate"),
+        (("exposure", "financial exposure"), "Exposure is an illustrative estimate of value associated with the priority—not booked loss, guaranteed savings, or a forecast.", "Documented modeled exposure assumptions for the priority domain.", "Modeled Estimate"),
+        (("owner", "accountable owner"), "The owner identifies the executive role expected to validate the signal and coordinate follow-up; it does not assign fault.", "Predefined domain-to-owner governance mapping.", "Validation Required — Governance"),
+    ),
+    "System Patient-Flow Funnel": (
+        (("stage", "placement", "funnel"), "Each stage is a modeled portfolio count from ED arrivals through admission demand and placement. The largest narrowing is a scenario signal for where flow loss may be concentrated.", "Placement stages are derived from selected aggregate demand and average boarding pressure; they are not patient-level transitions.", "Modeled Estimate"),
+    ),
+    "Staffing Intensity Versus Composite Outcome Pressure": (
+        (("outcome pressure", "pressure index", "trendline"), "Outcome pressure is an illustrative composite used to compare hospital-level outcome signals. The fitted line shows association only and must not be read as a staffing effect.", "Normalized synthetic outcome components plotted against aggregate hours per patient day; ordinary least-squares line is descriptive.", "Modeled Estimate"),
+    ),
+    "Intervention Value Frontier": (
+        (("annual value", "value"), "Annual value is the intervention table's modeled yearly benefit estimate. A higher position means greater assumed value, not a guaranteed return.", "Modeled annual_value from the intervention scenario table.", "Modeled Estimate"),
+        (("annual cost", "cost"), "Annual cost is the modeled yearly resource requirement shown on the horizontal axis; it is not an approved budget.", "Modeled annual_cost from the intervention scenario table.", "Modeled Estimate"),
+        (("capacity days", "capacity"), "Bubble size represents modeled capacity days released. Larger bubbles indicate more assumed capacity benefit, not observed bed availability.", "Modeled capacity_days from the intervention scenario table.", "Modeled Estimate"),
+        (("confidence",), "Color represents the scenario's predefined confidence factor. It communicates assumption strength; it is not a statistical confidence interval.", "Predefined intervention confidence factor.", "Modeled Estimate"),
+        (("roi", "return"), "ROI compares modeled net value with modeled annual cost and should be considered with confidence, feasibility, capacity impact, and strategic fit.", "ROI = (modeled annual value − modeled annual cost) / modeled annual cost.", "Modeled Estimate"),
+    ),
+    "Selected Portfolio Table": (
+        (("budget", "spend", "selected"), "The table shows the interventions retained by the current budget scenario after modeled priority sorting. Inclusion is a scenario result, not funding approval.", "Modeled interventions are sorted by priority; cumulative annual cost must remain within the selected budget.", "Modeled Estimate"),
+    ),
+    "Decision Integrity Components": (
+        (("source authority", "completeness", "definitions", "timeliness", "causal confidence", "external validity", "component"), "Each bar is an illustrative evidence-readiness component. A shorter bar identifies a larger governance or validation gap; it is not model accuracy.", "Predefined 0–100 readiness components displayed independently; review the named component's evidence before use.", "Validation Required — Governance"),
+    ),
+    "Source and Evidence Registry": (
+        (("source", "evidence type", "registry", "limitation", "lineage"), "Each row documents what a source contributes, its evidence category, intended use, and known limitation. It supports traceability but does not certify production readiness.", "Documented source/evidence metadata; no analytical inference is made from the registry itself.", "Validation Required — Governance"),
+    ),
+    "Privacy Risk by Event Type and Severity": (
+        (("records affected", "severity", "event type", "privacy event"), "Bar length is the number of synthetic records affected, grouped by event type; color shows the synthetic severity category. Exposure is not the same as a legally reportable breach.", "Sum of synthetic records_affected grouped by event_type and severity.", "Synthetic Result / Validation Required"),
+    ),
+    "CIPP-Informed Governance Gates": (
+        (("gate", "privacy", "owner", "purpose limitation", "minimum necessary"), "Each gate is a required governance question with an accountable review role. It is a decision checkpoint, not proof of compliance.", "Documented privacy-by-design control questions and owner mapping.", "Validation Required — Governance"),
+    ),
+    "Statistical Process Control Chart": (
+        (("center line", "ucl", "lcl", "control limit", "sigma", "spc"), "The center line is the selected monthly measure's mean; UCL and LCL are three-sigma analytic limits. A point beyond a limit is an investigation signal, not proof of failure or cause.", "Monthly aggregation; center = mean; limits = mean ± 3 sample standard deviations, with the lower limit clipped at zero where applicable.", "Synthetic Result / Analytical Signal"),
+    ),
+    "Pareto: Discharge Barriers": (
+        (("barrier", "pareto", "count", "frequency"), "Bars rank synthetic discharge barriers by encounter frequency. The tallest category is the most frequently recorded—not automatically the most severe or causal.", "Count selected encounters by discharge_barrier and sort descending.", "Synthetic Result"),
+    ),
+    "PDSA Learning System": (
+        (("plan", "do", "study", "act", "pdsa"), "Plan defines the aim and prediction; Do runs a small test; Study compares results with the prediction; Act decides whether to adopt, adapt, or abandon. The framework organizes learning but does not prove effectiveness.", "Documented Plan–Do–Study–Act learning cycle; evidence must come from the measured test.", "Validation Required — Improvement Method"),
+    ),
+}
+
+
+def _documented_content_interpretation(visual, question):
+    q = normalized_text(question)
+    for aliases, answer, calculation, evidence in DOCUMENTED_CONTENT.get(visual, ()):
+        if any(normalized_text(alias) in q for alias in aliases):
+            return {
+                "answer": answer,
+                "calculation": calculation,
+                "evidence": evidence,
+                "limitation": "This explanation is restricted to the visual's documented deterministic logic and requires local operational validation.",
+            }
+    return None
+
+
+def _metric_detail_interpretation(metric, daily, encounters):
+    value = _value(metric, daily, encounters)
+    if pd.isna(value):
+        return None
+    detail = METRIC_DETAIL.get(metric.key, {})
+    definition = detail.get("definition", metric.calculation)
+    context = detail.get("context", "This is a descriptive synthetic dashboard metric requiring local validation.")
+    hospital_values = []
+    for hospital, hospital_daily in daily.groupby("hospital"):
+        hospital_encounters = encounters[encounters.hospital == hospital]
+        hospital_value = _value(metric, hospital_daily, hospital_encounters)
+        if not pd.isna(hospital_value):
+            hospital_values.append((hospital, hospital_value))
+    variation = ""
+    if hospital_values:
+        ordered = sorted(hospital_values, key=lambda item: item[1], reverse=True)
+        high_hospital, high_value = ordered[0]
+        low_hospital, low_value = ordered[-1]
+        variation = (
+            f" Across the selected hospitals, {high_hospital} is highest at {_format(high_value, metric.unit)} "
+            f"and {low_hospital} is lowest at {_format(low_value, metric.unit)}."
+            if high_hospital != low_hospital else ""
+        )
+    threshold_interpretation = ""
+    modeled_score = None
+    if {"target", "bad", "direction"}.issubset(detail):
+        if detail["direction"] == "high":
+            modeled_score = _higher_score(value, detail["target"], detail["bad"])
+            gap = value - detail["target"]
+        else:
+            modeled_score = _lower_score(value, detail["target"], detail["bad"])
+            gap = value - detail["target"]
+        gap_display = (
+            f"{100 * abs(gap):.1f} percentage points"
+            if metric.unit == "percent" else _format(abs(gap), metric.unit)
+        )
+        relation = "above" if gap > 0 else "below" if gap < 0 else "at"
+        threshold_interpretation = (
+            f" {detail['threshold_text']} The current value is {gap_display} {relation} the favorable threshold "
+            f"and maps to an illustrative component score of {modeled_score:.0f}/100."
+        )
+    answer = (
+        f"{metric.label} of {_format(value, metric.unit)} means {definition} is {_format(value, metric.unit)} for the current filters."
+        f"{threshold_interpretation}{variation} What leadership should take from it: this value is a screening signal for comparison and follow-up, not a causal explanation."
+    )
+    return {
+        "answer": answer,
+        "calculation": metric.calculation + (f"; illustrative component score = {modeled_score:.0f}/100 after linear threshold mapping and clipping." if modeled_score is not None else "."),
+        "evidence": "Synthetic Result / Modeled Estimate" if modeled_score is not None else "Synthetic Result",
+        "limitation": context,
+    }
+
+
 def answer_visual_question(page, visual, question, daily, encounters):
     sheet = VISUALS.get(str(page).split(" ", 1)[0], {})
     selected_visual = visual
@@ -256,7 +453,12 @@ def answer_visual_question(page, visual, question, daily, encounters):
     if not q:
         return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
     signal = _current_signal(spec, daily, encounters)
-    dynamic = _dynamic_visual_interpretation(page, visual, daily, encounters)
+    explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
+    dynamic = (
+        _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        if explicit_metrics else
+        _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
+    )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
     wants_calculation = bool(tokens & {"calculate", "metric", "axis", "legend", "measure", "method", "formula", "derive"}) or "get this number" in q or "come up with" in q
@@ -312,7 +514,7 @@ def answer_visual_question(page, visual, question, daily, encounters):
         "answer": answer,
         "evidence": dynamic["evidence"] if dynamic else ("Synthetic Result" if signal else "Validation Required — Visual Documentation"),
         "calculation": dynamic["calculation"] if dynamic else spec["calculation"],
-        "limitation": spec["limits"] + " The answer is descriptive and does not establish cause or support patient-care decisions.",
+        "limitation": ((dynamic.get("limitation") or spec["limits"]) if dynamic else spec["limits"]) + " The answer is descriptive and does not establish cause or support patient-care decisions.",
         "suggestions": [], "keywords": extracted_keywords(question),
         "resolved_visual": visual, "selection_note": selection_note,
     }

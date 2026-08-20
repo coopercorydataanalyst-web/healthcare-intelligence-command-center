@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from visual_qa import VISUALS, answer_visual_question, resolve_visual, visual_options
+from qa_engine import METRICS
+from visual_qa import DOCUMENTED_CONTENT, VISUALS, answer_visual_question, resolve_visual, visual_options
 
 
 ROOT = Path(__file__).resolve().parent
@@ -103,3 +104,52 @@ def test_explicit_visual_name_overrides_stale_dropdown_selection():
 def test_generic_this_visual_keeps_dropdown_selection():
     resolved, _ = resolve_visual("1 — CEO", "Executive KPI Cards", "what is this visual telling me")
     assert resolved == "Executive KPI Cards"
+
+
+def test_named_kpi_inside_visual_gets_granular_data_aware_explanation():
+    result = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards",
+        "what does Patient Experience: 76.8% mean", daily, encounters,
+    )
+    assert "Patient Experience of 76.8%" in result["answer"]
+    assert "mean synthetic patient-experience composite" in result["answer"]
+    assert "5.2 percentage points below the favorable threshold" in result["answer"]
+    assert "63/100" in result["answer"]
+    assert "Across the selected hospitals" in result["answer"]
+    assert "mean synthetic patient_experience composite" in result["calculation"]
+    assert result["evidence"] == "Synthetic Result / Modeled Estimate"
+    assert "not an official HCAHPS score" in result["limitation"]
+    assert "Operating Margin:" not in result["answer"]
+
+
+def test_other_named_kpi_inside_visual_uses_its_own_definition():
+    result = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards",
+        "Can you explain what the RN vacancy number means?", daily, encounters,
+    )
+    assert "RN Vacancy of" in result["answer"]
+    assert "mean synthetic RN vacancy rate" in result["answer"]
+    assert "unit-level skill mix" in result["limitation"]
+
+
+def test_every_mapped_metric_on_every_visual_gets_metric_level_answer():
+    by_key = {metric.key: metric for metric in METRICS}
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            for key in spec["metrics"]:
+                metric = by_key[key]
+                question = f"What does {metric.aliases[0]} mean on this visual?"
+                result = answer_visual_question(page, visual, question, daily, encounters)
+                assert f"{metric.label} of" in result["answer"], (page, visual, key, result["answer"])
+                assert result["calculation"]
+                assert result["evidence"] != "Validation Required — Visual Documentation"
+
+
+def test_documented_modeled_and_governance_content_is_explained_specifically():
+    for visual, entries in DOCUMENTED_CONTENT.items():
+        page = next(page for page, visuals in VISUALS.items() if visual in visuals)
+        alias = entries[0][0][0]
+        result = answer_visual_question(page, visual, f"What does {alias} mean?", daily, encounters)
+        assert result["answer"] == entries[0][1], (visual, alias, result["answer"])
+        assert result["calculation"] == entries[0][2]
+        assert "operational validation" in result["limitation"]

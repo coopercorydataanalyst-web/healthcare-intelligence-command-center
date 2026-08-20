@@ -38,6 +38,20 @@ METRICS = (
     Metric("denial_rate", "Denial Rate", ("denial rate",), "total denied dollars / total revenue", "percent", better="low"),
     Metric("or_utilization", "OR Utilization", ("or utilization", "operating room utilization", "procedural utilization"), "mean daily or_utilization", "percent", better="high"),
     Metric("specialty_wait", "Access / Specialty Wait", ("specialty wait", "access wait", "wait days", "access"), "mean daily specialty_wait_days", "days", better="low"),
+    Metric("deterioration", "Deterioration Rate", ("deterioration", "deterioration rate"), "deterioration encounters / selected encounters", "percent", better="low"),
+    Metric("harm", "Harm Rate", ("harm", "harm rate", "composite harm"), "harm encounters / selected encounters", "percent", better="low"),
+    Metric("followup", "Follow-Up Booked", ("follow up", "followup", "follow-up booked"), "encounters with follow-up booked / selected encounters", "percent", better="high"),
+    Metric("los", "Length of Stay", ("length of stay", "los"), "mean synthetic encounter length of stay", "days", better="low"),
+    Metric("discharge_delay", "Discharge-Order-to-Exit Time", ("discharge delay", "discharge order to exit", "order to exit"), "mean daily discharge_order_to_exit_hours", "hours", better="low"),
+    Metric("pending_admissions", "Pending Admissions", ("pending admissions", "admission queue"), "mean daily pending_admissions", "count", better="low"),
+    Metric("expected_discharges", "Expected Discharges", ("expected discharges",), "mean daily expected_discharges", "count", better="context"),
+    Metric("licensed_beds", "Licensed Beds", ("licensed beds", "licensed capacity"), "mean daily licensed_beds", "count", better="context"),
+    Metric("staffed_beds", "Staffed Beds", ("staffed beds", "staffed capacity"), "mean daily staffed_beds", "count", better="context"),
+    Metric("census", "Average Census", ("average census", "census", "occupied beds"), "mean daily census", "count", better="context"),
+    Metric("overtime_share", "Overtime Labor Share", ("overtime share", "overtime labor", "overtime"), "total overtime hours / total productive staff hours", "percent", better="low"),
+    Metric("hppd", "Hours per Patient Day", ("hours per patient day", "hppd", "staffing intensity"), "total productive staff hours / total census patient-days", "number", better="context"),
+    Metric("or_cases", "OR Case Volume", ("or cases", "case volume", "procedural volume"), "sum of daily OR cases", "count", better="context"),
+    Metric("contribution", "Encounter Contribution", ("contribution", "operating contribution"), "sum of synthetic encounter revenue minus cost", "currency", better="high"),
 )
 
 MAIN_SUGGESTIONS = (
@@ -106,6 +120,20 @@ def _value(metric, daily, encounters):
     if metric.key == "denial_rate": return daily.denials.sum() / max(daily.revenue.sum(), 1)
     if metric.key == "or_utilization": return daily.or_utilization.mean()
     if metric.key == "specialty_wait": return daily.specialty_wait_days.mean()
+    if metric.key == "deterioration": return encounters.deterioration.mean() if not encounters.empty else np.nan
+    if metric.key == "harm": return encounters.harm.mean() if not encounters.empty else np.nan
+    if metric.key == "followup": return encounters.followup_booked.mean() if not encounters.empty else np.nan
+    if metric.key == "los": return encounters.los.mean() if not encounters.empty else np.nan
+    if metric.key == "discharge_delay": return daily.discharge_order_to_exit_hours.mean()
+    if metric.key == "pending_admissions": return daily.pending_admissions.mean()
+    if metric.key == "expected_discharges": return daily.expected_discharges.mean()
+    if metric.key == "licensed_beds": return daily.licensed_beds.mean()
+    if metric.key == "staffed_beds": return daily.staffed_beds.mean()
+    if metric.key == "census": return daily.census.mean()
+    if metric.key == "overtime_share": return daily.overtime_hours.sum() / max(daily.staff_hours.sum(), 1)
+    if metric.key == "hppd": return daily.staff_hours.sum() / max(daily.census.sum(), 1)
+    if metric.key == "or_cases": return daily.or_cases.sum()
+    if metric.key == "contribution": return (encounters.revenue - encounters.cost).sum() if not encounters.empty else np.nan
     return np.nan
 
 

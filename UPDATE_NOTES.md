@@ -60,6 +60,15 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 40. Added a translucent glass-style idle launcher with a light hover state; the launcher becomes solid green while clicked/focused or while its popover reports an expanded state.
 41. Added explicit visual-name resolution so a question naming a different visual overrides a stale dropdown selection, with a visible interpretation notice.
 42. Added data-aware interpretation for Executive Health Score by Domain: current ranked scores, strongest/weakest domains, point gap, underlying filtered metrics, normalized-score meaning, and exact component methodology.
+43. Added granular KPI-within-visual interpretation. Explicitly naming Patient Experience, Operating Margin, Staffed-Bed Utilization, ED Boarding, Readmission, RN Vacancy, Agency Labor Share, LWBS, Specialty Wait, or Denial Rate now returns the filtered value, exact definition, hospital variation, threshold relationship, modeled component score where applicable, calculation, evidence type, and metric-specific limitation instead of summarizing the whole visual.
+44. Added regression coverage for the exact question `what does Patient Experience: 76.8% mean`, corrected percentage-point threshold wording, and repaired the dynamic-visual limitation fallback.
+45. Generalized granular interpretation across all 14 analytical pages and all 26 cataloged visuals. Added deterministic metric semantics for deterioration, harm, follow-up, length of stay, discharge delay, pending admissions, expected discharges, licensed/staffed beds, census, overtime share, hours per patient day, OR case volume, and encounter contribution, alongside the existing core measures.
+46. Added exact contextual explanations for non-observed visual content: executive severity/exposure/ownership, modeled funnel stages, outcome-pressure index, intervention cost/value/capacity/confidence/ROI, budget-selected portfolios, decision-integrity components, source/evidence registry fields, privacy exposure/severity, governance gates, SPC center/control limits, Pareto barrier counts, and PDSA stages.
+47. Added dashboard-wide regression tests requiring every metric mapped to every visual to produce a metric-level answer, plus specific coverage for every modeled/governance content family.
+48. Repaired the global service-line filter contract. Added a deterministic service-line operating allocation for capacity, demand, census, flow, quality, workforce, experience, procedural, and financial hospital-day measures, then rolled selected lines back to hospital-day grain before every KPI, chart, priority, briefing, trend, and contextual-Q&A calculation.
+49. Guaranteed exact reconciliation to the original hospital-day data when all service lines are selected. Subset selections now visibly change every applicable CEO KPI, including health score, margin, utilization, boarding, readmission, RN vacancy, agency share, patient experience, and effective capacity.
+50. Added visible service-scope disclosure and explicit non-applicability language for privacy events, source/governance facts, and intervention assumptions, which lack defensible service-line attribution.
+51. Added service-line reconciliation, subset-sensitivity, completeness, and live Streamlit interaction tests.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -67,4 +76,7 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - CEO-page assertions: priority ranks render in #1–#5 sequence, the #1 emphasis class is present, stable wording is present, and no directional `0.0` language is rendered.
 - Q&A unit tests: all required examples, documented metrics, refusal paths, filter exclusions, modeled intents, executive-language summaries, and insufficient-window guardrails passed.
 - Q&A form runtime: a submitted hospital-ranking question rendered an answer without exceptions.
-- Contextual visual Q&A runtime: all 15 sheets executed without exceptions, and a submitted CEO-sheet visual question rendered current filtered signals.
+- Contextual visual Q&A runtime: all 15 sheets executed without exceptions, and submitted CEO-sheet visual questions rendered current filtered signals and granular named-KPI interpretation.
+- Automated Q&A suite: 22 tests passed, including exact Patient Experience and RN Vacancy questions, every metric-to-visual mapping, and every documented modeled/governance content family.
+- Combined automated suite: 25 tests passed, including exact full-portfolio reconciliation and service-line subset sensitivity.
+- Live Streamlit interaction: changing Service Line(s) from all lines to COPD changed every displayed CEO performance KPI without exceptions.

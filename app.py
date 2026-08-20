@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from qa_engine import answer_question
+from service_line_ops import allocate_service_lines, rollup_selected_service_lines, service_filter_is_complete
 from visual_qa import answer_visual_question, visual_options
 
 ROOT = Path(__file__).resolve().parent
@@ -99,6 +100,14 @@ def load():
 
 d, e, p, iv, src = load()
 
+
+@st.cache_data
+def service_line_daily(daily):
+    return allocate_service_lines(daily)
+
+
+service_daily = service_line_daily(d)
+
 with st.sidebar:
     st.markdown("## ✚ GulfStar Health")
     st.caption("Clinical, Capacity & Margin Intelligence")
@@ -127,6 +136,7 @@ with st.sidebar:
     st.caption(f"Available data: {min_d:%b %d, %Y} – {max_d:%b %d, %Y}")
     hospitals = st.multiselect("Hospital(s)", sorted(d.hospital.unique()), default=sorted(d.hospital.unique()))
     services = st.multiselect("Service Line(s)", sorted(e.service_line.unique()), default=sorted(e.service_line.unique()))
+    st.caption("Service-line selections recalculate synthetic hospital-day operations through a modeled allocation that reconciles to the full portfolio.")
     st.markdown("---")
     st.caption("Portfolio simulation • No PHI • Not patient-care decision support")
 
@@ -139,15 +149,27 @@ if isinstance(date_range, tuple) and len(date_range) == 2:
 else:
     start = end = pd.Timestamp(date_range)
 
-fd = d[d.hospital.isin(hospitals) & d.date.between(start, end)].copy()
+fd_allocated = service_daily[
+    service_daily.hospital.isin(hospitals)
+    & service_daily.service_line.isin(services)
+    & service_daily.date.between(start, end)
+].copy()
+fd = rollup_selected_service_lines(fd_allocated, services)
 fe = e[e.hospital.isin(hospitals) & e.service_line.isin(services) & e.admit_date.between(start, end)].copy()
 fp = p[p.hospital.isin(hospitals) & p.date.between(start, end)].copy()
 
 period_days = max((end - start).days + 1, 1)
 prior_end = start - pd.Timedelta(days=1)
 prior_start = prior_end - pd.Timedelta(days=period_days - 1)
-pdaily = d[d.hospital.isin(hospitals) & d.date.between(prior_start, prior_end)].copy()
+pdaily_allocated = service_daily[
+    service_daily.hospital.isin(hospitals)
+    & service_daily.service_line.isin(services)
+    & service_daily.date.between(prior_start, prior_end)
+].copy()
+pdaily = rollup_selected_service_lines(pdaily_allocated, services)
 penc = e[e.hospital.isin(hospitals) & e.service_line.isin(services) & e.admit_date.between(prior_start, prior_end)].copy()
+
+service_scope = "All service lines — reconciles to original hospital-day totals" if service_filter_is_complete(services) else "Selected service lines — modeled allocation of hospital-day operations"
 
 
 def money(x):
@@ -206,6 +228,13 @@ def hero(title, sub):
 
 
 def evidence():
+    applicability = ""
+    if page.startswith("11 —"):
+        applicability = " Intervention assumptions are portfolio scenarios and are not reallocated by service line."
+    elif page.startswith("12 —"):
+        applicability = " Governance scores and source-registry facts are not service-line performance measures."
+    elif page.startswith("13 —"):
+        applicability = " Privacy events lack service-line attribution; hospital and date filters apply, but service line does not."
     st.markdown(
         '<div class="sourcebar">'
         '<span class="badge">PUBLIC BENCHMARK</span>'
@@ -213,6 +242,8 @@ def evidence():
         '<span class="badge model">MODELED ESTIMATE</span>'
         '<span class="badge validate">VALIDATION REQUIRED</span>'
         f' Selected Range: <b>{start.strftime("%b %d, %Y")}–{end.strftime("%b %d, %Y")}</b>'
+        f' • Service Scope: <b>{service_scope}</b>'
+        f' {applicability}'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -902,7 +933,10 @@ if not page.startswith("15 —"):
                                 "question": visual_suggestion, "result": visual_result,
                             }
                             st.session_state["visual_qa_result"] = saved_visual_result
-                    st.markdown(f"**{selected_visual}**")
+                    resolved_visual = visual_result.get("resolved_visual", selected_visual)
+                    st.markdown(f"**{resolved_visual}**")
+                    if visual_result.get("selection_note"):
+                        st.info(visual_result["selection_note"])
                     st.caption(f"Question: {saved_visual_result['question']}")
                     st.markdown(f'<div class="brief"><b>{visual_result["answer"]}</b></div>', unsafe_allow_html=True)
                     st.markdown(f"**Evidence type:** {visual_result['evidence']}")
