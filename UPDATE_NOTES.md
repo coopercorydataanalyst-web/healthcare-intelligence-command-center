@@ -92,6 +92,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 72. Added reusable hospital-comparison interpretation across every metric-backed visual, including conversational multi-hospital questions and independent high/middle/low positions for each mapped measure.
 73. Added relative-outlier review across every metric-backed visual. The assistant identifies the point most separated from the selected-hospital median while clearly distinguishing a relative screening signal from a statistically confirmed anomaly.
 74. Added regression coverage for every hospital on the discharge-delay/boarding scatter, every metric-backed visual's outlier route, and natural executive comparisons such as one hospital being high while another is low or average.
+75. Replaced aggregate-only `Explain the output` responses on hospital-comparison visuals with an executive readout listing every selected hospital, each mapped value, and its relative high/middle/low position.
+76. Added a dedicated Deterioration-to-Harm Reliability Matrix readout covering every hospital's deterioration rate, harm rate, encounter volume, and highest combined-pressure service line, plus axis, bubble-size, governance, and non-causal interpretation.
+77. Added exact regression coverage for the Deterioration-to-Harm `explain the output` question and confirmed the structured answer does not fall back to aggregate current signals.
 
 ## Validation completed
 - Python syntax compilation: passed.

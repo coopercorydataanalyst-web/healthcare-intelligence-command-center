@@ -36,6 +36,23 @@ def test_every_visual_answers_core_contextual_questions():
                 assert "does not establish cause" in result["limitation"]
 
 
+def test_deterioration_matrix_explain_output_covers_every_available_hospital():
+    result = answer_visual_question(
+        "3 — Deterioration", "Deterioration-to-Harm Reliability Matrix",
+        "explain the output", daily, encounters,
+    )
+    assert result.get("display")
+    assert "farther right means" in result["answer"]
+    assert "farther up means" in result["answer"]
+    assert "larger bubbles mean more encounters" in result["answer"]
+    for hospital in sorted(encounters.hospital.unique()):
+        assert f"{hospital}: Deterioration" in result["answer"]
+        assert f"{hospital.replace('GulfStar ', '')}:" in result["answer"]
+    assert "highest combined displayed pressure" in result["answer"]
+    assert result["display"]["action_heading"] == "What Leadership Should Validate"
+    assert "Current filtered signals:" not in result["answer"]
+
+
 def test_unsupported_visual_question_refuses_to_guess():
     visual = visual_options("1 — CEO")[0]
     result = answer_visual_question("1 — CEO", visual, "Predict next year's exact result", daily, encounters)

@@ -84,6 +84,8 @@ Named-entity position questions are data-aware. A question such as **“Why is G
 
 High, low, average, comparison, and outlier language is handled consistently across metric-backed visuals. On multi-axis charts, each axis is ranked independently, so a hospital can correctly be highest on one measure and in the middle on another. Multi-hospital questions return side-by-side current values and positions. Outlier questions identify relative separation within the selected peer group but do not call a point a statistically confirmed anomaly when the peer set is too small. “Why” answers describe the measured difference and provide validation steps without inventing an operational cause.
 
+General explanation questions on hospital-comparison visuals also enumerate every selected hospital instead of returning only a portfolio average. The Deterioration-to-Harm Reliability Matrix additionally explains both axes and bubble size, reports hospital-level deterioration, harm, and encounter volume, and identifies each hospital's highest combined-pressure service line for validation-first follow-up.
+
 Contextual Q&A state is versioned for Streamlit Cloud deployments. Browser sessions holding older widget or result structures are migrated automatically so a redeploy cannot fail with a stale `visual_qa` key or incompatible saved-result shape.
 
 Modeled funnel-stage questions use the actual selected scenario math. Questions about Modeled Delayed Placements report the count, share of admissions, complementary within-target count, boarding-pressure input, formula, and the fact that discharges are a separate operating total rather than the next patient-level subset.

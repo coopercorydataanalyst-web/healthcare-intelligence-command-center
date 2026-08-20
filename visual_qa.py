@@ -238,6 +238,111 @@ def _dynamic_visual_interpretation(page, visual, daily, encounters):
     page_number = str(page).split(" ", 1)[0]
     if page_number == "1" and visual == "Executive Health Score by Domain":
         return _executive_domain_interpretation(daily, encounters)
+    if visual == "Deterioration-to-Harm Reliability Matrix" and not encounters.empty:
+        grouped = encounters.groupby("hospital").agg(
+            encounters=("encounter_id", "count"),
+            deterioration=("deterioration", "mean"),
+            harm=("harm", "mean"),
+        )
+        deterioration_order = grouped.deterioration.sort_values()
+        harm_order = grouped.harm.sort_values()
+        hospital_rows = []
+        for hospital, row in grouped.iterrows():
+            deterioration_position = "highest" if hospital == deterioration_order.index[-1] else "lowest" if hospital == deterioration_order.index[0] else "middle"
+            harm_position = "highest" if hospital == harm_order.index[-1] else "lowest" if hospital == harm_order.index[0] else "middle"
+            hospital_rows.append(
+                f"{hospital}: Deterioration {_format(row.deterioration, 'percent')} ({deterioration_position}); "
+                f"Harm {_format(row.harm, 'percent')} ({harm_position}); {row.encounters:,.0f} encounters."
+            )
+        service_rows = []
+        if "service_line" in encounters:
+            by_service = encounters.groupby(["hospital", "service_line"]).agg(
+                encounters=("encounter_id", "count"), deterioration=("deterioration", "mean"), harm=("harm", "mean")
+            ).reset_index()
+            for hospital, frame in by_service.groupby("hospital"):
+                pressure = frame.assign(joint_pressure=frame.deterioration + frame.harm).sort_values(
+                    ["joint_pressure", "encounters"], ascending=False
+                ).iloc[0]
+                service_rows.append(
+                    f"{hospital.replace('GulfStar ', '')}: {pressure.service_line} has the highest combined displayed pressure "
+                    f"({_format(pressure.deterioration, 'percent')} deterioration; {_format(pressure.harm, 'percent')} harm; "
+                    f"{pressure.encounters:,.0f} encounters)."
+                )
+        answer = (
+            "The matrix compares each hospital and service line on two rates: farther right means more selected encounters "
+            "were flagged for deterioration, farther up means more were flagged for harm, and larger bubbles mean more encounters. "
+            "Hospital-level results are summarized below; the plotted bubbles provide the service-line detail."
+        )
+        limitation = (
+            "The flags and rates are synthetic and not risk-adjusted. Position and bubble size identify where validation should start; "
+            "they do not establish cause, clinical performance, or patient-level risk."
+        )
+        return {
+            "answer": answer + " " + " ".join(hospital_rows + service_rows),
+            "calculation": "Hospital and hospital-service-line encounter counts with mean Boolean deterioration and harm flags; bubble size = encounter count.",
+            "evidence": "Synthetic Result / Analytical Signal", "limitation": limitation,
+            "display": {
+                "title": "Deterioration-to-Harm Reliability Matrix — Executive Readout",
+                "filters": _selected_filter_summary(daily, encounters), "answer": answer,
+                "what_matters": hospital_rows + service_rows,
+                "actions": [
+                    "Start validation with large bubbles that are simultaneously farther right and higher on the matrix.",
+                    "Confirm deterioration, harm, encounter-eligibility, service-line, and reporting definitions.",
+                    "Review persistent differences by hospital, service line, acuity, and period through clinical governance before selecting an intervention.",
+                ],
+                "action_heading": "What Leadership Should Validate", "limitation": limitation,
+            },
+        }
+    spec = VISUALS.get(page_number, {}).get(visual, {})
+    if "hospital" in (visual + " " + spec.get("purpose", "")).lower() and spec.get("metrics"):
+        hospitals = sorted(set(daily.hospital.unique()) | set(encounters.hospital.unique()))
+        metric_values = {}
+        for key in spec["metrics"]:
+            metric = _metric_by_key(key)
+            if metric is None:
+                continue
+            values = []
+            for hospital in hospitals:
+                value = _value(metric, daily[daily.hospital == hospital], encounters[encounters.hospital == hospital])
+                if not pd.isna(value):
+                    values.append((hospital, float(value)))
+            if values:
+                metric_values[metric] = sorted(values, key=lambda item: item[1])
+        hospital_rows = []
+        for hospital in hospitals:
+            parts = []
+            for metric, ordered in metric_values.items():
+                match = next(((name, value) for name, value in ordered if name == hospital), None)
+                if match is None:
+                    continue
+                rank = ordered.index(match) + 1
+                position = "lowest" if rank == 1 else "highest" if rank == len(ordered) else "middle"
+                parts.append(f"{metric.label} {_format(match[1], metric.unit)} ({position})")
+            if parts:
+                hospital_rows.append(f"{hospital}: " + "; ".join(parts) + ".")
+        if hospital_rows:
+            answer = (
+                f"This visual compares the selected hospitals using {', '.join(metric.label for metric in metric_values)}. "
+                "Each hospital's current filtered values and relative position are listed below."
+            )
+            limitation = (
+                "The high, middle, and low labels are relative only to the currently selected hospitals. They describe the output "
+                "but do not explain cause or establish that a difference is statistically unusual."
+            )
+            return {
+                "answer": answer + " " + " ".join(hospital_rows),
+                "calculation": spec["calculation"], "evidence": "Synthetic Result / Analytical Signal", "limitation": limitation,
+                "display": {
+                    "title": f"{visual} — Executive Readout", "filters": _selected_filter_summary(daily, encounters),
+                    "answer": answer, "what_matters": hospital_rows,
+                    "actions": [
+                        "Review the hospital with the least favorable combination of displayed measures first.",
+                        "Confirm definitions, denominators, time periods, volume, and data completeness.",
+                        "Validate whether the difference persists in comparable service lines, units, days, and operating shifts before assigning a cause.",
+                    ],
+                    "action_heading": "What Leadership Should Validate", "limitation": limitation,
+                },
+            }
     return None
 
 
