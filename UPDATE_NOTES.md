@@ -86,6 +86,7 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 66. Added chart-specific interpretation for Discharge Delay and ED Boarding: actual x/y values, peer comparison, bubble-size meaning, validation steps, and an explicit non-causal boundary.
 67. Added deployment-safe session-state migration for contextual Q&A. Stale `visual_qa`, result, selector, question, and suggestion state from earlier Streamlit Cloud builds is cleared once under a versioned app-state contract; malformed saved results are discarded instead of raising `KeyError`.
 68. Updated prior-period timedelta construction to use an explicit day unit, removing the NumPy generic-timedelta deprecation warning.
+69. Added stage-level System Patient-Flow Funnel interpretation. `Why is modeled delayed placements so low` now returns selected admissions, within-target and delayed counts/shares, boarding input, exact scenario formula, discharge-count distinction, and validation steps.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -106,3 +107,5 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Entity-position validation: GulfStar North returned 5.84 boarding hours, 2.26 discharge-delay hours, 52,940 selected ED arrivals, peer comparisons, and no fabricated causal explanation.
 - Combined automated suite: 32 tests passed, including named-hospital questions across every metric-backed visual.
 - Runtime migration validation: a simulated browser session containing legacy `visual_qa` and invalid saved-result state loaded without exception, and all 15 sheets passed the Streamlit execution harness.
+- Funnel-stage validation: 21,020 delayed placements (24.0% of 87,595 admissions), 66,575 within-target placements, 5.9-hour boarding input, and separate 86,512 discharge total reconciled exactly.
+- Combined automated suite: 33 tests passed after the funnel-stage interpretation upgrade.

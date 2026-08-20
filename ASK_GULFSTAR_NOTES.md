@@ -68,6 +68,8 @@ The contextual popover now renders structured executive answers. It removes the 
 
 Hospital-position intent now resolves questions such as **“Why is GulfStar North so low?”** against the selected visual's filtered values. On the Discharge Delay and ED Boarding scatter, the response reports the hospital's x-axis, y-axis, and bubble-size values, peer comparisons, and validation steps without inventing a causal explanation. The same deterministic entity-position contract applies across every metric-backed visual.
 
+The System Patient-Flow Funnel has stage-level interpretation for Modeled Delayed Placements. It explains the selected count and percentage of admissions, the bounded boarding-pressure formula, the within-target complement, and why discharges must not be read as the next subset in an observed patient-level funnel.
+
 The desktop popover is capped at 430 pixels wide and 76% of viewport height with independent vertical scrolling. The closed launcher is a small pill, and mobile screens use reduced edge spacing. The dedicated Sheet 15 remains unchanged for cross-dashboard questions.
 
 The launcher is intentionally translucent while idle (`rgba` background plus backdrop blur), becomes slightly stronger on hover, and turns fully solid when clicked/focused or when Streamlit reports the popover as open.

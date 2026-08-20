@@ -473,6 +473,52 @@ def _entity_position_interpretation(visual, spec, question, daily, encounters):
     }
 
 
+def _funnel_stage_interpretation(visual, question, daily, encounters):
+    if visual != "System Patient-Flow Funnel" or daily.empty:
+        return None
+    q = normalized_text(question)
+    tokens = flexible_tokens(question)
+    if "modeled delayed placement" not in q and "delayed placement" not in q:
+        return None
+    if not ({"why", "low", "high", "mean", "explain"} & tokens):
+        return None
+    admissions = int(daily.admissions.sum())
+    arrivals = int(daily.ed_arrivals.sum())
+    discharges = int(daily.discharges.sum())
+    boarding = daily.boarding_hours.mean()
+    delayed_share = float(pd.Series([(boarding - 4) / 8]).clip(0, .55).iloc[0])
+    delayed = int(admissions * delayed_share)
+    within_target = admissions - delayed
+    delayed_pct = delayed / max(admissions, 1)
+    answer = (
+        f"Modeled Delayed Placements is {delayed:,.0f}, or {100 * delayed_pct:.1f}% of admissions. "
+        "It is lower because it represents only the modeled delayed subset of admissions; it is not the total patient-flow volume."
+    )
+    what_matters = [
+        f"Admissions: {admissions:,.0f}.",
+        f"Modeled within-target placements: {within_target:,.0f} ({100 * (1 - delayed_pct):.1f}% of admissions).",
+        f"Modeled delayed placements: {delayed:,.0f} ({100 * delayed_pct:.1f}% of admissions).",
+        f"The delayed share is derived from average ED Boarding of {boarding:.1f} hours using the dashboard's bounded scenario formula.",
+        f"Discharges ({discharges:,.0f}) are a separate selected-period operating total—not the next subset after delayed placements.",
+    ]
+    actions = [
+        "Validate admission-decision, bed-ready, placement, and discharge timestamps before treating the split as operational fact.",
+        "Compare the modeled delayed share with observed placement performance by hospital, day, and shift.",
+        "Use the funnel as a scenario screen, then replace the modeled split with validated patient-level transitions for production use.",
+    ]
+    limitation = "The placement split is modeled from aggregate boarding pressure; it is not an observed patient-level funnel and does not identify cause."
+    return {
+        "answer": answer + " " + " ".join(what_matters),
+        "calculation": "delayed share = clip((mean boarding hours − 4) / 8, 0%, 55%); delayed placements = admissions × delayed share; within-target placements = admissions − delayed placements.",
+        "evidence": "Modeled Estimate", "limitation": limitation,
+        "display": {
+            "title": "Modeled Delayed Placements", "filters": _selected_filter_summary(daily, encounters),
+            "answer": answer, "what_matters": what_matters, "actions": actions,
+            "action_heading": "What Leadership Should Validate", "limitation": limitation,
+        },
+    }
+
+
 def _weakest_visual_metric(spec, daily, encounters):
     candidates = []
     for key in spec.get("metrics", ()):
@@ -746,11 +792,12 @@ def answer_visual_question(page, visual, question, daily, encounters):
         return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
     signal = _current_signal(spec, daily, encounters)
     entity_position = _entity_position_interpretation(visual, spec, question, daily, encounters)
+    funnel_stage = _funnel_stage_interpretation(visual, question, daily, encounters)
     explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
     dynamic = (
-        entity_position or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        funnel_stage or entity_position or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
         if explicit_metrics else
-        entity_position or _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
+        funnel_stage or entity_position or _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
     )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
@@ -764,7 +811,7 @@ def answer_visual_question(page, visual, question, daily, encounters):
     wants_action = forward_language and (improvement_word or wants_negative or asks_next_step)
     wants_focus = bool(tokens & {"focus", "important", "interest", "attention", "priority", "matter", "why", "care", "outlier"}) or {"stand", "out"}.issubset(tokens)
     wants_meaning = bool(tokens & {"tell", "mean", "explain", "summarize", "show", "happen", "understand", "interpret", "read"})
-    if entity_position:
+    if entity_position or funnel_stage:
         wants_meaning = True
         wants_focus = False
     # A broad what/how/why question about a selected visual should receive a

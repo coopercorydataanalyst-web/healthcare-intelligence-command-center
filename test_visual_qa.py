@@ -243,3 +243,17 @@ def test_hospital_position_questions_are_data_aware_across_metric_visuals():
             assert "GulfStar North" in result["answer"], (page, visual, result["answer"])
             assert result.get("display"), (page, visual)
             assert "descriptive" in result["limitation"].lower() or "cannot explain" in result["limitation"].lower()
+
+
+def test_modeled_delayed_placements_question_uses_actual_funnel_math():
+    result = answer_visual_question(
+        "2 — Flow", "System Patient-Flow Funnel",
+        "why is modeled delayed placements so low", daily, encounters,
+    )
+    assert "21,020, or 24.0% of admissions" in result["answer"]
+    assert "66,575 (76.0% of admissions)" in result["answer"]
+    assert "average ED Boarding of 5.9 hours" in result["answer"]
+    assert "Discharges (86,512) are a separate" in result["answer"]
+    assert "The largest drop or queue" not in result["answer"]
+    assert result["evidence"] == "Modeled Estimate"
+    assert result["display"]["action_heading"] == "What Leadership Should Validate"
