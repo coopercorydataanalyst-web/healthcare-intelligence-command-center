@@ -82,6 +82,8 @@ The selected scope appears once as a compact bold **Filters:** line. Full select
 
 Named-entity position questions are data-aware. A question such as **“Why is GulfStar North so low?”** identifies the hospital in the selected visual, reports its actual plotted values and rank/comparison, explains size or encoding where supported, and separates the descriptive position from causal explanation. The assistant states what the chart shows, what leadership should validate, and what the available data cannot establish.
 
+Contextual Q&A state is versioned for Streamlit Cloud deployments. Browser sessions holding older widget or result structures are migrated automatically so a redeploy cannot fail with a stale `visual_qa` key or incompatible saved-result shape.
+
 ### Service-line filter behavior
 
 The service-line control now recalculates the operational dashboard, not only encounter-based readmission results. Because the source operations table is hospital-day grain, the app uses a deterministic synthetic allocation layer for service-line capacity, demand, census, flow intervals, quality events, staffing, labor, experience, procedural activity, revenue, cost, and denials. Selecting all service lines reconciles exactly to the original hospital-day portfolio; selecting a subset rolls only those modeled service-line components back into the KPI cards and visuals. The evidence bar labels this scope as a **Modeled Estimate**. Privacy events, source-governance facts, and intervention assumptions do not contain defensible service-line attribution and are explicitly labeled as not applicable rather than being silently changed.

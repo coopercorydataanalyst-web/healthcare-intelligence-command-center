@@ -84,6 +84,8 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 64. Added a compact bold `Filters:` callout, separate rendered lines for every finding and numbered action, sentence capitalization, and `All Hospitals` / `All Service Lines` summaries for full selections.
 65. Added named-hospital position intent for high/low/why questions across every metric-backed visual, using actual filtered hospital values instead of generic focus text.
 66. Added chart-specific interpretation for Discharge Delay and ED Boarding: actual x/y values, peer comparison, bubble-size meaning, validation steps, and an explicit non-causal boundary.
+67. Added deployment-safe session-state migration for contextual Q&A. Stale `visual_qa`, result, selector, question, and suggestion state from earlier Streamlit Cloud builds is cleared once under a versioned app-state contract; malformed saved results are discarded instead of raising `KeyError`.
+68. Updated prior-period timedelta construction to use an explicit day unit, removing the NumPy generic-timedelta deprecation warning.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -103,3 +105,4 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Structured presentation validated: no scope recital, three concise decision signals, four numbered actions, and one short non-causal caution.
 - Entity-position validation: GulfStar North returned 5.84 boarding hours, 2.26 discharge-delay hours, 52,940 selected ED arrivals, peer comparisons, and no fabricated causal explanation.
 - Combined automated suite: 32 tests passed, including named-hospital questions across every metric-backed visual.
+- Runtime migration validation: a simulated browser session containing legacy `visual_qa` and invalid saved-result state loaded without exception, and all 15 sheets passed the Streamlit execution harness.

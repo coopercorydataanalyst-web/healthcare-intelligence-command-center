@@ -100,6 +100,15 @@ def load():
 
 d, e, p, iv, src = load()
 
+# Browser sessions can survive a Streamlit Cloud code redeploy. Version the
+# contextual-Q&A state so an older widget/result shape cannot crash new code.
+APP_STATE_VERSION = "visual_qa_v4"
+if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
+    for state_key in list(st.session_state):
+        if state_key == "visual_qa" or state_key.startswith(("visual_qa_", "context_visual_", "context_question_", "visual_suggestion_")):
+            del st.session_state[state_key]
+    st.session_state["_gulfstar_app_state_version"] = APP_STATE_VERSION
+
 
 @st.cache_data
 def service_line_daily(daily):
@@ -159,8 +168,8 @@ fe = e[e.hospital.isin(hospitals) & e.service_line.isin(services) & e.admit_date
 fp = p[p.hospital.isin(hospitals) & p.date.between(start, end)].copy()
 
 period_days = max((end - start).days + 1, 1)
-prior_end = start - pd.Timedelta(days=1)
-prior_start = prior_end - pd.Timedelta(days=period_days - 1)
+prior_end = start - pd.Timedelta(1, unit="D")
+prior_start = prior_end - pd.Timedelta(int(period_days - 1), unit="D")
 pdaily_allocated = service_daily[
     service_daily.hospital.isin(hospitals)
     & service_daily.service_line.isin(services)
@@ -911,6 +920,9 @@ if not page.startswith("15 —"):
                         "page": page, "visual": selected_visual, "question": visual_question, "result": visual_result,
                     }
                 saved_visual_result = st.session_state.get("visual_qa_result")
+                if not isinstance(saved_visual_result, dict):
+                    st.session_state.pop("visual_qa_result", None)
+                    saved_visual_result = None
                 if (
                     saved_visual_result
                     and saved_visual_result.get("page") == page
