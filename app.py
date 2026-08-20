@@ -39,12 +39,16 @@ CSS = """
 .stApp{background:var(--bg);color:var(--ink)}
 [data-testid="stSidebar"]{background:linear-gradient(180deg,#082f49,#123c55)}
 [data-testid="stSidebar"] *{color:#fff}
-[data-testid="stSidebar"] input,[data-testid="stSidebar"] textarea{color:#172033!important;background:#fff!important}
+[data-testid="stSidebar"] input,[data-testid="stSidebar"] textarea{color:#fff!important;-webkit-text-fill-color:#fff!important;background:#0f766e!important;border-radius:10px!important;caret-color:#fff!important}
+[data-testid="stSidebar"] input::placeholder,[data-testid="stSidebar"] textarea::placeholder{color:#e7f8f5!important;-webkit-text-fill-color:#e7f8f5!important;opacity:1!important}
+[data-testid="stSidebar"] [data-testid="stDateInput"] [data-baseweb="input"]{background:#0f766e!important;border-color:#0f766e!important;border-radius:12px!important}
+[data-testid="stSidebar"] [data-testid="stDateInput"] [data-baseweb="input"] svg{fill:#fff!important;color:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="select"]>div{background:#fff!important;color:#172033!important}
 [data-testid="stSidebar"] [data-baseweb="select"] *{color:#172033!important}
 [data-testid="stSidebar"] [data-baseweb="tag"]{background:#0f766e!important}
 [data-testid="stSidebar"] [data-baseweb="tag"] *{color:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="tag"] svg{fill:#fff!important;color:#fff!important}
+[data-testid="stSidebar"] [data-baseweb="select"] input{min-width:42px!important;padding:4px 8px!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
 .hero{padding:28px 34px;border-radius:22px;background:linear-gradient(120deg,#082f49,#0369a1 68%,#0f766e);color:#fff;margin-bottom:18px}
 .hero h1{font-size:2.15rem;margin:0 0 8px}.hero p{font-size:1.02rem;margin:0;color:#e8f6fb}
 .badge{display:inline-block;padding:5px 10px;border-radius:99px;background:#dff5ef;color:#07594f;font-weight:700;font-size:.75rem;margin:4px 5px 4px 0}
@@ -56,6 +60,9 @@ CSS = """
 .sourcebar{background:#fff;border:1px solid #d8e2ea;border-radius:12px;padding:10px 14px;margin-bottom:14px;color:#445366;font-size:.82rem}
 .brief{background:#fff;border:1px solid #d8e2ea;border-radius:16px;padding:18px 20px;margin:10px 0 16px;box-shadow:0 4px 14px rgba(8,47,73,.05)}
 .priority{background:#fff;border:1px solid #d8e2ea;border-radius:14px;padding:14px 16px;margin:8px 0}
+.priority.priority-top{background:linear-gradient(135deg,#fff8e8,#fff);border:2px solid #d97706;box-shadow:0 8px 22px rgba(180,83,9,.16);position:relative}
+.priority.priority-top::before{content:"TOP EXECUTIVE PRIORITY";display:inline-block;background:#b45309;color:#fff;border-radius:999px;padding:3px 8px;margin-bottom:7px;font-size:.65rem;font-weight:900;letter-spacing:.05em}
+.priority.priority-top .rank{color:#92400e}.priority.priority-top .name{font-size:1.10rem}
 .priority .rank{font-size:.75rem;font-weight:800;color:#526071}.priority .name{font-size:1.02rem;font-weight:800;color:#082f49}
 .priority .meta{font-size:.80rem;color:#526071;margin-top:5px}
 h1,h2,h3{color:#082f49!important}.stTabs [data-baseweb="tab"]{font-weight:700}
@@ -379,14 +386,20 @@ def change_brief(current, prior):
         ("Denial rate", current["denial_rate"], prior["denial_rate"], False, "percentage points"),
     ]
     changes = []
+    stable = []
     for label, cur, old, higher_good, unit in specs:
         if pd.isna(cur) or pd.isna(old):
             continue
         raw = cur-old
         display = raw if unit == "hours" else raw*100
+        # The narrative displays one decimal place, so classify a delta that
+        # rounds to 0.0 as stable rather than assigning a misleading direction.
+        if f"{abs(display):.1f}" == "0.0":
+            stable.append(label)
+            continue
         worsened = (raw < 0) if higher_good else (raw > 0)
         changes.append((abs(display), worsened, label, display, unit))
-    if not changes:
+    if not changes and not stable:
         return ["No comparable prior-period signals are available."]
     worsening = sorted([x for x in changes if x[1]], reverse=True)[:2]
     improving = sorted([x for x in changes if not x[1] and x[0] > 0], reverse=True)[:2]
@@ -397,6 +410,8 @@ def change_brief(current, prior):
     if improving:
         bits = [f"{x[2]} {'increased' if x[3] > 0 else 'decreased'} by {abs(x[3]):.1f} {x[4]}" for x in improving]
         lines.append("Improving: " + "; ".join(bits) + ".")
+    if stable:
+        lines.append("Stable: " + "; ".join(f"{label} remained stable" for label in stable) + ".")
     return lines or ["Signals were essentially stable versus the comparable prior period."]
 
 
@@ -478,16 +493,19 @@ if page.startswith("1 —"):
         plot(fig)
 
     st.subheader("Executive Priority Queue")
-    pq_cols = st.columns([1,1])
-    for idx, (_, row) in enumerate(topq.iterrows()):
-        with pq_cols[idx % 2]:
-            st.markdown(
-                f'<div class="priority"><div class="rank">PRIORITY #{int(row["rank"])} • {row["urgency"].upper()}</div>'
-                f'<div class="name">{row["domain"]} — {row["hospital"]}</div>'
-                f'<div class="meta">Severity: <b>{row["severity_score"]:.0f}/100</b> • Owner: <b>{row["accountable_owner"]}</b> '
-                f'• Modeled exposure: <b>{money(row["modeled_exposure"])}</b></div></div>',
-                unsafe_allow_html=True,
-            )
+    priority_rows = list(topq.iterrows())
+    for row_start in range(0, len(priority_rows), 2):
+        pq_cols = st.columns([1, 1])
+        for col_idx, (_, row) in enumerate(priority_rows[row_start:row_start + 2]):
+            card_class = "priority priority-top" if int(row["rank"]) == 1 else "priority"
+            with pq_cols[col_idx]:
+                st.markdown(
+                    f'<div class="{card_class}"><div class="rank">PRIORITY #{int(row["rank"])} • {row["urgency"].upper()}</div>'
+                    f'<div class="name">{row["domain"]} — {row["hospital"]}</div>'
+                    f'<div class="meta">Severity: <b>{row["severity_score"]:.0f}/100</b> • Owner: <b>{row["accountable_owner"]}</b> '
+                    f'• Modeled exposure: <b>{money(row["modeled_exposure"])}</b></div></div>',
+                    unsafe_allow_html=True,
+                )
 
     with st.expander("View full priority queue and scoring assumptions"):
         table(q[["rank","hospital","domain","severity_score","urgency","accountable_owner","modeled_exposure"]])
