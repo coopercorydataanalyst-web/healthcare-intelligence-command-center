@@ -26,6 +26,7 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 12. Sidebar accessibility polish: date, search, and multiselect entry fields now use the same high-contrast green background and white text as selected hospital and service-line chips.
 13. Date-range repair: the control now defaults to the complete dataset range, resets stale out-of-range session values, remains bounded by the loaded data, and displays the available minimum and maximum dates.
 14. Sidebar control repair: outer select and multiselect surfaces now use dark green with white text/icons on every page.
+15. Streamlit Cloud compatibility repair: directly styles the newer `stDateInputField` control, restores white sidebar headings/captions, and versions the date widget key so an older browser-side selection cannot override the full-range default.
 
 ## Validation completed
 - Python syntax compilation: passed.

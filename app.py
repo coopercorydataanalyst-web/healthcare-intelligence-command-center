@@ -39,10 +39,14 @@ CSS = """
 .stApp{background:var(--bg);color:var(--ink)}
 [data-testid="stSidebar"]{background:linear-gradient(180deg,#082f49,#123c55)}
 [data-testid="stSidebar"] *{color:#fff}
+[data-testid="stSidebar"] h1,[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3,[data-testid="stSidebar"] p,[data-testid="stSidebar"] label{color:#fff!important}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"],[data-testid="stSidebar"] [data-testid="stCaptionContainer"] *{color:#d8f3ef!important}
 [data-testid="stSidebar"] input,[data-testid="stSidebar"] textarea{color:#fff!important;-webkit-text-fill-color:#fff!important;background:#0f766e!important;border-radius:10px!important;caret-color:#fff!important}
 [data-testid="stSidebar"] input::placeholder,[data-testid="stSidebar"] textarea::placeholder{color:#e7f8f5!important;-webkit-text-fill-color:#e7f8f5!important;opacity:1!important}
 [data-testid="stSidebar"] [data-testid="stDateInput"] [data-baseweb="input"]{background:#0f766e!important;border-color:#0f766e!important;border-radius:12px!important}
 [data-testid="stSidebar"] [data-testid="stDateInput"] [data-baseweb="input"] svg{fill:#fff!important;color:#fff!important}
+[data-testid="stSidebar"] [data-testid="stDateInputField"]{background:#0f766e!important;border:1px solid #2dd4bf!important;border-radius:12px!important;color:#fff!important}
+[data-testid="stSidebar"] [data-testid="stDateInputField"] *{color:#fff!important;-webkit-text-fill-color:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="select"]>div{background:#07594f!important;border-color:#0f766e!important;color:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="select"] *{color:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="select"] svg{fill:#fff!important;color:#fff!important}
@@ -89,7 +93,9 @@ with st.sidebar:
     page = st.selectbox("Choose Analysis Sheet", NAV)
     st.markdown("### Global Reporting Controls")
     min_d, max_d = d.date.min().date(), d.date.max().date()
-    date_key = "reporting_date_range"
+    # Version the key when the default contract changes so Streamlit Cloud
+    # cannot restore an older browser-side widget value after deployment.
+    date_key = "reporting_date_range_v2"
     full_range = (min_d, max_d)
     saved_range = st.session_state.get(date_key)
     saved_dates = list(saved_range) if isinstance(saved_range, (tuple, list)) else []
