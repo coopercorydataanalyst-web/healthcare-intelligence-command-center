@@ -1,10 +1,11 @@
 """Deterministic contextual help for each dashboard visual and section."""
 
 import re
+from difflib import SequenceMatcher
 
 import pandas as pd
 
-from language_utils import closest_suggestions, extracted_keywords, flexible_tokens
+from language_utils import closest_suggestions, extracted_keywords, flexible_tokens, normalized_text
 from qa_engine import METRICS, _format, _value
 
 
@@ -18,7 +19,7 @@ def _v(purpose, focus, action, callout, limits, metrics=(), calculation="See the
 VISUALS = {
     "1": {
         "Executive KPI Cards": _v("Summarizes current system performance, capacity, workforce, experience, and evidence readiness.", "Start with the lowest-performing domain and whether its movement is material versus the comparable period.", "Validate the underlying denominator and operating context, assign an accountable owner, and use a time-bounded improvement cycle.", "Scores and targets are illustrative portfolio constructs; stable displayed deltas are not described as directional changes.", "The Executive Health Score is not a validated clinical score or forecast.", ("margin", "bed_utilization", "boarding", "readmission", "rn_vacancy", "experience")),
-        "Executive Health Score by Domain": _v("Compares six executive domains on a 0–100 modeled portfolio scale.", "The shortest bar is the largest modeled performance gap and deserves validation first.", "Review the component metrics behind the weakest domain before selecting an intervention.", "Quality, flow, finance, workforce, access, and experience use transparent illustrative weights and thresholds.", "Bars compare a modeled composite, not certified external benchmarks.", calculation="Weighted higher/lower-is-better component scores on a 0–100 illustrative scale."),
+        "Executive Health Score by Domain": _v("Compares Quality & Safety, Patient Flow, Financial, Workforce, Access, and Patient Experience on a 0–100 modeled portfolio scale. A higher bar means the selected synthetic results are closer to the dashboard's illustrative target thresholds; a lower bar means a larger modeled performance gap to validate.", "The shortest bar is the largest modeled performance gap and deserves validation first.", "Review the component metrics behind the weakest domain before selecting an intervention.", "Quality, flow, finance, workforce, access, and experience use transparent illustrative weights and thresholds.", "Bars compare a modeled composite, not certified external benchmarks.", calculation="Weighted higher/lower-is-better component scores on a 0–100 illustrative scale."),
         "Margin and Flow Pressure by Month": _v("Shows monthly operating contribution beside an indexed ED-boarding pressure series.", "Look for months where contribution weakens while boarding pressure rises; treat this as a co-movement signal.", "Validate throughput timestamps, discharge constraints, staffing, volume, and payer mix before acting.", "Boarding is multiplied only to share a readable axis with dollars; it is not a dollar value.", "The dual-scale view does not establish that boarding caused margin movement.", ("margin", "boarding")),
         "Executive Priority Queue": _v("Ranks hospital-domain priorities by modeled severity and then modeled exposure.", "Priority #1 is the first validation target; review its owner, severity components, and exposure assumptions.", "Assign the listed executive owner, validate inputs, and move an approved response into a PDSA cycle.", "The orange #1 treatment identifies the highest current modeled portfolio priority.", "The queue is not a clinical risk score or validated forecast.", calculation="Severity descending; modeled exposure descending as tie-breaker."),
     },
@@ -76,6 +77,29 @@ def visual_options(page):
     return list(VISUALS.get(str(page).split(" ", 1)[0], {}).keys())
 
 
+def resolve_visual(page, selected_visual, question):
+    """Honor a clearly named visual even when the dropdown still points elsewhere."""
+    options = visual_options(page)
+    q_text = normalized_text(question)
+    q_tokens = set(extracted_keywords(question))
+    best_visual, best_score = selected_visual, 0.0
+    for option in options:
+        option_text = normalized_text(option)
+        option_tokens = set(extracted_keywords(option))
+        if option_text and option_text in q_text:
+            score = 1.0
+        else:
+            union = q_tokens | option_tokens
+            overlap = len(q_tokens & option_tokens) / len(union) if union else 0.0
+            phrase = SequenceMatcher(None, q_text, option_text).ratio()
+            score = 0.78 * overlap + 0.22 * phrase
+        if score > best_score:
+            best_visual, best_score = option, score
+    # Require a strong explicit match so generic language such as "this visual"
+    # continues to use the user's dropdown selection.
+    return (best_visual, best_score) if best_score >= 0.42 else (selected_visual, best_score)
+
+
 def _current_signal(spec, daily, encounters):
     values = []
     for key in spec.get("metrics", ()):
@@ -121,15 +145,118 @@ def _visual_movements(spec, daily, encounters, wanted):
     return "; ".join(rows)
 
 
+def _lower_score(value, target, bad):
+    if pd.isna(value): return 50.0
+    if value <= target: return 100.0
+    if value >= bad: return 0.0
+    return 100.0 * (bad - value) / (bad - target)
+
+
+def _higher_score(value, target, bad):
+    if pd.isna(value): return 50.0
+    if value >= target: return 100.0
+    if value <= bad: return 0.0
+    return 100.0 * (value - bad) / (target - bad)
+
+
+def _executive_domain_interpretation(daily, encounters):
+    if daily.empty:
+        return None
+    revenue = daily.revenue.sum()
+    staff_hours = max(daily.staff_hours.sum(), 1)
+    metrics = {
+        "margin": (revenue - daily.cost.sum()) / max(revenue, 1),
+        "denial_rate": daily.denials.sum() / max(revenue, 1),
+        "boarding": daily.boarding_hours.mean(),
+        "occupancy": daily.census.sum() / max(daily.staffed_beds.sum(), 1),
+        "discharge_delay": daily.discharge_order_to_exit_hours.mean(),
+        "readmission": daily.readmission_rate.mean(),
+        "mortality": daily.mortality_rate.mean(),
+        "harm": encounters.harm.mean() if not encounters.empty else float("nan"),
+        "vacancy": daily.rn_vacancy_rate.mean(),
+        "overtime_share": daily.overtime_hours.sum() / staff_hours,
+        "agency_share": daily.agency_hours.sum() / staff_hours,
+        "lwbs": daily.lwbs_rate.mean(),
+        "wait": daily.specialty_wait_days.mean(),
+        "experience": daily.patient_experience.mean(),
+    }
+    scores = {
+        "Quality & Safety": sum([
+            _lower_score(metrics["readmission"], .12, .18),
+            _lower_score(metrics["mortality"], .020, .035),
+            _lower_score(metrics["harm"], .020, .060),
+        ]) / 3,
+        "Patient Flow": sum([
+            _lower_score(metrics["boarding"], 4.0, 10.0),
+            _lower_score(metrics["occupancy"], .85, .98),
+            _lower_score(metrics["discharge_delay"], 2.0, 5.0),
+        ]) / 3,
+        "Financial": sum([
+            _higher_score(metrics["margin"], .05, -.02),
+            _lower_score(metrics["denial_rate"], .040, .075),
+        ]) / 2,
+        "Workforce": sum([
+            _lower_score(metrics["vacancy"], .08, .18),
+            _lower_score(metrics["overtime_share"], .07, .16),
+            _lower_score(metrics["agency_share"], .04, .10),
+        ]) / 3,
+        "Access": sum([
+            _lower_score(metrics["lwbs"], .02, .07),
+            _lower_score(metrics["wait"], 10.0, 24.0),
+        ]) / 2,
+        "Patient Experience": _higher_score(metrics["experience"], .82, .68),
+    }
+    ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    score_text = "; ".join(f"{name} {score:.0f}" for name, score in ranked)
+    high_score = ranked[0][1]
+    leaders = [name for name, score in ranked if round(score) == round(high_score)]
+    weakest_name, weakest_score = ranked[-1]
+    gap = high_score - weakest_score
+    leader_text = " and ".join(leaders)
+    details = (
+        f"Financial reflects operating margin {_format(metrics['margin'], 'percent')} and denial rate {_format(metrics['denial_rate'], 'percent')}. "
+        f"Workforce reflects RN vacancy {_format(metrics['vacancy'], 'percent')}, overtime share {_format(metrics['overtime_share'], 'percent')}, and agency share {_format(metrics['agency_share'], 'percent')}. "
+        f"Patient Flow reflects boarding {_format(metrics['boarding'], 'hours')}, staffed-bed utilization {_format(metrics['occupancy'], 'percent')}, and discharge delay {_format(metrics['discharge_delay'], 'hours')}. "
+        f"Patient Experience is based on the synthetic experience composite of {_format(metrics['experience'], 'percent')}."
+    )
+    answer = (
+        f"What you are looking at: six horizontal bars ranked from the strongest to weakest modeled domain score for the current filters. "
+        f"The displayed scores are {score_text}. {leader_text} lead at {high_score:.0f}, while {weakest_name} is lowest at {weakest_score:.0f}—a {gap:.0f}-point modeled gap. "
+        f"What it means: performance is most aligned with the dashboard's illustrative thresholds in {leader_text}, while {weakest_name} is the clearest area for leadership to validate and investigate first. "
+        f"A score of {weakest_score:.0f} does not mean {100-weakest_score:.0f}% failure; it is a normalized distance from illustrative thresholds. {details}"
+    )
+    calculation = (
+        "Each underlying metric is clipped to 0–100 between an illustrative favorable target and unfavorable threshold; "
+        "each domain is the unweighted mean of its components. Quality & Safety uses readmission, mortality, and harm; "
+        "Patient Flow uses boarding, staffed-bed utilization, and discharge delay; Financial uses margin and denial rate; "
+        "Workforce uses RN vacancy, overtime, and agency share; Access uses LWBS and specialty wait; Patient Experience uses the synthetic experience composite."
+    )
+    return {"answer": answer, "calculation": calculation, "evidence": "Synthetic Result / Modeled Estimate"}
+
+
+def _dynamic_visual_interpretation(page, visual, daily, encounters):
+    page_number = str(page).split(" ", 1)[0]
+    if page_number == "1" and visual == "Executive Health Score by Domain":
+        return _executive_domain_interpretation(daily, encounters)
+    return None
+
+
 def answer_visual_question(page, visual, question, daily, encounters):
     sheet = VISUALS.get(str(page).split(" ", 1)[0], {})
+    selected_visual = visual
+    visual, match_score = resolve_visual(page, selected_visual, question)
+    selection_note = (
+        f"Your question explicitly matched “{visual}”, so I used that visual instead of the dropdown selection “{selected_visual}”."
+        if visual != selected_visual else ""
+    )
     spec = sheet.get(visual)
     if spec is None:
-        return {"answer": "Select a listed visual or section first.", "evidence": "Validation Required", "calculation": "No visual context selected.", "limitation": "The assistant will not guess which visual you mean."}
+        return {"answer": "Select a listed visual or section first.", "evidence": "Validation Required", "calculation": "No visual context selected.", "limitation": "The assistant will not guess which visual you mean.", "resolved_visual": visual, "selection_note": selection_note}
     q = re.sub(r"[^a-z0-9]+", " ", str(question).lower()).strip()
     if not q:
-        return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result."}
+        return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
     signal = _current_signal(spec, daily, encounters)
+    dynamic = _dynamic_visual_interpretation(page, visual, daily, encounters)
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
     wants_calculation = bool(tokens & {"calculate", "metric", "axis", "legend", "measure", "method", "formula", "derive"}) or "get this number" in q or "come up with" in q
@@ -148,7 +275,10 @@ def answer_visual_question(page, visual, question, daily, encounters):
         wants_meaning = True
     sections = []
     if wants_meaning:
-        sections.append("What it shows: " + spec["purpose"] + (f" Current filtered signals: {signal}." if signal else ""))
+        if dynamic:
+            sections.append(dynamic["answer"])
+        else:
+            sections.append("What it shows: " + spec["purpose"] + (f" Current filtered signals: {signal}." if signal else ""))
     if wants_focus:
         sections.append("What to focus on: " + spec["focus"] + " This matters because it identifies the strongest validation or improvement priority represented by this visual.")
     if wants_positive:
@@ -175,12 +305,14 @@ def answer_visual_question(page, visual, question, daily, encounters):
             "calculation": "No supported visual-question intent was identified.",
             "limitation": "Suggestions are similarity-ranked from a safe allowlist; review the wording before running one.",
             "suggestions": suggestions, "keywords": keywords,
+            "resolved_visual": visual, "selection_note": selection_note,
         }
     answer = " ".join(sections)
     return {
         "answer": answer,
-        "evidence": "Synthetic Result" if signal else "Validation Required — Visual Documentation",
-        "calculation": spec["calculation"],
+        "evidence": dynamic["evidence"] if dynamic else ("Synthetic Result" if signal else "Validation Required — Visual Documentation"),
+        "calculation": dynamic["calculation"] if dynamic else spec["calculation"],
         "limitation": spec["limits"] + " The answer is descriptive and does not establish cause or support patient-care decisions.",
         "suggestions": [], "keywords": extracted_keywords(question),
+        "resolved_visual": visual, "selection_note": selection_note,
     }

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from visual_qa import VISUALS, answer_visual_question, visual_options
+from visual_qa import VISUALS, answer_visual_question, resolve_visual, visual_options
 
 
 ROOT = Path(__file__).resolve().parent
@@ -85,3 +85,21 @@ def test_visual_suggestions_use_extracted_keywords_and_close_intent():
     assert len(result["suggestions"]) == 3
     assert "visual" in result["keywords"]
     assert any("visual" in suggestion.lower() for suggestion in result["suggestions"])
+
+
+def test_explicit_visual_name_overrides_stale_dropdown_selection():
+    result = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards",
+        "what does executive health score by domain mean", daily, encounters,
+    )
+    assert result["resolved_visual"] == "Executive Health Score by Domain"
+    assert "used that visual instead" in result["selection_note"]
+    assert "Financial 90; Workforce 90; Patient Flow 86; Quality & Safety 80; Access 77; Patient Experience 63" in result["answer"]
+    assert "Patient Experience is lowest at 63" in result["answer"]
+    assert "each domain is the unweighted mean of its components" in result["calculation"]
+    assert result["evidence"] == "Synthetic Result / Modeled Estimate"
+
+
+def test_generic_this_visual_keeps_dropdown_selection():
+    resolved, _ = resolve_visual("1 — CEO", "Executive KPI Cards", "what is this visual telling me")
+    assert resolved == "Executive KPI Cards"

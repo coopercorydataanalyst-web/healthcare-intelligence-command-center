@@ -58,6 +58,8 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 38. Added Streamlit Cloud compatibility for the newer `stLayoutWrapper` container so the visual-Q&A launcher remains fixed in both local and deployed runtimes.
 39. Repositioned the floating launcher to the bottom center so Streamlit Cloud's lower-right management badge cannot cover it.
 40. Added a translucent glass-style idle launcher with a light hover state; the launcher becomes solid green while clicked/focused or while its popover reports an expanded state.
+41. Added explicit visual-name resolution so a question naming a different visual overrides a stale dropdown selection, with a visible interpretation notice.
+42. Added data-aware interpretation for Executive Health Score by Domain: current ranked scores, strongest/weakest domains, point gap, underlying filtered metrics, normalized-score meaning, and exact component methodology.
 
 ## Validation completed
 - Python syntax compilation: passed.
