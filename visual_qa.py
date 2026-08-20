@@ -389,12 +389,103 @@ def _selected_filter_summary(daily, encounters):
     return f"{hospital_filter} • {service_filter} • {dates.min():%b %-d, %Y}–{dates.max():%b %-d, %Y}"
 
 
+def _visual_comparison_interpretation(visual, spec, question, daily, encounters):
+    """Answer hospital comparisons and relative-outlier questions from current filtered values."""
+    tokens = flexible_tokens(question)
+    comparison_language = bool(tokens & {"outlier", "outliers", "compare", "versus", "vs", "difference", "different", "high", "low", "highest", "lowest", "average"})
+    if not comparison_language or not spec.get("metrics"):
+        return None
+    hospitals = sorted(set(daily.hospital.unique()) | set(encounters.hospital.unique()))
+    q = normalized_text(question)
+    named = [
+        name for name in hospitals
+        if normalized_text(name) in q or normalized_text(name.replace("GulfStar ", "")) in q
+    ]
+    asks_outliers = bool(tokens & {"outlier", "outliers"})
+    if len(named) < 2 and not asks_outliers:
+        return None
+
+    explicit_keys = {metric.key for metric in _metrics_in(question)}
+    metric_keys = [key for key in spec.get("metrics", ()) if not explicit_keys or key in explicit_keys]
+    rows = []
+    relative_outliers = []
+    for key in metric_keys:
+        metric = _metric_by_key(key)
+        if metric is None:
+            continue
+        values = []
+        for hospital in hospitals:
+            value = _value(metric, daily[daily.hospital == hospital], encounters[encounters.hospital == hospital])
+            if not pd.isna(value):
+                values.append((hospital, float(value)))
+        if len(values) < 2:
+            continue
+        ordered = sorted(values, key=lambda item: item[1])
+        median = float(pd.Series([value for _, value in values]).median())
+        span = ordered[-1][1] - ordered[0][1]
+        selected = named or hospitals
+        positions = []
+        for hospital in selected:
+            match = next(((name, value) for name, value in ordered if name == hospital), None)
+            if match is None:
+                continue
+            rank = ordered.index(match) + 1
+            label = "lowest" if rank == 1 else "highest" if rank == len(ordered) else "middle"
+            displayed = (
+                f"{match[1]:.2f} hours"
+                if visual == "Discharge Delay and ED Boarding" and metric.unit == "hours"
+                else _format(match[1], metric.unit)
+            )
+            positions.append(f"{hospital.replace('GulfStar ', '')}: {displayed} ({label})")
+        if positions:
+            rows.append(f"{metric.label}: " + "; ".join(positions) + ".")
+        if asks_outliers and span > 0:
+            deviations = [(name, abs(value - median), value) for name, value in values]
+            name, deviation, value = max(deviations, key=lambda item: item[1])
+            # With only a few hospitals, label the most separated point as a relative
+            # outlier candidate, never as a statistically confirmed anomaly.
+            relative_outliers.append(
+                f"{metric.label}: {name} is the most separated from the selected-hospital median "
+                f"({_format(value, metric.unit)} versus {_format(median, metric.unit)})."
+            )
+    if not rows:
+        return None
+
+    if asks_outliers:
+        answer = "Relative outlier review: " + " ".join(relative_outliers or rows)
+        title = f"{visual} — Relative Outliers"
+    else:
+        answer = "Hospital comparison: " + " ".join(rows)
+        title = f"{visual} — Hospital Comparison"
+    limitation = (
+        "These are descriptive relative positions within the currently selected hospitals. With a small peer set, "
+        "the dashboard does not label any point a statistically confirmed outlier or infer why it differs."
+    )
+    return {
+        "answer": answer,
+        "calculation": "Current filtered hospital values ranked independently for each mapped visual measure; relative outlier candidate = largest absolute distance from the selected-hospital median.",
+        "evidence": "Synthetic Result / Analytical Signal",
+        "limitation": limitation,
+        "display": {
+            "title": title, "filters": _selected_filter_summary(daily, encounters),
+            "answer": answer, "what_matters": rows,
+            "actions": [
+                "Confirm the difference persists across comparable months, days, units, and operating shifts.",
+                "Validate definitions, denominators, timestamps, case mix, volume, and data completeness.",
+                "Review the visual's related capacity, workforce, quality, access, or financial guardrails before selecting an intervention.",
+            ],
+            "action_heading": "What Leadership Should Validate", "limitation": limitation,
+        },
+    }
+
+
 def _entity_position_interpretation(visual, spec, question, daily, encounters):
     """Explain a named hospital's plotted position without inventing a cause."""
     q = normalized_text(question)
     hospitals = sorted(set(daily.hospital.unique()) | set(encounters.hospital.unique()))
     hospital = next((name for name in hospitals if normalized_text(name) in q), None)
-    if hospital is None or not spec.get("metrics") or not ({"why", "low", "high", "bottom", "top"} & flexible_tokens(question)):
+    tokens = flexible_tokens(question)
+    if hospital is None or not spec.get("metrics") or not ({"why", "low", "high", "bottom", "top", "outlier", "average"} & tokens):
         return None
 
     if visual == "Discharge Delay and ED Boarding":
@@ -410,9 +501,29 @@ def _entity_position_interpretation(visual, spec, question, daily, encounters):
         delay_order = grouped.delay.sort_values()
         boarding_peers = ", ".join(f"{name.replace('GulfStar ', '')} {value:.2f}" for name, value in boarding_order.items() if name != hospital)
         delay_peers = ", ".join(f"{name.replace('GulfStar ', '')} {value:.2f}" for name, value in delay_order.items() if name != hospital)
+        boarding_rank = int(boarding_order.index.get_loc(hospital)) + 1
+        delay_rank = int(delay_order.index.get_loc(hospital)) + 1
+        count = len(grouped)
+
+        def position(rank):
+            if count == 1:
+                return "the only selected value"
+            if rank == 1:
+                return "lowest"
+            if rank == count:
+                return "highest"
+            return "in the middle"
+
+        boarding_position = position(boarding_rank)
+        delay_position = position(delay_rank)
+        if boarding_position == delay_position:
+            position_summary = f"{boarding_position} on both plotted measures"
+        else:
+            position_summary = f"{boarding_position} on ED Boarding and {delay_position} on Discharge Order-to-Exit"
         answer = (
-            f"{hospital} is the lowest point because its ED Boarding value is {row.boarding:.2f} hours. "
-            "That describes its position on the vertical axis; the visual does not identify the cause."
+            f"{hospital} is {position_summary}. Its ED Boarding value is {row.boarding:.2f} hours and its "
+            f"Discharge Order-to-Exit value is {row.delay:.2f} hours. Those values explain where the point appears; "
+            "the visual does not identify the operational cause."
         )
         what_matters = [
             f"ED Boarding: {row.boarding:.2f} hours versus {boarding_peers} hours.",
@@ -420,11 +531,11 @@ def _entity_position_interpretation(visual, spec, question, daily, encounters):
             f"Bubble size represents {row.arrivals:,.0f} selected ED arrivals—not performance severity.",
         ]
         actions = [
-            "Confirm that the lower position persists by month, day, and operating shift.",
+            "Confirm that the relative position persists by month, day, and operating shift.",
             "Validate admission-decision, bed-ready, placement, discharge-order, and exit timestamps.",
             "Compare demand, staffed capacity, pending admissions, and discharge reliability before attributing the difference.",
         ]
-        limitation = "The chart shows a descriptive difference; it cannot explain why GulfStar North is lower or establish causality."
+        limitation = f"The chart shows a descriptive difference; it cannot explain why {hospital}'s values differ or establish causality."
         return {
             "answer": answer + " " + " ".join(what_matters) + " " + limitation,
             "calculation": "Hospital means for discharge_order_to_exit_hours and boarding_hours; bubble size = total selected ed_arrivals.",
@@ -478,8 +589,6 @@ def _funnel_stage_interpretation(visual, question, daily, encounters):
         return None
     q = normalized_text(question)
     tokens = flexible_tokens(question)
-    if "modeled delayed placement" not in q and "delayed placement" not in q:
-        return None
     if not ({"why", "low", "high", "mean", "explain"} & tokens):
         return None
     admissions = int(daily.admissions.sum())
@@ -490,29 +599,81 @@ def _funnel_stage_interpretation(visual, question, daily, encounters):
     delayed = int(admissions * delayed_share)
     within_target = admissions - delayed
     delayed_pct = delayed / max(admissions, 1)
-    answer = (
-        f"Modeled Delayed Placements is {delayed:,.0f}, or {100 * delayed_pct:.1f}% of admissions. "
-        "It is lower because it represents only the modeled delayed subset of admissions; it is not the total patient-flow volume."
+    admission_pct = admissions / max(arrivals, 1)
+    stage = None
+    if "delayed placement" in q:
+        stage = "delayed"
+    elif "within portfolio target" in q or "within target" in q or "target placement" in q:
+        stage = "within_target"
+    elif "ed arrival" in q or ("arrival" in q and "discharge" not in q):
+        stage = "arrivals"
+    elif "admission" in q:
+        stage = "admissions"
+    elif "discharge" in q:
+        stage = "discharges"
+    if stage is None:
+        return None
+
+    stage_content = {
+        "arrivals": {
+            "title": "ED Arrivals",
+            "answer": f"ED Arrivals is {arrivals:,.0f}. It is the largest value because it represents all selected ED visits, while Admissions includes only the portion admitted to inpatient care.",
+            "matters": [
+                f"Admissions: {admissions:,.0f}, or {100 * admission_pct:.1f}% of ED Arrivals.",
+                f"The remaining {arrivals - admissions:,.0f} arrivals were not counted as inpatient admissions; this funnel does not show their individual dispositions.",
+                "A large arrival count is demand volume—not automatically poor performance or avoidable utilization.",
+            ],
+            "actions": [
+                "Validate ED-arrival and admission definitions and confirm that repeat, transfer, and observation encounters are handled consistently.",
+                "Review arrivals by hospital, day, hour, acuity, and disposition before labeling demand unusually high.",
+                "Compare demand with staffed capacity, provider coverage, LWBS, boarding, and admission conversion.",
+            ],
+        },
+        "admissions": {
+            "title": "Admissions",
+            "answer": f"Admissions is {admissions:,.0f}, representing {100 * admission_pct:.1f}% of ED Arrivals. It is lower than ED Arrivals because not every ED visit becomes an inpatient admission.",
+            "matters": [f"ED Arrivals: {arrivals:,.0f}.", f"Admissions: {admissions:,.0f} ({100 * admission_pct:.1f}% of arrivals).", "The funnel does not distinguish discharge, observation, transfer, or other non-admission dispositions."],
+            "actions": ["Validate admission and disposition definitions.", "Review conversion by hospital, acuity, service line, and time period.", "Compare admission demand with staffed capacity and placement performance."],
+        },
+        "within_target": {
+            "title": "Bed Placement Within Portfolio Target",
+            "answer": f"Modeled Within-Target Placements is {within_target:,.0f}, or {100 * (1 - delayed_pct):.1f}% of admissions. It is the modeled complement of delayed placements—not an observed timestamp result.",
+            "matters": [f"Admissions: {admissions:,.0f}.", f"Within-target placements: {within_target:,.0f}.", f"Modeled delayed placements: {delayed:,.0f}."],
+            "actions": ["Validate bed-request, bed-ready, and placement timestamps.", "Compare modeled and observed target performance by hospital and shift.", "Replace the modeled split with validated transitions before production use."],
+        },
+        "delayed": {
+            "title": "Modeled Delayed Placements",
+            "answer": f"Modeled Delayed Placements is {delayed:,.0f}, or {100 * delayed_pct:.1f}% of admissions. It is lower because it represents only the modeled delayed subset of admissions; it is not total patient-flow volume.",
+            "matters": [f"Admissions: {admissions:,.0f}.", f"Modeled within-target placements: {within_target:,.0f} ({100 * (1 - delayed_pct):.1f}% of admissions).", f"Modeled delayed placements: {delayed:,.0f} ({100 * delayed_pct:.1f}% of admissions).", f"The delayed share is derived from average ED Boarding of {boarding:.1f} hours using the dashboard's bounded scenario formula.", f"Discharges ({discharges:,.0f}) are a separate selected-period operating total—not the next subset after delayed placements."],
+            "actions": ["Validate admission-decision, bed-ready, placement, and discharge timestamps before treating the split as operational fact.", "Compare the modeled delayed share with observed placement performance by hospital, day, and shift.", "Replace the modeled split with validated patient-level transitions for production use."],
+        },
+        "discharges": {
+            "title": "Discharges",
+            "answer": f"Discharges is {discharges:,.0f}. It is a separate selected-period operating total and can be larger than a modeled placement subset because this chart is not a cohort-linked sequential funnel.",
+            "matters": [f"Admissions: {admissions:,.0f}.", f"Discharges: {discharges:,.0f}.", "Admissions and discharges occurring in the same reporting window do not necessarily represent the same patients."],
+            "actions": ["Validate admission and discharge cohort timing.", "Use patient-level encounter identifiers for a true sequential funnel.", "Review discharge reliability separately from modeled placement status."],
+        },
+    }[stage]
+    answer = stage_content["answer"]
+    what_matters = stage_content["matters"]
+    actions = stage_content["actions"]
+    modeled_stage = stage in {"within_target", "delayed"}
+    evidence = "Modeled Estimate" if modeled_stage else "Synthetic Result"
+    calculation = (
+        "delayed share = clip((mean boarding hours − 4) / 8, 0%, 55%); delayed placements = admissions × delayed share; within-target placements = admissions − delayed placements."
+        if modeled_stage else
+        f"{stage_content['title']} = sum of the selected synthetic daily operating count."
     )
-    what_matters = [
-        f"Admissions: {admissions:,.0f}.",
-        f"Modeled within-target placements: {within_target:,.0f} ({100 * (1 - delayed_pct):.1f}% of admissions).",
-        f"Modeled delayed placements: {delayed:,.0f} ({100 * delayed_pct:.1f}% of admissions).",
-        f"The delayed share is derived from average ED Boarding of {boarding:.1f} hours using the dashboard's bounded scenario formula.",
-        f"Discharges ({discharges:,.0f}) are a separate selected-period operating total—not the next subset after delayed placements.",
-    ]
-    actions = [
-        "Validate admission-decision, bed-ready, placement, and discharge timestamps before treating the split as operational fact.",
-        "Compare the modeled delayed share with observed placement performance by hospital, day, and shift.",
-        "Use the funnel as a scenario screen, then replace the modeled split with validated patient-level transitions for production use.",
-    ]
-    limitation = "The placement split is modeled from aggregate boarding pressure; it is not an observed patient-level funnel and does not identify cause."
+    limitation = (
+        "The placement split is modeled from aggregate boarding pressure; it is not an observed patient-level funnel and does not identify cause."
+        if modeled_stage else
+        "This is aggregate synthetic volume. The chart is not a cohort-linked patient journey and does not establish why the volume is high or low."
+    )
     return {
         "answer": answer + " " + " ".join(what_matters),
-        "calculation": "delayed share = clip((mean boarding hours − 4) / 8, 0%, 55%); delayed placements = admissions × delayed share; within-target placements = admissions − delayed placements.",
-        "evidence": "Modeled Estimate", "limitation": limitation,
+        "calculation": calculation, "evidence": evidence, "limitation": limitation,
         "display": {
-            "title": "Modeled Delayed Placements", "filters": _selected_filter_summary(daily, encounters),
+            "title": stage_content["title"], "filters": _selected_filter_summary(daily, encounters),
             "answer": answer, "what_matters": what_matters, "actions": actions,
             "action_heading": "What Leadership Should Validate", "limitation": limitation,
         },
@@ -791,13 +952,14 @@ def answer_visual_question(page, visual, question, daily, encounters):
     if not q:
         return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
     signal = _current_signal(spec, daily, encounters)
+    visual_comparison = _visual_comparison_interpretation(visual, spec, question, daily, encounters)
     entity_position = _entity_position_interpretation(visual, spec, question, daily, encounters)
     funnel_stage = _funnel_stage_interpretation(visual, question, daily, encounters)
     explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
     dynamic = (
-        funnel_stage or entity_position or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        funnel_stage or visual_comparison or entity_position or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
         if explicit_metrics else
-        funnel_stage or entity_position or _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
+        funnel_stage or visual_comparison or entity_position or _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
     )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
@@ -811,7 +973,7 @@ def answer_visual_question(page, visual, question, daily, encounters):
     wants_action = forward_language and (improvement_word or wants_negative or asks_next_step)
     wants_focus = bool(tokens & {"focus", "important", "interest", "attention", "priority", "matter", "why", "care", "outlier"}) or {"stand", "out"}.issubset(tokens)
     wants_meaning = bool(tokens & {"tell", "mean", "explain", "summarize", "show", "happen", "understand", "interpret", "read"})
-    if entity_position or funnel_stage:
+    if visual_comparison or entity_position or funnel_stage:
         wants_meaning = True
         wants_focus = False
     # A broad what/how/why question about a selected visual should receive a

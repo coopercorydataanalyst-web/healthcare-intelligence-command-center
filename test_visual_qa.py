@@ -225,13 +225,63 @@ def test_named_hospital_low_position_uses_actual_scatter_values():
         "2 — Flow", "Discharge Delay and ED Boarding",
         "why is gulfstar north so low?", daily, encounters,
     )
-    assert "GulfStar North is the lowest point" in result["answer"]
+    assert "GulfStar North is lowest on ED Boarding and in the middle on Discharge Order-to-Exit" in result["answer"]
     assert "ED Boarding value is 5.84 hours" in result["answer"]
     assert "Discharge Order-to-Exit: 2.26 hours" in result["answer"]
     assert "Bubble size represents" in result["answer"]
-    assert "does not identify the cause" in result["answer"]
+    assert "does not identify the operational cause" in result["answer"]
     assert "Upper-right, large-volume points" not in result["answer"]
     assert result["display"]["action_heading"] == "What Leadership Should Validate"
+
+
+def test_named_hospital_high_position_uses_actual_scatter_values():
+    result = answer_visual_question(
+        "2 — Flow", "Discharge Delay and ED Boarding",
+        "why is gulfstar medical center so high?", daily, encounters,
+    )
+    assert "GulfStar Medical Center is highest on both plotted measures" in result["answer"]
+    assert "ED Boarding value is 5.97 hours" in result["answer"]
+    assert "Discharge Order-to-Exit value is 2.30 hours" in result["answer"]
+    assert "lowest point" not in result["answer"]
+    assert "cannot explain why GulfStar Medical Center's values differ" in result["limitation"]
+
+
+def test_scatter_positions_are_calculated_for_every_hospital():
+    expected = {
+        "GulfStar Community": "in the middle on ED Boarding and lowest on Discharge Order-to-Exit",
+        "GulfStar Medical Center": "highest on both plotted measures",
+        "GulfStar North": "lowest on ED Boarding and in the middle on Discharge Order-to-Exit",
+    }
+    for hospital, phrase in expected.items():
+        result = answer_visual_question(
+            "2 — Flow", "Discharge Delay and ED Boarding",
+            f"why is {hospital} high or low", daily, encounters,
+        )
+        assert phrase in result["answer"], (hospital, result["answer"])
+
+
+def test_relative_outlier_questions_use_current_visual_metrics():
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            if not spec["metrics"]:
+                continue
+            result = answer_visual_question(page, visual, "are there any outliers and why", daily, encounters)
+            assert "Relative outlier review:" in result["answer"], (page, visual, result["answer"])
+            assert "selected-hospital median" in result["answer"], (page, visual, result["answer"])
+            assert "statistically confirmed outlier" in result["limitation"], (page, visual)
+            assert result.get("display"), (page, visual)
+
+
+def test_multi_hospital_comparison_supports_natural_executive_wording():
+    result = answer_visual_question(
+        "2 — Flow", "Discharge Delay and ED Boarding",
+        "why is GulfStar Medical Center high but GulfStar North low and Community average", daily, encounters,
+    )
+    assert "Hospital comparison:" in result["answer"]
+    assert "Medical Center: 5.97 hours (highest)" in result["answer"]
+    assert "North: 5.84 hours (lowest)" in result["answer"]
+    assert "Community: 5.94 hours (middle)" in result["answer"]
+    assert "does not label any point a statistically confirmed outlier" in result["limitation"]
 
 
 def test_hospital_position_questions_are_data_aware_across_metric_visuals():
@@ -257,3 +307,31 @@ def test_modeled_delayed_placements_question_uses_actual_funnel_math():
     assert "The largest drop or queue" not in result["answer"]
     assert result["evidence"] == "Modeled Estimate"
     assert result["display"]["action_heading"] == "What Leadership Should Validate"
+
+
+def test_ed_arrivals_high_question_uses_actual_funnel_denominator():
+    result = answer_visual_question(
+        "2 — Flow", "System Patient-Flow Funnel",
+        "why is ed arrivals so high", daily, encounters,
+    )
+    assert "ED Arrivals is 173,578" in result["answer"]
+    assert "Admissions includes only the portion admitted" in result["answer"]
+    assert "87,595, or 50.5% of ED Arrivals" in result["answer"]
+    assert "85,983 arrivals were not counted as inpatient admissions" in result["answer"]
+    assert "The largest drop or queue" not in result["answer"]
+    assert result["evidence"] == "Synthetic Result"
+    assert result["display"]["title"] == "ED Arrivals"
+
+
+def test_every_funnel_stage_has_stage_level_interpretation():
+    questions = {
+        "why are ed arrivals high": "ED Arrivals",
+        "why are admissions low": "Admissions",
+        "explain bed placement within portfolio target": "Bed Placement Within Portfolio Target",
+        "why are modeled delayed placements low": "Modeled Delayed Placements",
+        "why are discharges high": "Discharges",
+    }
+    for question, title in questions.items():
+        result = answer_visual_question("2 — Flow", "System Patient-Flow Funnel", question, daily, encounters)
+        assert result.get("display"), question
+        assert result["display"]["title"] == title, (question, result["answer"])

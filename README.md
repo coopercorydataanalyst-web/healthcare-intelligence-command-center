@@ -82,9 +82,13 @@ The selected scope appears once as a compact bold **Filters:** line. Full select
 
 Named-entity position questions are data-aware. A question such as **“Why is GulfStar North so low?”** identifies the hospital in the selected visual, reports its actual plotted values and rank/comparison, explains size or encoding where supported, and separates the descriptive position from causal explanation. The assistant states what the chart shows, what leadership should validate, and what the available data cannot establish.
 
+High, low, average, comparison, and outlier language is handled consistently across metric-backed visuals. On multi-axis charts, each axis is ranked independently, so a hospital can correctly be highest on one measure and in the middle on another. Multi-hospital questions return side-by-side current values and positions. Outlier questions identify relative separation within the selected peer group but do not call a point a statistically confirmed anomaly when the peer set is too small. “Why” answers describe the measured difference and provide validation steps without inventing an operational cause.
+
 Contextual Q&A state is versioned for Streamlit Cloud deployments. Browser sessions holding older widget or result structures are migrated automatically so a redeploy cannot fail with a stale `visual_qa` key or incompatible saved-result shape.
 
 Modeled funnel-stage questions use the actual selected scenario math. Questions about Modeled Delayed Placements report the count, share of admissions, complementary within-target count, boarding-pressure input, formula, and the fact that discharges are a separate operating total rather than the next patient-level subset.
+
+Every displayed funnel stage now has its own interpretation: ED Arrivals, Admissions, Bed Placement Within Portfolio Target, Modeled Delayed Placements, and Discharges. High/low/why questions use the correct count, denominator, evidence label, stage relationship, and cohort limitation instead of returning generic focus guidance.
 
 ### Service-line filter behavior
 

@@ -87,6 +87,11 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 67. Added deployment-safe session-state migration for contextual Q&A. Stale `visual_qa`, result, selector, question, and suggestion state from earlier Streamlit Cloud builds is cleared once under a versioned app-state contract; malformed saved results are discarded instead of raising `KeyError`.
 68. Updated prior-period timedelta construction to use an explicit day unit, removing the NumPy generic-timedelta deprecation warning.
 69. Added stage-level System Patient-Flow Funnel interpretation. `Why is modeled delayed placements so low` now returns selected admissions, within-target and delayed counts/shares, boarding input, exact scenario formula, discharge-count distinction, and validation steps.
+70. Completed stage-level coverage for ED Arrivals, Admissions, Within-Target Placements, Modeled Delayed Placements, and Discharges. Each stage now uses its correct denominator and distinguishes synthetic observed totals from modeled scenario stages.
+71. Removed a hard-coded scatter-position label that incorrectly described every named hospital as the lowest point. Discharge Delay and ED Boarding now calculates each hospital's independent rank on both axes from the active filtered data.
+72. Added reusable hospital-comparison interpretation across every metric-backed visual, including conversational multi-hospital questions and independent high/middle/low positions for each mapped measure.
+73. Added relative-outlier review across every metric-backed visual. The assistant identifies the point most separated from the selected-hospital median while clearly distinguishing a relative screening signal from a statistically confirmed anomaly.
+74. Added regression coverage for every hospital on the discharge-delay/boarding scatter, every metric-backed visual's outlier route, and natural executive comparisons such as one hospital being high while another is low or average.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -109,3 +114,5 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - Runtime migration validation: a simulated browser session containing legacy `visual_qa` and invalid saved-result state loaded without exception, and all 15 sheets passed the Streamlit execution harness.
 - Funnel-stage validation: 21,020 delayed placements (24.0% of 87,595 admissions), 66,575 within-target placements, 5.9-hour boarding input, and separate 86,512 discharge total reconciled exactly.
 - Combined automated suite: 33 tests passed after the funnel-stage interpretation upgrade.
+- ED-arrival validation: 173,578 arrivals, 87,595 admissions (50.5%), and 85,983 non-admission arrivals reconcile exactly without labeling high demand as poor performance.
+- Combined automated suite: 35 tests passed, including all five funnel stages and the Streamlit runtime.
