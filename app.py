@@ -43,8 +43,9 @@ CSS = """
 [data-testid="stSidebar"] input::placeholder,[data-testid="stSidebar"] textarea::placeholder{color:#e7f8f5!important;-webkit-text-fill-color:#e7f8f5!important;opacity:1!important}
 [data-testid="stSidebar"] [data-testid="stDateInput"] [data-baseweb="input"]{background:#0f766e!important;border-color:#0f766e!important;border-radius:12px!important}
 [data-testid="stSidebar"] [data-testid="stDateInput"] [data-baseweb="input"] svg{fill:#fff!important;color:#fff!important}
-[data-testid="stSidebar"] [data-baseweb="select"]>div{background:#fff!important;color:#172033!important}
-[data-testid="stSidebar"] [data-baseweb="select"] *{color:#172033!important}
+[data-testid="stSidebar"] [data-baseweb="select"]>div{background:#07594f!important;border-color:#0f766e!important;color:#fff!important}
+[data-testid="stSidebar"] [data-baseweb="select"] *{color:#fff!important}
+[data-testid="stSidebar"] [data-baseweb="select"] svg{fill:#fff!important;color:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="tag"]{background:#0f766e!important}
 [data-testid="stSidebar"] [data-baseweb="tag"] *{color:#fff!important}
 [data-testid="stSidebar"] [data-baseweb="tag"] svg{fill:#fff!important;color:#fff!important}
@@ -88,13 +89,24 @@ with st.sidebar:
     page = st.selectbox("Choose Analysis Sheet", NAV)
     st.markdown("### Global Reporting Controls")
     min_d, max_d = d.date.min().date(), d.date.max().date()
-    default_start = max(pd.Timestamp(min_d), pd.Timestamp("2026-01-01")).date()
+    date_key = "reporting_date_range"
+    full_range = (min_d, max_d)
+    saved_range = st.session_state.get(date_key)
+    saved_dates = list(saved_range) if isinstance(saved_range, (tuple, list)) else []
+    saved_range_valid = (
+        len(saved_dates) == 2
+        and min_d <= saved_dates[0] <= saved_dates[1] <= max_d
+    )
+    if saved_range is not None and not saved_range_valid:
+        del st.session_state[date_key]
     date_range = st.date_input(
         "Reporting Date Range",
-        (default_start, max_d),
+        value=full_range,
         min_value=min_d,
         max_value=max_d,
+        key=date_key,
     )
+    st.caption(f"Available data: {min_d:%b %d, %Y} – {max_d:%b %d, %Y}")
     hospitals = st.multiselect("Hospital(s)", sorted(d.hospital.unique()), default=sorted(d.hospital.unique()))
     services = st.multiselect("Service Line(s)", sorted(e.service_line.unique()), default=sorted(e.service_line.unique()))
     st.markdown("---")

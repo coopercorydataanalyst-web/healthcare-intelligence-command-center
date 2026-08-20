@@ -24,6 +24,8 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 10. Preserved the remaining clinical, financial, governance, privacy, ROI, SPC, Pareto, and PDSA analysis sheets.
 11. CEO-page polish: effectively-zero displayed changes now read as stable, priority cards render row-wise (#1/#2, #3/#4, #5), and the #1 item receives a stronger executive-priority treatment.
 12. Sidebar accessibility polish: date, search, and multiselect entry fields now use the same high-contrast green background and white text as selected hospital and service-line chips.
+13. Date-range repair: the control now defaults to the complete dataset range, resets stale out-of-range session values, remains bounded by the loaded data, and displays the available minimum and maximum dates.
+14. Sidebar control repair: outer select and multiselect surfaces now use dark green with white text/icons on every page.
 
 ## Validation completed
 - Python syntax compilation: passed.
