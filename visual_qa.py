@@ -406,6 +406,11 @@ def _metric_improvement(metric, daily, encounters, visual=None):
         ("accountable operational executive", metric.calculation, "run a time-bounded validation and improvement cycle"),
     )
     hospitals = sorted(daily.hospital.unique()) if not daily.empty else sorted(encounters.hospital.unique())
+    services = sorted(encounters.service_line.unique()) if not encounters.empty and "service_line" in encounters else []
+    dates = daily.date if not daily.empty and "date" in daily else encounters.admit_date
+    hospital_filter = "All Hospitals" if len(hospitals) == 3 else (", ".join(hospitals) if hospitals else "Selected Hospitals")
+    service_filter = "All Service Lines" if len(services) == 6 else (", ".join(services) if services else "Selected Service Lines")
+    filter_summary = f"{hospital_filter} • {service_filter} • {dates.min():%b %-d, %Y}–{dates.max():%b %-d, %Y}"
     hospital_values = []
     for hospital in hospitals:
         hd = daily[daily.hospital == hospital]
@@ -465,6 +470,7 @@ def _metric_improvement(metric, daily, encounters, visual=None):
         "text": text,
         "display": {
             "title": metric.label,
+            "filters": filter_summary,
             "answer": displayed_context,
             "what_matters": what_matters,
             "actions": actions,

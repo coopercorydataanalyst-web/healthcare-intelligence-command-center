@@ -81,6 +81,7 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 61. Replaced dense contextual improvement paragraphs with a structured executive layout: direct answer, `What matters` bullets, numbered leadership actions, and a concise caution.
 62. Removed hospital/service-line/date recitals from the answer narrative; active filters remain visible in the dashboard controls and evidence bar.
 63. Moved evidence type, calculation logic, and full limitations into a collapsed details expander to keep the default answer scannable.
+64. Added a compact bold `Filters:` callout, separate rendered lines for every finding and numbered action, sentence capitalization, and `All Hospitals` / `All Service Lines` summaries for full selections.
 
 ## Validation completed
 - Python syntax compilation: passed.

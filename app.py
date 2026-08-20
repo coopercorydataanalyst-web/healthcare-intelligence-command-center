@@ -941,6 +941,8 @@ if not page.startswith("15 —"):
                     display = visual_result.get("display")
                     if display:
                         st.markdown(f"##### {display['title']}")
+                        if display.get("filters"):
+                            st.markdown(f"**Filters:** {display['filters']}")
                         st.markdown(display["answer"])
                         if display.get("what_matters"):
                             st.markdown("**What matters**")

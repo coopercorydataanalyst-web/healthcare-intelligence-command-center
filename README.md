@@ -78,6 +78,8 @@ Composite-score answers explicitly reconcile display and source scales. For exam
 
 Contextual answers use an executive-readable layout rather than a dense paragraph. Improvement results show a short direct answer, a **What matters** bullet list, a numbered **What leadership should do** list, and one concise caution. Active filters are not repeated in the narrative because they remain visible on the dashboard. Evidence type, calculation, and the full limitation are available in a collapsed **Evidence, calculation, and limitations** section.
 
+The selected scope appears once as a compact bold **Filters:** line. Full selections are summarized as **All Hospitals** and **All Service Lines**; subsets list only the selected values. Every bullet and numbered action is rendered on its own line with sentence capitalization for CEO-level scanning.
+
 ### Service-line filter behavior
 
 The service-line control now recalculates the operational dashboard, not only encounter-based readmission results. Because the source operations table is hospital-day grain, the app uses a deterministic synthetic allocation layer for service-line capacity, demand, census, flow intervals, quality events, staffing, labor, experience, procedural activity, revenue, cost, and denials. Selecting all service lines reconciles exactly to the original hospital-day portfolio; selecting a subset rolls only those modeled service-line components back into the KPI cards and visuals. The evidence bar labels this scope as a **Modeled Estimate**. Privacy events, source-governance facts, and intervention assumptions do not contain defensible service-line attribution and are explicitly labeled as not applicable rather than being silently changed.

@@ -194,6 +194,10 @@ def test_domain_score_patient_experience_improvement_uses_metric_path():
     assert "Chief Experience Officer" in result["answer"]
     assert "Related signals:" in result["answer"]
     assert "Review the component metrics behind the weakest domain" not in result["answer"]
+    assert result["display"]["filters"].startswith("All Hospitals • All Service Lines")
+    assert len(result["display"]["what_matters"]) == 3
+    assert len(result["display"]["actions"]) == 4
+    assert all(action[0].isupper() for action in result["display"]["actions"])
 
 
 def test_every_metric_backed_visual_has_filter_aware_generic_improvement():
