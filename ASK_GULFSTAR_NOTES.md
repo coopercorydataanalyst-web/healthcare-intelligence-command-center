@@ -9,6 +9,8 @@ The UI is Analysis Sheet 15 in `app.py`. It passes only the currently filtered o
 ## Supported intents
 
 - Compare selected hospitals on one or more supported measures
+- Explain the dashboard, its scope, major analysis areas, Q&A behavior, and guardrails
+- Answer overview/help language such as “Tell me about this dashboard” and “What can I ask?” without pretending a metric calculation occurred
 - Rank hospitals by highest/lowest (and metric-aware best/worst)
 - Return current-period values for a named hospital
 - Compare the active period with its immediately preceding equal-length period
@@ -46,9 +48,37 @@ Broad executive questions default to the latest 30 days versus the preceding 30 
 - A named hospital excluded by the global filter is reported as excluded instead of being silently ignored.
 - System-level intervention scenarios do not change with hospital, date, or service-line filters.
 
+## Contextual visual Q&A
+
+Every analytical sheet includes an **Ask About This Sheet** panel beneath its visuals. A required visual/section selector removes ambiguity when a sheet contains multiple charts, cards, tables, funnels, or governance sections. The catalog currently covers 26 visual contexts across Sheets 1–14.
+
+Supported visual-question intents are:
+
+- Meaning and “what happened”
+- Current filtered signal, where a direct safe metric mapping exists
+- What deserves attention and why
+- Predefined improvement or validation response
+- Callout/warning explanation
+- Calculation, axes, legend, or encoding logic
+- Limitations and appropriate trust
+
+One question may combine several intents. The answer labels each requested part. Improvement guidance remains process- and validation-oriented, never a patient-care recommendation, and no visual relationship is described as causal.
+
+### Flexible language handling
+
+The deterministic parser uses local normalization, a bounded healthcare-dashboard vocabulary, common variant aliases, and cautious typo matching. It accepts natural shorthand and misspellings without sending text to an LLM. It recognizes families of meaning, positive movement, negative movement, action, focus/importance, callout, calculation, and limitation/trust language. Low-confidence or unsafe requests still use the refusal path.
+
+For visuals with safely mapped metrics, positive and negative output questions compare the latest 30 filtered days with the preceding 30 filtered days. For visuals without a direct mapping, the assistant explains that it cannot safely label a movement positive or negative and directs the user to the documented focus and required validation.
+
+### Closest-match suggestions
+
+If no supported intent is sufficiently identified, the response shows the keywords extracted from the user's wording and the three closest supported questions. Ranking combines normalized token overlap, character-level phrase similarity, typo normalization, and additional weight for shared dashboard-domain concepts. All candidates come from fixed safe allowlists.
+
+The user selects a candidate and explicitly clicks **Ask Selected Suggestion** or **Ask Selected Visual Suggestion**. Nothing is silently rewritten or run. This preserves human control while turning an uncertain request into an easy recovery path.
+
 ## Validation
 
 - Python compilation passes for `app.py` and `qa_engine.py`.
-- All 15 Streamlit analysis sheets execute without exceptions in the runtime harness.
+- All 15 Streamlit analysis sheets execute without exceptions in the runtime harness, including contextual panels on Sheets 1–14.
 - The Q&A submission form renders a hospital-ranking answer without exceptions.
-- Focused tests cover all required example questions, every metric in the allowlist, unsupported-question refusal, filtered-out hospitals, ROI, priority, and exposure.
+- Focused tests cover all required example questions, every metric in the allowlist, unsupported-question refusal, filtered-out hospitals, ROI, priority, exposure, all 26 visual contexts, core visual questions, and combined visual intents.

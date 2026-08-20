@@ -6,6 +6,8 @@ import re
 import numpy as np
 import pandas as pd
 
+from language_utils import closest_suggestions, extracted_keywords, flexible_tokens
+
 
 @dataclass(frozen=True)
 class Metric:
@@ -36,6 +38,32 @@ METRICS = (
     Metric("denial_rate", "Denial Rate", ("denial rate",), "total denied dollars / total revenue", "percent", better="low"),
     Metric("or_utilization", "OR Utilization", ("or utilization", "operating room utilization", "procedural utilization"), "mean daily or_utilization", "percent", better="high"),
     Metric("specialty_wait", "Access / Specialty Wait", ("specialty wait", "access wait", "wait days", "access"), "mean daily specialty_wait_days", "days", better="low"),
+)
+
+MAIN_SUGGESTIONS = (
+    "Tell me about this dashboard.",
+    "What can I ask?",
+    "What has improved in the last 30 days?",
+    "What got worse in the last 30 days?",
+    "Give me the executive summary.",
+    "What should leadership focus on?",
+    "Which hospital has the highest readmission rate?",
+    "Which hospital has the highest mortality rate?",
+    "Which hospital has the most falls?",
+    "Which hospital has the most HAI events?",
+    "What changed in ED boarding over the last 90 days?",
+    "Compare hospitals on ED-to-provider time.",
+    "Which hospital has the highest LWBS rate?",
+    "Compare hospitals on staffed-bed utilization and available staffed beds.",
+    "Which hospital has the highest workforce RN vacancy?",
+    "Compare hospitals on workforce agency labor share.",
+    "Compare hospitals on patient experience.",
+    "Compare hospitals on operating margin and denial rate.",
+    "Compare hospitals on OR utilization.",
+    "Which hospital has the longest specialty wait?",
+    "Which intervention has the highest modeled ROI?",
+    "What is the top executive priority?",
+    "Which priority has the highest modeled exposure?",
 )
 
 
@@ -106,18 +134,21 @@ def _display_comparison(frame, metrics):
     return shown
 
 
-def _response(answer, calculation, evidence="Synthetic Result", limitation=None, data=None):
+def _response(answer, calculation, evidence="Synthetic Result", limitation=None, data=None, suggestions=None, keywords=None):
     return {
         "answer": answer,
         "calculation": calculation,
         "evidence": evidence,
         "limitation": limitation or "Descriptive synthetic data only; this result does not establish cause or support patient-care decisions.",
         "data": data,
+        "suggestions": suggestions or [],
+        "keywords": keywords or [],
     }
 
 
 def _summary_intent(question):
     q = _norm(question)
+    tokens = flexible_tokens(question)
     # Executive questions are intentionally tolerant of conversational grammar
     # and common tense variants (for example, "has happen positively").
     positive_patterns = (
@@ -150,11 +181,63 @@ def _summary_intent(question):
         "what changed this month", "what has changed this month", "trend summary",
         "summarize trends", "how are we trending", "what changed recently",
     )
-    if any(re.search(pattern, q) for pattern in positive_patterns) or any(phrase in q for phrase in positive): return "positive_change"
-    if any(re.search(pattern, q) for pattern in negative_patterns) or any(phrase in q for phrase in negative): return "negative_change"
+    asks_for_action = bool(tokens & {"how", "can", "could", "should", "do", "action", "fix", "recommend"}) and "improve" in tokens
+    positive_language = bool(tokens & {"good", "positive", "better", "improve", "improved", "win", "strength", "celebrate", "well"})
+    negative_language = bool(tokens & {"bad", "negative", "worse", "decline", "concern", "risk", "problem", "weakness", "issue", "downside", "redflag", "flag"}) or {"not", "working"}.issubset(tokens)
+    if not asks_for_action and (any(re.search(pattern, q) for pattern in positive_patterns) or any(phrase in q for phrase in positive) or positive_language): return "positive_change"
+    if any(re.search(pattern, q) for pattern in negative_patterns) or any(phrase in q for phrase in negative) or negative_language: return "negative_change"
     if any(phrase in q for phrase in executive): return "executive_summary"
     if any(phrase in q for phrase in trend): return "trend_summary"
     return None
+
+
+def _dashboard_overview_intent(question):
+    q = _norm(question)
+    patterns = (
+        r"\btell me (?:more )?about (?:this|the) dashboard\b",
+        r"\bwhat is (?:this|the) dashboard\b",
+        r"\bwhat does (?:this|the) dashboard do\b",
+        r"\bexplain (?:this|the) dashboard\b",
+        r"\b(?:give me|show me) (?:an? )?(?:dashboard )?overview\b",
+        r"\bhelp me understand (?:this|the) dashboard\b",
+        r"\bwhat can (?:i|we) ask\b",
+        r"\bhow (?:does|do) (?:this|the) dashboard work\b",
+    )
+    return any(re.search(pattern, q) for pattern in patterns)
+
+
+def _dashboard_overview(daily, encounters):
+    hospital_count = daily.hospital.nunique() if not daily.empty else 0
+    service_count = encounters.service_line.nunique() if not encounters.empty else 0
+    if not daily.empty:
+        scope = f"The active filters currently cover {hospital_count} hospital(s) from {daily.date.min():%b %d, %Y} through {daily.date.max():%b %d, %Y}"
+        if service_count:
+            scope += f" and {service_count} selected encounter service line(s)"
+        scope += "."
+    else:
+        scope = "The current filters contain no operational rows."
+    answer = (
+        "GulfStar Intelligence is a 15-sheet executive healthcare analytics dashboard for a fictional three-hospital system. "
+        "It connects clinical quality, patient flow and staffed capacity, workforce, access, patient experience, margin and denials, "
+        "OR utilization, equity, privacy, quality improvement, and modeled intervention ROI. Its Ask GulfStar page uses a deterministic "
+        "local query layer—not a generative LLM—so it answers only supported questions with predefined calculations and refuses to guess. "
+        + scope
+    )
+    coverage = pd.DataFrame([
+        ["Executive command", "Health-system scorecard, changes, priorities, ownership, and modeled exposure"],
+        ["Operations", "Patient flow, capacity, ED access, workforce, OR utilization, and patient experience"],
+        ["Clinical quality", "Readmission, mortality, falls, HAI, deterioration, harm, and improvement reliability"],
+        ["Finance and portfolio", "Operating margin, denials, access leakage, and modeled intervention ROI"],
+        ["Governance", "Methods, source lineage, privacy, ethics, evidence confidence, and validation gates"],
+        ["Natural-language Q&A", "Safe comparisons, rankings, trends, executive summaries, priorities, ROI, and overview/help"],
+    ], columns=["Dashboard Area", "What It Covers"])
+    return _response(
+        answer,
+        "Dashboard configuration summary; no performance metric aggregation was run for this overview question.",
+        "Validation Required — Dashboard Documentation",
+        "All hospitals, people, and operational results are fictional and synthetic. Public sources provide definitions and context only. The dashboard is not patient-care, legal, privacy, or financial decision support.",
+        coverage,
+    )
 
 
 def _summary_horizon(question, daily):
@@ -273,6 +356,9 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
     if not q:
         return _response("Enter a question about a supported dashboard metric.", "No calculation run.", "Validation Required")
 
+    if _dashboard_overview_intent(question):
+        return _dashboard_overview(daily, encounters)
+
     hospitals = list(daily.hospital.dropna().unique())
     known_hospitals = list(all_hospitals) if all_hospitals is not None else hospitals
     requested_hospital = _hospital_from_question(question, known_hospitals)
@@ -326,7 +412,17 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
 
     metrics = _metrics_in(question)
     if not metrics:
-        return _response("I can answer hospital comparisons, highest/lowest values, current-period values, prior-period changes, intervention ROI, and the executive priority ranking for supported metrics.", "No calculation run because no supported metric or intent was identified.", "Validation Required", "Try: “Which hospital has the highest RN vacancy?”, “What changed in ED boarding over the last 90 days?”, or “Compare hospitals on operating margin and patient experience.”")
+        keywords = extracted_keywords(question)
+        suggestions = closest_suggestions(question, MAIN_SUGGESTIONS)
+        keyword_text = ", ".join(keywords) if keywords else "no clear supported keywords"
+        return _response(
+            f"I’m not certain which supported question you intended. I extracted: {keyword_text}. Select the closest safe match below rather than having the dashboard guess.",
+            "No calculation run because no supported metric or intent was identified.",
+            "Validation Required",
+            "Suggestions are similarity-ranked from an allowlist. Review the wording before running one; the dashboard will not infer an unsupported metric or causal claim.",
+            suggestions=suggestions,
+            keywords=keywords,
+        )
 
     # Last-N-day change stays inside the active date filter; otherwise use the dashboard's comparable prior frame.
     change_intent = any(term in q for term in ("change", "changed", "prior", "previous", "trend", "versus", "vs"))

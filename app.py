@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from qa_engine import answer_question
+from visual_qa import answer_visual_question, visual_options
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
@@ -767,6 +768,8 @@ else:
     with st.expander("Question help and examples", expanded=True):
         st.markdown(
             "- Which hospital has the highest readmission rate?\n"
+            "- Tell me about this dashboard.\n"
+            "- What can I ask?\n"
             "- What changed in ED boarding over the last 90 days?\n"
             "- Which hospital has the highest RN vacancy?\n"
             "- Why is GulfStar Medical Center the top priority?\n"
@@ -783,7 +786,7 @@ else:
             "Supported measures: readmission, mortality, falls, HAI, ED boarding, ED-to-provider, LWBS, "
             "staffed-bed utilization, available staffed beds, RN vacancy, agency labor share, patient experience, "
             "operating margin, denials/denial rate, OR utilization, specialty wait, intervention ROI, and priority exposure. "
-            "Executive intents include positive change, negative change, executive summary, and trend summary."
+            "Executive intents include positive change, negative change, executive summary, trend summary, and dashboard overview/help."
         )
 
     with st.form("gulfstar_question_form"):
@@ -804,6 +807,23 @@ else:
     result = st.session_state.get("gulfstar_last_answer")
     asked = st.session_state.get("gulfstar_last_question")
     if result:
+        if result.get("suggestions"):
+            st.markdown("#### Did you mean one of these?")
+            if result.get("keywords"):
+                st.caption("Keywords detected: " + ", ".join(result["keywords"]))
+            suggested_question = st.selectbox(
+                "Closest supported question",
+                result["suggestions"],
+                key="gulfstar_closest_question",
+            )
+            if st.button("Ask Selected Suggestion", key="gulfstar_run_suggestion"):
+                result = answer_question(
+                    suggested_question, fd, fe, pdaily, penc, iv, priority_queue(),
+                    all_hospitals=sorted(d.hospital.unique()),
+                )
+                asked = suggested_question
+                st.session_state["gulfstar_last_answer"] = result
+                st.session_state["gulfstar_last_question"] = asked
         st.subheader("Answer")
         if asked:
             st.caption(f"Question: {asked}")
@@ -822,6 +842,63 @@ else:
     st.caption(
         "Synthetic data only • No PHI • Not patient-care decision support • Descriptive and modeled outputs require validation before operational use"
     )
+
+if not page.startswith("15 —"):
+    contextual_options = visual_options(page)
+    if contextual_options:
+        st.markdown("---")
+        st.markdown("### Ask About This Sheet")
+        st.caption(
+            "Select the visual or section you mean, then ask what it shows, what changed, what matters most, "
+            "what its callouts mean, what may improve the result, how it is calculated, or what its limitations are. "
+            "Conversational wording, common misspellings, and combined questions are supported."
+        )
+        selected_visual = st.selectbox(
+            "Visual or section",
+            contextual_options,
+            key=f"context_visual_{page.split(' —')[0]}",
+        )
+        with st.form(f"context_question_form_{page.split(' —')[0]}"):
+            visual_question = st.text_input(
+                "Ask about the selected visual",
+                placeholder="Example: What is this visual telling me, and what should I focus on?",
+                key=f"context_question_{page.split(' —')[0]}",
+            )
+            visual_submitted = st.form_submit_button("Ask About This Visual")
+        if visual_submitted:
+            visual_result = answer_visual_question(page, selected_visual, visual_question, fd, fe)
+            st.session_state["visual_qa_result"] = {
+                "page": page, "visual": selected_visual, "question": visual_question, "result": visual_result,
+            }
+        saved_visual_result = st.session_state.get("visual_qa_result")
+        if (
+            saved_visual_result
+            and saved_visual_result.get("page") == page
+            and saved_visual_result.get("visual") == selected_visual
+        ):
+            visual_result = saved_visual_result["result"]
+            if visual_result.get("suggestions"):
+                st.markdown("#### Did you mean one of these?")
+                if visual_result.get("keywords"):
+                    st.caption("Keywords detected: " + ", ".join(visual_result["keywords"]))
+                visual_suggestion = st.selectbox(
+                    "Closest supported visual question",
+                    visual_result["suggestions"],
+                    key=f"visual_suggestion_{page.split(' —')[0]}",
+                )
+                if st.button("Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
+                    visual_result = answer_visual_question(page, selected_visual, visual_suggestion, fd, fe)
+                    saved_visual_result = {
+                        "page": page, "visual": selected_visual,
+                        "question": visual_suggestion, "result": visual_result,
+                    }
+                    st.session_state["visual_qa_result"] = saved_visual_result
+            st.markdown(f"**{selected_visual}**")
+            st.caption(f"Question: {saved_visual_result['question']}")
+            st.markdown(f'<div class="brief"><b>{visual_result["answer"]}</b></div>', unsafe_allow_html=True)
+            st.markdown(f"**Evidence type:** {visual_result['evidence']}")
+            st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
+            st.warning(f"**Limitation:** {visual_result['limitation']}")
 
 st.markdown("---")
 st.caption(

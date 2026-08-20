@@ -50,11 +50,29 @@ Analysis Sheet 15 lets an end user ask supported plain-language questions withou
 - The evidence type (Synthetic Result, Modeled Estimate, or Validation Required)
 - A limitation statement and visible synthetic/no-PHI/not-patient-care guardrails
 
-Supported intents include hospital comparisons, highest/lowest metrics, current-period values, comparable prior-period changes, last-N-day changes within the selected date range, intervention ROI, executive priority rationale, modeled priority exposure, positive-change summaries, negative-change summaries, executive summaries, and trend summaries. Executive language includes “What improved?”, “What got worse?”, “Give me the good news,” “What changed this month?”, “What should the CEO know?”, and “What should leadership celebrate?” Supported measures include readmission, mortality, falls, HAI, ED boarding, ED-to-provider time, LWBS, staffed-bed utilization, available staffed beds, RN vacancy, agency labor share, patient experience, operating margin, denials and denial rate, OR utilization, and specialty wait.
+Supported intents include dashboard overview/help, hospital comparisons, highest/lowest metrics, current-period values, comparable prior-period changes, last-N-day changes within the selected date range, intervention ROI, executive priority rationale, modeled priority exposure, positive-change summaries, negative-change summaries, executive summaries, and trend summaries. Executive language includes “Tell me about this dashboard,” “What can I ask?”, “What improved?”, “What got worse?”, “Give me the good news,” “What changed this month?”, “What should the CEO know?”, and “What should leadership celebrate?” Supported measures include readmission, mortality, falls, HAI, ED boarding, ED-to-provider time, LWBS, staffed-bed utilization, available staffed beds, RN vacancy, agency labor share, patient experience, operating margin, denials and denial rate, OR utilization, and specialty wait.
 
 Broad executive summaries default to the latest 30 filtered days compared with the preceding 30 filtered days. Explicit “last N days” questions use two equal N-day windows. Direction is determined from each metric’s documented higher/lower-is-better rule; values that round to no displayed change are labeled stable. Because dollars, counts, hours, days, and rates cannot be ranked directly, cross-metric summaries rank movements by proportional change.
 
 Hospital and date filters apply to all Q&A results. The service-line filter applies to encounter-based readmission answers. Intervention scenarios are system-level modeled inputs and therefore do not change with hospital, service-line, or date filters. Unsupported or ambiguous questions are refused with examples rather than guessed.
+
+### Contextual visual Q&A on every sheet
+
+Each of the 14 analytical sheets now includes an **Ask About This Sheet** panel. The user selects the visual or section they mean and can immediately ask:
+
+- What is this visual telling me?
+- What happened on this visual?
+- What should I focus on, and why?
+- What can I do to improve this result?
+- What are the callouts or warnings?
+- How is this calculated or encoded?
+- What are the limitations?
+
+The contextual catalog covers 26 visuals and sections. Answers can combine multiple requested parts, use current filtered metric values where the selected visual has a direct safe metric mapping, and otherwise explain the documented visual logic. Improvement responses are predefined validation and process-improvement options—not generated clinical recommendations. Unsupported questions are refused rather than guessed.
+
+The local language layer normalizes conversational variants, common misspellings, shorthand, tense changes, and chart synonyms without an external model. For example, “anything gud or positve,” “what is not working,” “any red flags,” “how can we make this better,” “why should I care,” “what stands out,” and “how did you get this number” map to distinct safe intents. Retrospective positive/negative questions use the latest 30 filtered days versus the preceding 30 days when the selected visual has a direct metric mapping; forward-looking improvement questions return predefined process and validation options.
+
+When intent remains uncertain, the dashboard no longer stops at a generic refusal. It displays the meaningful keywords it extracted, ranks three close supported questions from a safe allowlist, and provides an **Ask Selected Suggestion** control. The end user—not the parser—chooses whether to run the proposed interpretation. Suggestions are ranked by normalized token overlap, cautious typo handling, phrase similarity, and shared dashboard-domain concepts; they never create arbitrary executable queries.
 
 ## Evidence model
 

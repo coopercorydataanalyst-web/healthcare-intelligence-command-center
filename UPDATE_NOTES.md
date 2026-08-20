@@ -3,7 +3,10 @@
 ## Files to replace
 - `app.py`
 - `qa_engine.py`
+- `visual_qa.py`
+- `language_utils.py`
 - `test_qa_engine.py`
+- `test_visual_qa.py`
 - `ASK_GULFSTAR_NOTES.md`
 - `generate_data.py`
 - `data/daily_operations.csv.gz`
@@ -38,6 +41,17 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 21. Added auditable 30-day default summaries and explicit last-N-day comparisons, with current/prior values, directional classification, metric calculations, evidence labels, and non-causal limitations.
 22. Added proportional cross-metric ranking so unlike units are never compared by raw magnitude, plus stable-at-displayed-precision handling.
 23. Made executive intent recognition tolerant of conversational tense and grammar variants, including the exact end-user wording `what has happen positively in last 30 days`.
+24. Added a dashboard overview/help intent for questions such as `tell me about this dashboard`, `what does this dashboard do`, `what can I ask`, and `how does this dashboard work`.
+25. Added an in-context **Ask About This Sheet** panel to every one of the 14 analytical sheets, while preserving the dedicated Ask GulfStar page.
+26. Added deterministic coverage for 26 visuals and sections: meaning, current filtered signal, focus/importance, improvement response, callouts, calculation/encoding, and limitations.
+27. Added multi-intent visual answers so one question can request explanation, focus, and improvement guidance together.
+28. Added visual-context tests across every sheet, every cataloged visual, all core question types, combined questions, and unsupported-question refusal.
+29. Added deterministic flexible-language normalization for common typos, tense changes, shorthand, chart synonyms, and executive paraphrases without an external model.
+30. Added visual-level positive/negative movement interpretation using equal 30-day filtered windows when a safe metric mapping exists.
+31. Distinguished retrospective improvement questions from forward-looking action questions and expanded support for “red flags,” “what is not working,” “why should I care,” “what stands out,” calculation, and trust language.
+32. Replaced unsupported-question dead ends with keyword extraction and three similarity-ranked safe suggestions on both the dedicated Q&A page and contextual visual panels.
+33. Added user-controlled **Ask Selected Suggestion** actions so the dashboard never silently rewrites or executes an uncertain interpretation.
+34. Added dashboard-domain weighting to keep workforce, margin, quality, flow, access, privacy, equity, ROI, callout, calculation, and limitation suggestions relevant.
 
 ## Validation completed
 - Python syntax compilation: passed.
@@ -45,3 +59,4 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 - CEO-page assertions: priority ranks render in #1–#5 sequence, the #1 emphasis class is present, stable wording is present, and no directional `0.0` language is rendered.
 - Q&A unit tests: all required examples, documented metrics, refusal paths, filter exclusions, modeled intents, executive-language summaries, and insufficient-window guardrails passed.
 - Q&A form runtime: a submitted hospital-ranking question rendered an answer without exceptions.
+- Contextual visual Q&A runtime: all 15 sheets executed without exceptions, and a submitted CEO-sheet visual question rendered current filtered signals.

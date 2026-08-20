@@ -52,6 +52,7 @@ def test_unsupported_question_refuses_to_guess():
     result = ask("What caused the cardiology strategy to fail?")
     assert result["evidence"] == "Validation Required"
     assert result["calculation"].startswith("No calculation")
+    assert len(result["suggestions"]) == 3
 
 
 def test_filtered_out_hospital_is_reported():
@@ -98,3 +99,43 @@ def test_executive_summary_requires_two_complete_filtered_windows():
     result = ask("What improved in the last 30 days?", last_ten, last_ten_encounters)
     assert result["evidence"] == "Validation Required"
     assert "two complete comparison windows" in result["answer"]
+
+
+def test_dashboard_overview_and_help_language_is_supported():
+    questions = [
+        "tell me about this dashboard",
+        "What does this dashboard do?",
+        "Explain the dashboard",
+        "Give me a dashboard overview",
+        "Help me understand this dashboard",
+        "What can I ask?",
+        "How does this dashboard work?",
+    ]
+    for question in questions:
+        result = ask(question)
+        assert result["answer"].startswith("GulfStar Intelligence is a 15-sheet"), question
+        assert result["evidence"] == "Validation Required — Dashboard Documentation"
+        assert "no performance metric aggregation" in result["calculation"]
+        assert result["data"] is not None and len(result["data"]) == 6
+
+
+def test_executive_summary_understands_informal_positive_and_negative_language():
+    questions = {
+        "anything gud or positve lately": "Positive changes",
+        "where are we doing well": "Positive changes",
+        "give me the wins": "Positive changes",
+        "anything negatve or worrying": "Negative changes",
+        "what is not working": "Negative changes",
+        "show me the red flags": "Negative changes",
+    }
+    for question, expected in questions.items():
+        result = ask(question)
+        assert expected in result["answer"], (question, result["answer"])
+
+
+def test_main_suggestions_pull_keywords_and_rank_close_safe_question():
+    result = ask("can you predict the exact future nurse staffing outcome")
+    assert result["evidence"] == "Validation Required"
+    assert "workforce" in result["keywords"]
+    assert len(result["suggestions"]) == 3
+    assert any("RN vacancy" in suggestion or "agency labor" in suggestion for suggestion in result["suggestions"])
