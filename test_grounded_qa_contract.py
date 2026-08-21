@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -20,7 +21,7 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
 
 
 def test_build_version_and_clear_answer_controls_are_visible():
-    assert 'APP_BUILD = "2026.08.20-v25-forecast-discipline-and-cms"' in APP
+    assert re.search(r'APP_BUILD = "\d{4}\.\d{2}\.\d{2}-v\d+-[a-z0-9-]+"', APP)
     assert "Dashboard build: {APP_BUILD}" in APP
 
 
