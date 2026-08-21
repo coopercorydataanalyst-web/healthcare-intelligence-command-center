@@ -259,28 +259,49 @@ def _named_domain_interpretation(visual, question, daily, encounters):
         "Access": ("access",),
         "Patient Experience": ("patient experience",),
     }
-    named_domains = [name for name, names in aliases.items() if any(alias in q for alias in names)]
+    matched_domains = []
+    for name, names in aliases.items():
+        positions = [q.find(alias) for alias in names if alias in q]
+        if positions:
+            matched_domains.append((min(positions), name))
+    named_domains = [name for _, name in sorted(matched_domains)]
     if not named_domains:
         return None
     _, components, scores = _executive_domain_snapshot(daily, encounters)
     if scores is None:
         return None
     ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    displayed_scores = {name: round(value) for name, value in scores.items()}
     details = []
     for domain in named_domains:
-        rank = next(index for index, item in enumerate(ranked, 1) if item[0] == domain)
         score = scores[domain]
+        displayed_score = displayed_scores[domain]
+        higher_names = [name for name, value in ranked if displayed_scores[name] > displayed_score]
+        tied_names = [name for name, value in ranked if name != domain and displayed_scores[name] == displayed_score]
+        lower_names = [name for name, value in ranked if displayed_scores[name] < displayed_score]
+        rank = 1 + len(higher_names)
         component_rows = [
             f"{domain} - {label}: {_format(value, unit)}; modeled component score {component_score:.0f}/100."
             for label, value, unit, component_score in components[domain]
         ]
-        position = "highest" if rank == 1 else "lowest" if rank == len(ranked) else f"ranked {rank} of {len(ranked)}"
+        if rank == 1 and tied_names:
+            position = f"tied for highest at displayed precision with {', '.join(tied_names)}"
+        elif rank == 1:
+            position = "highest"
+        elif not lower_names and tied_names:
+            position = f"tied for lowest at displayed precision with {', '.join(tied_names)}"
+        elif not lower_names:
+            position = "lowest"
+        else:
+            position = f"ranked {rank} of {len(ranked)}"
         component_average = sum(item[3] for item in components[domain]) / len(components[domain])
-        higher_domains = [f"{name} ({value:.0f})" for name, value in ranked if value > score]
-        lower_domains = [f"{name} ({value:.0f})" for name, value in ranked if value < score]
+        higher_domains = [f"{name} ({displayed_scores[name]})" for name in higher_names]
+        tied_domains = [f"{name} ({displayed_scores[name]})" for name in tied_names]
+        lower_domains = [f"{name} ({displayed_scores[name]})" for name in lower_names]
         domain_why = (
             f"{domain} has this displayed position because its component scores average to {component_average:.1f}, which rounds to {score:.0f}/100. "
-            + (f"Domains scoring higher are {', '.join(higher_domains)}. " if higher_domains else "No selected domain scores higher. ")
+            + (f"Domains scoring higher at displayed precision are {', '.join(higher_domains)}. " if higher_domains else "No selected domain scores higher at displayed precision. ")
+            + (f"The same displayed score is shared by {', '.join(tied_domains)}. " if tied_domains else "")
             + (f"Domains scoring lower are {', '.join(lower_domains)}." if lower_domains else "No selected domain scores lower.")
         )
         domain_answer = (
@@ -298,6 +319,8 @@ def _named_domain_interpretation(visual, question, daily, encounters):
         low = min(details, key=lambda item: item["score"])
         why += f" Among the named domains, {high['domain']} is {high['score'] - low['score']:.0f} points higher than {low['domain']}."
     domain_label = " and ".join(item["domain"] for item in details)
+    tokens = flexible_tokens(question)
+    title_direction = "High" if tokens & {"high", "highest", "top"} else "Low" if tokens & {"low", "lowest", "bottom"} else "Different"
     actions = [
         "Validate the component definitions, denominators, and selected-period completeness.",
         f"Review the underlying {domain_label} measures by hospital, service line, month, and operating context.",
@@ -309,7 +332,7 @@ def _named_domain_interpretation(visual, question, daily, encounters):
         "calculation": " ".join(item["calculation"] for item in details),
         "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
         "display": {
-            "title": (f"{details[0]['domain']} Domain - Why It Has This Score" if len(details) == 1 else f"{' vs. '.join(item['domain'] for item in details)} - Why These Scores Are Low"),
+            "title": (f"{details[0]['domain']} Domain - Why It Has This Score" if len(details) == 1 else f"{' vs. '.join(item['domain'] for item in details)} - Why These Scores Are {title_direction}"),
             "answer": answer, "what_matters": component_rows, "why": why, "actions": actions,
             "action_heading": "What Leadership Should Validate", "limitation": limitation,
         },

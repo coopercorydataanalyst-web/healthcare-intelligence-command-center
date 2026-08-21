@@ -118,6 +118,10 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 98. Added multi-domain Executive Health Score interpretation. A single question may name any combination of Quality & Safety, Patient Flow, Financial, Workforce, Access, and Patient Experience without dropping later domains.
 99. Multi-domain answers now return each named displayed score, rank, raw component values, normalized component scores, exact domain calculation, peer-domain position, and point difference between the named domains.
 100. Added exact regression coverage for `Why is Access and Patient Experience so low?` and advanced the visible build/state contract to `2026.08.20-v10-multi-domain-why`.
+101. Made multi-domain titles intent-aware: high questions say `Why These Scores Are High`, low questions say `Why These Scores Are Low`, and neutral comparisons say `Why These Scores Are Different`.
+102. Preserved the user's named-domain order in the title and answer instead of catalog order.
+103. Corrected domain ranking to use displayed whole-number precision. Financial and Workforce are now described as tied at 90/100 rather than Financial being uniquely highest because of hidden decimals.
+104. Added displayed-precision peer language to Why explanations and exact regression coverage for `Why is Financial and Patient Flow so high?`; advanced the build/state contract to `2026.08.20-v11-intent-and-ties`.
 
 ## Validation completed
 - Python syntax compilation: passed.

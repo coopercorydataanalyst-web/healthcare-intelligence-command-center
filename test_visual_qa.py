@@ -161,6 +161,19 @@ def test_multi_domain_question_answers_every_named_domain_and_compares_them():
     assert "Patient Experience = unweighted mean" in result["calculation"]
 
 
+def test_multi_domain_high_question_has_correct_title_order_and_displayed_ties():
+    result = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "why is financial and patient flow so high", daily, encounters,
+    )
+    assert result["display"]["title"] == "Financial vs. Patient Flow - Why These Scores Are High"
+    assert "displayed Financial domain score is 90/100" in result["answer"]
+    assert "tied for highest at displayed precision with Workforce" in result["answer"]
+    assert "No selected domain scores higher at displayed precision" in result["display"]["why"]
+    assert "same displayed score is shared by Workforce (90)" in result["display"]["why"]
+    assert "Financial is 4 points higher than Patient Flow" in result["display"]["why"]
+
+
 def test_generic_this_visual_keeps_dropdown_selection():
     resolved, _ = resolve_visual("1 — CEO", "Executive KPI Cards", "what is this visual telling me")
     assert resolved == "Executive KPI Cards"
