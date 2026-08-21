@@ -65,6 +65,7 @@ CSS = """
 .badge.synthetic{background:#fff1cc;color:#704b00}.badge.model{background:#e7e9ff;color:#3730a3}.badge.validate{background:#fee2e2;color:#991b1b}
 .kpi{background:#fff;border:1px solid #d8e2ea;border-radius:16px;padding:18px;min-height:130px;box-shadow:0 5px 18px rgba(8,47,73,.06)}
 .kpi .label{color:#526071;font-weight:700;font-size:.84rem}.kpi .value{color:#082f49;font-size:1.7rem;font-weight:800;margin:7px 0}.kpi .note{color:#526071;font-size:.76rem}
+.kpi.low-score .value,.qa-low-score{color:#b91c1c!important;font-weight:900!important}
 .insight{background:#e8f5f3;border-left:6px solid #0f766e;border-radius:12px;padding:16px 18px;margin:14px 0;color:#17313a}
 .warning{background:#fff4df;border-left-color:#d97706}.risk{background:#feecec;border-left-color:#b91c1c}
 .sourcebar{background:#fff;border:1px solid #d8e2ea;border-radius:12px;padding:10px 14px;margin-bottom:14px;color:#445366;font-size:.82rem}
@@ -102,7 +103,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v12-month-ranking"
+APP_BUILD = "2026.08.20-v17-low-score-emphasis"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -244,11 +245,21 @@ def grounded_scope(daily_frame, encounter_frame):
     return when, f"{where_hospitals}; {where_services}"
 
 
+def emphasize_low_scores(text):
+    """Render low modeled scores (<80/100) in bold red without recoloring ordinary metrics."""
+    value_pattern = re.compile(r"(?<![\w>])(\d+(?:\.\d+)?)/100(?![\w<])")
+    def replace(match):
+        value = float(match.group(1))
+        shown = match.group(0)
+        return f'<span class="qa-low-score">{shown}</span>' if value < 80 else shown
+    return value_pattern.sub(replace, str(text))
+
+
 def render_grounded_contract(answer, calculation, limitation, daily_frame, encounter_frame, why=None):
     """Render the same grounded analyst structure on every Q&A surface."""
     when, where = grounded_scope(daily_frame, encounter_frame)
     st.markdown("##### What")
-    st.markdown(answer)
+    st.markdown(emphasize_low_scores(answer), unsafe_allow_html=True)
     st.markdown("##### When")
     st.markdown(when)
     st.markdown("##### Where")
@@ -256,7 +267,7 @@ def render_grounded_contract(answer, calculation, limitation, daily_frame, encou
     st.markdown("##### How")
     st.markdown(calculation)
     st.markdown("##### Why")
-    st.markdown(why or "This interpretation follows only from the displayed filtered values and documented calculation. The available evidence does not establish an operational or clinical cause.")
+    st.markdown(emphasize_low_scores(why or "This interpretation follows only from the displayed filtered values and documented calculation. The available evidence does not establish an operational or clinical cause."), unsafe_allow_html=True)
     st.caption("Grounding constraint: Visible filtered data and documented dashboard logic only. No extrapolation or outside knowledge.")
 
 
@@ -289,8 +300,10 @@ def evidence():
 def cards(items):
     cols = st.columns(len(items))
     for c, (label, value, note) in zip(cols, items):
+        score_match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)/100\s*", str(value))
+        score_class = " low-score" if score_match and float(score_match.group(1)) < 80 else ""
         c.markdown(
-            f'<div class="kpi"><div class="label">{title_label(label)}</div>'
+            f'<div class="kpi{score_class}"><div class="label">{title_label(label)}</div>'
             f'<div class="value">{value}</div><div class="note">{title_label(note)}</div></div>',
             unsafe_allow_html=True,
         )
@@ -969,15 +982,16 @@ if not page.startswith("15 —"):
                         st.session_state.pop("visual_qa_result", None)
                         st.rerun()
                     if visual_result.get("suggestions"):
-                        st.markdown("##### Did you mean one of these?")
+                        clarification = visual_result.get("evidence") == "Validation Required — Clarification"
+                        st.markdown("##### Choose what you mean" if clarification else "##### Did you mean one of these?")
                         if visual_result.get("keywords"):
                             st.caption("Keywords detected: " + ", ".join(visual_result["keywords"]))
                         visual_suggestion = st.selectbox(
-                            "Closest supported visual question",
+                            "Select an interpretation" if clarification else "Closest supported visual question",
                             visual_result["suggestions"],
                             key=f"visual_suggestion_{page.split(' —')[0]}",
                         )
-                        if st.button("Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
+                        if st.button("Answer This Question" if clarification else "Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
                             visual_result = answer_visual_question(page, selected_visual, visual_suggestion, fd, fe)
                             saved_visual_result = {
                                 "page": page, "visual": selected_visual,
@@ -1008,7 +1022,7 @@ if not page.startswith("15 —"):
                         if display.get("what_matters"):
                             st.markdown("**What matters**")
                             for item in display["what_matters"]:
-                                st.markdown(f"- {item}")
+                                st.markdown(f"- {emphasize_low_scores(item)}", unsafe_allow_html=True)
                         st.markdown(f"**{display.get('action_heading', 'What Leadership Should Do')}**")
                         for number, action in enumerate(display.get("actions", []), 1):
                             st.markdown(f"{number}. {action}")

@@ -339,6 +339,141 @@ def _named_domain_interpretation(visual, question, daily, encounters):
     }
 
 
+def _domain_aggregate_interpretation(visual, question, daily, encounters):
+    """Answer domain-wide rankings and arithmetic across any named domains."""
+    if visual != "Executive Health Score by Domain":
+        return None
+    tokens = flexible_tokens(question)
+    if not (tokens & {"average", "high", "highest", "top", "low", "lowest", "bottom"}):
+        return None
+    q = normalized_text(question)
+    if "gulfstar" in q:
+        return None
+    aliases = {
+        "Quality & Safety": ("quality and safety", "quality safety", "quality & safety"),
+        "Patient Flow": ("patient flow",), "Financial": ("financial", "finance"),
+        "Workforce": ("workforce",), "Access": ("access",),
+        "Patient Experience": ("patient experience",),
+    }
+    named = []
+    for domain, variants in aliases.items():
+        positions = [q.find(normalized_text(alias)) for alias in variants if normalized_text(alias) in q]
+        if positions:
+            named.append((min(positions), domain))
+    named = [domain for _, domain in sorted(named)]
+    _, components, scores = _executive_domain_snapshot(daily, encounters)
+    if not scores:
+        return None
+    displayed = {domain: round(score) for domain, score in scores.items()}
+    wants_average = "average" in tokens
+    wants_low = bool(tokens & {"low", "lowest", "bottom"})
+    limitation = "These are modeled portfolio scores using illustrative thresholds, not validated benchmarks or causal measures."
+    if wants_average:
+        selected = named or list(scores)
+        arithmetic_average = sum(scores[domain] for domain in selected) / len(selected)
+        display_average = sum(displayed[domain] for domain in selected) / len(selected)
+        detail = [f"{domain}: {displayed[domain]}/100" for domain in selected]
+        label = "the named domains" if named else "all six domains"
+        answer = f"The average across {label} is {arithmetic_average:.1f}/100 using the underlying modeled scores. The average of the whole-number scores displayed on the chart is {display_average:.1f}/100."
+        why = f"The result is the arithmetic mean of {len(selected)} domain scores: " + ", ".join(detail) + "."
+        return {
+            "answer": answer + " " + "; ".join(detail) + ".",
+            "calculation": f"Domain average = ({' + '.join(f'{scores[d]:.1f}' for d in selected)}) / {len(selected)}.",
+            "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
+            "display": {"title": "Average Domain Score", "filters": _selected_filter_summary(daily, encounters),
+                        "answer": answer, "what_matters": detail, "why": why,
+                        "actions": ["Use the individual domain scores—not only the average—to identify concentrated performance gaps.", "Validate component definitions and thresholds before operational use."],
+                        "action_heading": "What Leadership Should Validate", "limitation": limitation},
+        }
+    if not named:
+        if _metrics_in(question) and "domain" not in tokens:
+            return None
+        extreme = min(displayed.values()) if wants_low else max(displayed.values())
+        leaders = [domain for domain, value in displayed.items() if value == extreme]
+        direction = "lowest" if wants_low else "highest"
+        answer = f"{' and '.join(leaders)} {'are tied for' if len(leaders) > 1 else 'is'} {direction} at {extreme}/100."
+        detail = [f"{domain}: {displayed[domain]}/100" for domain in sorted(displayed, key=displayed.get, reverse=True)]
+        return {
+            "answer": answer + " Displayed domain scores: " + "; ".join(detail) + ".",
+            "calculation": f"Rank the six modeled domain scores at the whole-number precision displayed in the chart; preserve ties for the {direction} score.",
+            "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
+            "display": {"title": f"{direction.title()} Domain Score", "filters": _selected_filter_summary(daily, encounters),
+                        "answer": answer, "what_matters": detail,
+                        "why": f"The named domain{'s' if len(leaders) > 1 else ''} share the {direction} whole-number score shown in the chart.",
+                        "actions": ["Review the component measures behind the ranked domain before selecting an intervention."],
+                        "action_heading": "What Leadership Should Validate", "limitation": limitation},
+        }
+    return None
+
+
+def _domain_action_interpretation(visual, question, daily, encounters):
+    """Explain measured domain drivers and provide validation-first improvement paths."""
+    if visual != "Executive Health Score by Domain":
+        return None
+    tokens = flexible_tokens(question)
+    if not (tokens & {"improve", "better", "fix", "action", "cause", "caused", "driver", "get", "reach", "match", "raise", "increase", "decrease"}):
+        return None
+    q = normalized_text(question)
+    aliases = {
+        "Quality & Safety": ("quality and safety", "quality safety"), "Patient Flow": ("patient flow",),
+        "Financial": ("financial", "finance"), "Workforce": ("workforce",),
+        "Access": ("access",), "Patient Experience": ("patient experience",),
+    }
+    positioned = []
+    for domain, variants in aliases.items():
+        hits = [q.find(alias) for alias in variants if alias in q]
+        if hits:
+            positioned.append((min(hits), domain))
+    named = [domain for _, domain in sorted(positioned)]
+    if not named:
+        return None
+    _, components, scores = _executive_domain_snapshot(daily, encounters)
+    if not scores:
+        return None
+    component_keys = {
+        "30-Day Readmission": "readmission", "Mortality": "mortality", "Harm": "harm",
+        "ED Boarding": "boarding", "Staffed-Bed Utilization": "bed_utilization", "Discharge Delay": "discharge_delay",
+        "Operating Margin": "margin", "Denial Rate": "denial_rate", "RN Vacancy": "rn_vacancy",
+        "Overtime Share": "overtime_share", "Agency Share": "agency_share", "Left Without Being Seen": "lwbs",
+        "Specialty Wait": "specialty_wait", "Patient Experience": "experience",
+    }
+    comparative = any(phrase in q for phrase in ("as high as", "as low as", "lower than", "higher than", "compared with", "compared to"))
+    benchmark = max(scores[domain] for domain in named) if comparative and len(named) > 1 else max(scores.values())
+    action_domains = [domain for domain in named if not comparative or scores[domain] < benchmark - .5]
+    matters, actions, explanations = [], [], []
+    for domain in named:
+        score = scores[domain]
+        gap = benchmark - score
+        ordered_components = sorted(components[domain], key=lambda item: item[3])
+        weakest = ordered_components[0]
+        explanations.append(
+            f"{domain} is {score:.0f}/100" + (f", {gap:.0f} points below the strongest named comparison" if gap > .5 else ", at the strongest named comparison level") + "."
+        )
+        for label, value, unit, component_score in ordered_components:
+            matters.append(f"{domain} — {label}: {_format(value, unit)}; modeled component score {component_score:.0f}/100.")
+        if domain in action_domains:
+            metric_key = component_keys[weakest[0]]
+            owner, validation, intervention = IMPROVEMENT_PATHS[metric_key]
+            actions.append(f"{domain}: Ask the {owner} to validate {validation}; then {intervention}. Track the other domain components as guardrails.")
+    causal = bool(tokens & {"cause", "caused", "driver"})
+    answer = " ".join(explanations)
+    if causal:
+        answer += " The component scores below mathematically explain the displayed result. They identify measured pressure—not a proven operational cause."
+    else:
+        answer += " Improvement should start with the lowest component score in each named domain, after validating its underlying data and operating context."
+    why = "The displayed domain score is the unweighted mean of the component scores listed below. A lower component pulls the domain average down; a higher component pulls it up."
+    limitation = "The dashboard identifies measured contributors to the modeled score, not causal effects. Operational cause requires validated timestamps, denominators, context, and governed local investigation."
+    return {
+        "answer": answer + " " + " ".join(matters + actions),
+        "calculation": "For each named domain: normalize each documented component to 0–100, then take the unweighted mean; compare the resulting domain scores and identify the lowest component score.",
+        "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
+        "display": {"title": f"{' and '.join(named)} — Measured Drivers and Improvement Path",
+                    "filters": _selected_filter_summary(daily, encounters), "answer": answer,
+                    "what_matters": matters, "why": why, "actions": actions,
+                    "action_heading": "What Leadership Can Do Next", "limitation": limitation},
+    }
+
+
 def _dynamic_visual_interpretation(page, visual, daily, encounters):
     page_number = str(page).split(" ", 1)[0]
     if page_number == "1" and visual == "Executive Health Score by Domain":
@@ -689,6 +824,93 @@ def _visual_comparison_interpretation(visual, spec, question, daily, encounters)
     }
 
 
+def _metric_group_ranking_interpretation(visual, spec, question, daily, encounters):
+    """Rank valid visual groups for explicitly named metrics and preserve displayed ties."""
+    if "what does" in normalized_text(question):
+        return None
+    tokens = flexible_tokens(question)
+    if not (tokens & {"high", "highest", "top", "low", "lowest", "bottom", "average"}):
+        return None
+    q = normalized_text(question)
+    if "average" not in tokens and "which" not in tokens and not any(group in q for group in ("hospital", "service line", "payer", "barrier", "day of week", "weekday")):
+        return None
+    explicit = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
+    if not explicit:
+        return None
+    q = normalized_text(question)
+    hospitals = sorted(set(daily.hospital.unique()) | set(encounters.hospital.unique()))
+    service_lines = sorted(encounters.service_line.dropna().unique()) if "service_line" in encounters else []
+    payers = sorted(encounters.payer.dropna().unique()) if "payer" in encounters else []
+    barriers = sorted(encounters.discharge_barrier.dropna().unique()) if "discharge_barrier" in encounters else []
+    weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    named_hospitals = [name for name in hospitals if normalized_text(name) in q or normalized_text(name.replace("GulfStar ", "")) in q]
+    named_services = [name for name in service_lines if normalized_text(name) in q]
+    named_payers = [name for name in payers if normalized_text(name) in q]
+    named_barriers = [name for name in barriers if normalized_text(name) in q]
+    named_days = [name for name in weekdays if normalized_text(name) in q]
+    if "service line" in q or named_services:
+        group_label, groups, named_groups = "service line", service_lines, named_services
+        slicer = lambda group: (daily, encounters[encounters.service_line == group])
+    elif "payer" in q or named_payers:
+        group_label, groups, named_groups = "payer", payers, named_payers
+        slicer = lambda group: (daily, encounters[encounters.payer == group])
+    elif "barrier" in q or named_barriers:
+        group_label, groups, named_groups = "discharge barrier", barriers, named_barriers
+        slicer = lambda group: (daily, encounters[encounters.discharge_barrier == group])
+    elif "day of week" in q or "weekday" in q or named_days:
+        group_label, groups, named_groups = "day of week", weekdays, named_days
+        slicer = lambda group: (
+            daily[pd.to_datetime(daily.date).dt.day_name() == group],
+            encounters[pd.to_datetime(encounters.admit_date).dt.day_name() == group],
+        )
+    else:
+        group_label, groups, named_groups = "hospital", hospitals, named_hospitals
+        slicer = lambda group: (daily[daily.hospital == group], encounters[encounters.hospital == group])
+    wants_average = "average" in tokens
+    wants_low = bool(tokens & {"low", "lowest", "bottom"})
+    rows, answers = [], []
+    for metric in explicit:
+        if group_label in {"service line", "payer", "discharge barrier"} and metric.key not in {"readmission", "deterioration", "harm", "followup", "los", "contribution"}:
+            continue
+        values = []
+        for group in groups:
+            group_daily, group_encounters = slicer(group)
+            value = _value(metric, group_daily, group_encounters)
+            if not pd.isna(value):
+                values.append((group, float(value)))
+        if not values:
+            continue
+        selected_values = [(name, value) for name, value in values if not named_groups or name in named_groups]
+        if not selected_values:
+            selected_values = values
+        if wants_average:
+            average = sum(value for _, value in selected_values) / len(selected_values)
+            scope = "named" if named_groups else "selected"
+            answers.append(f"The average {metric.label} across the {scope} {group_label}s is {_format(average, metric.unit)}.")
+        else:
+            extreme = min(value for _, value in selected_values) if wants_low else max(value for _, value in selected_values)
+            # Match ties at the precision the dashboard displays for the metric.
+            formatted_extreme = _format(extreme, metric.unit)
+            leaders = [name for name, value in selected_values if _format(value, metric.unit) == formatted_extreme]
+            direction = "lowest" if wants_low else "highest"
+            answers.append(f"{' and '.join(leaders)} {'are tied for' if len(leaders) > 1 else 'has'} the {direction} {metric.label} among the {group_label}s at {formatted_extreme}.")
+        ordered = sorted(selected_values, key=lambda item: item[1], reverse=not wants_low)
+        rows.append(f"{metric.label}: " + "; ".join(f"{name}: {_format(value, metric.unit)}" for name, value in ordered) + ".")
+    if not answers:
+        return None
+    limitation = "The ranking is descriptive within the currently selected hospitals and does not establish cause, statistical significance, or a patient-care conclusion."
+    return {
+        "answer": " ".join(answers + rows),
+        "calculation": f"Calculate each explicitly named metric separately for every applicable {group_label}; rank in the requested direction or take the arithmetic mean. Ties use displayed precision.",
+        "evidence": "Synthetic Result / Analytical Signal", "limitation": limitation,
+        "display": {"title": f"{visual} — Requested Ranking", "filters": _selected_filter_summary(daily, encounters),
+                    "answer": " ".join(answers), "what_matters": rows,
+                    "why": "The answer follows from the separately calculated hospital values shown under What matters; metrics with different units are never averaged together.",
+                    "actions": ["Validate definitions, denominators, time coverage, and peer comparability before acting on the rank."],
+                    "action_heading": "What Leadership Should Validate", "limitation": limitation},
+    }
+
+
 def _entity_position_interpretation(visual, spec, question, daily, encounters):
     """Explain a named hospital's plotted position without inventing a cause."""
     q = normalized_text(question)
@@ -914,12 +1136,27 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
     balanced = complete.loc[complete.balanced_score.idxmin() if asks_worst else complete.balanced_score.idxmax()]
     highest_contribution = complete.loc[complete.contribution.idxmax()]
     lowest_boarding = complete.loc[complete.boarding.idxmin()]
+    highest_boarding = complete.loc[complete.boarding.idxmax()]
+    lowest_contribution = complete.loc[complete.contribution.idxmin()]
     label = "worst" if asks_worst else "best"
-    answer = (
-        f"Using an equal-weight balanced ranking of higher Operating Contribution and lower ED Boarding, "
-        f"{balanced.date:%B %Y} is the {label} complete month. It recorded ${balanced.contribution:,.0f} in Operating Contribution "
-        f"and {balanced.boarding:.2f} hours of ED Boarding."
-    )
+    asks_contribution = bool(tokens & {"contribution", "margin", "financial", "finance"})
+    asks_boarding = "boarding" in tokens
+    asks_balanced = bool(tokens & {"balance", "balanced", "overall", "combined"})
+    if asks_contribution and not asks_balanced:
+        chosen = lowest_contribution if asks_worst else highest_contribution
+        title = f"{'Lowest' if asks_worst else 'Highest'} Operating Contribution Month"
+        answer = f"{chosen.date:%B %Y} had the {'lowest' if asks_worst else 'highest'} Operating Contribution among complete months at ${chosen.contribution:,.0f}."
+    elif asks_boarding and not asks_balanced:
+        chosen = highest_boarding if asks_worst else lowest_boarding
+        title = f"{'Highest' if asks_worst else 'Lowest'} ED Boarding Month"
+        answer = f"{chosen.date:%B %Y} had the {'highest' if asks_worst else 'lowest'} ED Boarding among complete months at {chosen.boarding:.2f} hours."
+    else:
+        title = f"{label.title()} Balanced Month - Margin and Flow"
+        answer = (
+            f"Using an equal-weight balanced ranking of higher Operating Contribution and lower ED Boarding, "
+            f"{balanced.date:%B %Y} is the {label} complete month. It recorded ${balanced.contribution:,.0f} in Operating Contribution "
+            f"and {balanced.boarding:.2f} hours of ED Boarding."
+        )
     what_matters = [
         f"Highest Operating Contribution: {highest_contribution.date:%B %Y} at ${highest_contribution.contribution:,.0f}.",
         f"Lowest ED Boarding: {lowest_boarding.date:%B %Y} at {lowest_boarding.boarding:.2f} hours.",
@@ -940,7 +1177,7 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
         "calculation": "Monthly Operating Contribution = sum(revenue) - sum(cost). Monthly ED Boarding = mean(boarding_hours). Balanced score = mean(percentile rank of contribution, percentile rank of negative boarding) across complete months.",
         "evidence": "Synthetic Result / Analytical Signal", "limitation": limitation,
         "display": {
-            "title": f"{label.title()} Month - Margin and Flow", "filters": _selected_filter_summary(daily, encounters),
+            "title": title, "filters": _selected_filter_summary(daily, encounters),
             "answer": answer, "what_matters": what_matters, "why": why,
             "actions": [
                 "Confirm whether leadership means highest contribution, lowest boarding, or the disclosed balanced view.",
@@ -950,6 +1187,64 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
             "action_heading": "What Leadership Should Validate", "limitation": limitation,
         },
     }
+
+
+def _ambiguous_visual_question(visual, spec, question):
+    """Return safe choices only when different interpretations change the answer."""
+    tokens = flexible_tokens(question)
+    if visual == "Margin and Flow Pressure by Month" and "month" in tokens:
+        broad_best = bool(tokens & {"good", "bad", "best", "worst", "high", "low", "highest", "lowest"})
+        has_outcome = bool(tokens & {"contribution", "margin", "financial", "finance", "boarding", "balance", "balanced", "overall", "combined"})
+        if broad_best and not has_outcome:
+            direction = "worst" if bool(tokens & {"bad", "worst", "low", "lowest"}) else "best"
+            if direction == "best":
+                suggestions = [
+                    "Which month had the highest operating contribution?",
+                    "Which month had the lowest ED boarding?",
+                    "Which month had the best balance of operating contribution and ED boarding?",
+                ]
+            else:
+                suggestions = [
+                    "Which month had the lowest operating contribution?",
+                    "Which month had the highest ED boarding?",
+                    "Which month had the worst balance of operating contribution and ED boarding?",
+                ]
+            return {
+                "answer": "That wording can mean different things on this visual. Choose the outcome that matches your decision so the dashboard does not guess.",
+                "evidence": "Validation Required — Clarification",
+                "calculation": "No ranking was run until an outcome is selected.",
+                "limitation": "Operating Contribution and ED Boarding use different units, so neither should silently define overall performance.",
+                "suggestions": suggestions,
+                "keywords": extracted_keywords(question),
+            }
+    if visual not in {"Executive Health Score by Domain", "Margin and Flow Pressure by Month"} and len(spec.get("metrics", ())) > 1:
+        directional = bool(tokens & {"high", "highest", "low", "lowest", "top", "bottom", "average"})
+        explicit = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
+        names_hospital = "gulfstar" in normalized_text(question) or any(name in normalized_text(question) for name in ("community", "medical center", "north"))
+        if directional and not explicit and not names_hospital:
+            wants_low = bool(tokens & {"bad", "low", "lowest", "bottom"})
+            wants_average = "average" in tokens
+            suggestions = []
+            for key in spec["metrics"]:
+                metric = _metric_by_key(key)
+                if metric is None:
+                    continue
+                if wants_average:
+                    suggestions.append(f"What is the average {metric.label} across the selected hospitals?")
+                else:
+                    direction = "lowest" if wants_low else "highest"
+                    suggestions.append(f"Which hospital has the {direction} {metric.label}?")
+                if len(suggestions) == 3:
+                    break
+            if suggestions:
+                return {
+                    "answer": "This visual contains multiple measures, so that question has more than one valid answer. Choose the measure you mean.",
+                    "evidence": "Validation Required — Clarification",
+                    "calculation": "No cross-unit ranking or average was run.",
+                    "limitation": "Measures with different units or meanings cannot be safely ranked or averaged together.",
+                    "suggestions": suggestions, "keywords": extracted_keywords(question),
+                }
+    return None
 
 
 def _weakest_visual_metric(spec, daily, encounters):
@@ -1223,8 +1518,15 @@ def answer_visual_question(page, visual, question, daily, encounters):
     q = re.sub(r"[^a-z0-9]+", " ", str(question).lower()).strip()
     if not q:
         return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
+    ambiguity = _ambiguous_visual_question(visual, spec, question)
+    if ambiguity:
+        ambiguity.update({"resolved_visual": visual, "selection_note": selection_note})
+        return ambiguity
     signal = _current_signal(spec, daily, encounters)
+    domain_aggregate = _domain_aggregate_interpretation(visual, question, daily, encounters)
+    domain_action = _domain_action_interpretation(visual, question, daily, encounters)
     named_domain = _named_domain_interpretation(visual, question, daily, encounters)
+    metric_ranking = _metric_group_ranking_interpretation(visual, spec, question, daily, encounters)
     visual_comparison = _visual_comparison_interpretation(visual, spec, question, daily, encounters)
     entity_position = _entity_position_interpretation(visual, spec, question, daily, encounters)
     funnel_stage = _funnel_stage_interpretation(visual, question, daily, encounters)
@@ -1232,9 +1534,9 @@ def answer_visual_question(page, visual, question, daily, encounters):
     documented_content = _documented_content_interpretation(visual, question)
     explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
     dynamic = (
-        monthly_margin_flow or named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        monthly_margin_flow or domain_aggregate or domain_action or named_domain or metric_ranking or funnel_stage or visual_comparison or entity_position or documented_content or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
         if explicit_metrics else
-        monthly_margin_flow or named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _dynamic_visual_interpretation(page, visual, daily, encounters)
+        monthly_margin_flow or domain_aggregate or domain_action or named_domain or metric_ranking or funnel_stage or visual_comparison or entity_position or documented_content or _dynamic_visual_interpretation(page, visual, daily, encounters)
     )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
@@ -1248,13 +1550,15 @@ def answer_visual_question(page, visual, question, daily, encounters):
     wants_action = forward_language and (improvement_word or wants_negative or asks_next_step)
     wants_focus = bool(tokens & {"focus", "important", "interest", "attention", "priority", "matter", "why", "care", "outlier"}) or {"stand", "out"}.issubset(tokens)
     wants_meaning = bool(tokens & {"tell", "mean", "explain", "summarize", "show", "happen", "understand", "interpret", "read"})
-    if named_domain or visual_comparison or entity_position or funnel_stage or monthly_margin_flow:
+    if domain_aggregate or domain_action or named_domain or metric_ranking or visual_comparison or entity_position or funnel_stage or monthly_margin_flow:
         wants_meaning = True
         wants_focus = False
     if monthly_margin_flow:
         # A month ranking is distinct from a recent movement summary.
         wants_positive = False
         wants_negative = False
+    if domain_action:
+        wants_action = False
     # A broad what/how/why question about a selected visual should receive a
     # useful contextual explanation even without a memorized phrase.
     if not any((wants_callout, wants_calculation, wants_limits, wants_action, wants_positive, wants_negative, wants_focus, wants_meaning)) and tokens & {"what", "how", "why"}:
@@ -1276,11 +1580,25 @@ def answer_visual_question(page, visual, question, daily, encounters):
         sections.append("Negative movement: " + (negative if negative else "No safely mapped negative movement is available for this visual under the current filtered 30-day comparison. This does not prove that every underlying subgroup improved."))
     if wants_action:
         documented_action = _documented_improvement(visual, question)
-        action_metric = explicit_metrics[0] if explicit_metrics else (None if documented_action else _weakest_visual_metric(spec, daily, encounters))
-        tailored_action = _metric_improvement(action_metric, daily, encounters, visual) if action_metric else None
-        if tailored_action:
-            answer_display = tailored_action["display"]
-        sections.append("Possible improvement response: " + (tailored_action["text"] if tailored_action else documented_action or spec["action"]))
+        action_metrics = explicit_metrics or ([ _weakest_visual_metric(spec, daily, encounters) ] if not documented_action else [])
+        tailored_actions = [result for metric in action_metrics if metric for result in [_metric_improvement(metric, daily, encounters, visual)] if result]
+        if len(tailored_actions) > 1:
+            answer_display = {
+                "title": " and ".join(result["display"]["title"] for result in tailored_actions) + " — Improvement Path",
+                "filters": _selected_filter_summary(daily, encounters),
+                "answer": "Each named measure has its own current result, validation need, accountable executive, and improvement pathway.",
+                "what_matters": [result["display"]["answer"] for result in tailored_actions] + [item for result in tailored_actions for item in result["display"].get("what_matters", [])],
+                "actions": [f"{result['display']['title']}: {action}" for result in tailored_actions for action in result["display"].get("actions", [])],
+                "why": "The response treats every named measure separately so unlike units, thresholds, and operating pathways are not blended into one unsupported conclusion.",
+                "action_heading": "What Leadership Can Do Next",
+                "limitation": "These are validation-first operating options, not proven causal remedies or patient-care recommendations.",
+            }
+            sections.append("Possible improvement response: " + " ".join(result["text"] for result in tailored_actions))
+        else:
+            tailored_action = tailored_actions[0] if tailored_actions else None
+            if tailored_action:
+                answer_display = tailored_action["display"]
+            sections.append("Possible improvement response: " + (tailored_action["text"] if tailored_action else documented_action or spec["action"]))
     if wants_callout:
         sections.append("Callout: " + spec["callout"])
     if wants_calculation:

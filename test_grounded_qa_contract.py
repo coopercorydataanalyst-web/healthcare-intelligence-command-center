@@ -20,8 +20,12 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
 
 
 def test_build_version_and_clear_answer_controls_are_visible():
-    assert 'APP_BUILD = "2026.08.20-v12-month-ranking"' in APP
+    assert 'APP_BUILD = "2026.08.20-v17-low-score-emphasis"' in APP
     assert "Dashboard build: {APP_BUILD}" in APP
+    assert "def emphasize_low_scores(text):" in APP
+    assert "value < 80" in APP
+    assert 'class="qa-low-score"' in APP
+    assert 'score_class = " low-score"' in APP
     assert "Clear Saved Q&A Answer" in APP
     assert "Clear This Visual Answer" in APP
     assert 'why_text = display.get("why")' in APP

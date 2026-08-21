@@ -125,6 +125,23 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 105. Added a data-aware `best/worst month` intent for the Margin and Flow chart. It now reports the highest Operating Contribution month, the lowest ED Boarding month, and a disclosed equal-weight balanced result instead of substituting a recent-movement answer.
 106. Excluded incomplete months from month-total rankings and identifies them explicitly, preventing the partial August 2026 bar from being misclassified as a weak full month.
 107. Added exact regression coverage for `What is my best month?` and advanced the visible build/state contract to `2026.08.20-v12-month-ranking`.
+108. Added hybrid visual Q&A behavior: clear questions answer immediately, while materially ambiguous wording pauses and offers short visual-specific choices rather than silently choosing an interpretation.
+109. `Best month`, `worst month`, `highest month`, and `lowest month` now clarify whether the user means Operating Contribution, ED Boarding, or an explicitly disclosed balanced view. Each selected option runs its own grounded calculation.
+110. Updated the clarification interface with executive-friendly `Choose what you mean`, `Select an interpretation`, and `Answer This Question` labels; advanced the visible build/state contract to `2026.08.20-v13-hybrid-clarification`.
+111. Added reusable domain arithmetic: average across all six domains or any explicitly named set of domains, using underlying modeled scores while also reporting the average of the whole-number scores displayed in the chart.
+112. Added highest/lowest domain ranking with displayed-precision tie preservation; Financial and Workforce correctly return as tied at 90/100 and Patient Experience returns as lowest at 63/100 under the default filters.
+113. Added a dashboard-wide explicit-metric ranking path for every metric-backed visual, supporting hospitals and applicable service-line, payer, discharge-barrier, and day-of-week groupings.
+114. Added clarification for unnamed high/low/average requests on multi-measure visuals and prohibited silent arithmetic across incompatible units.
+115. Added catalog-wide regression coverage plus exact two-domain, three-domain, all-domain, tie, service-line, named-hospital-average, and ambiguity tests; advanced the build/state contract to `2026.08.20-v14-visual-semantic-aggregation`.
+116. Added multi-domain measured-driver and improvement responses. Any explicitly named domain set now returns its scores, gaps, component values, weakest modeled components, accountable executives, validation requirements, and separate improvement pathways.
+117. Added directional target-gap questions such as `How can I get Access as high as Financial?`; the comparison domain is treated as the reference while actions focus on the lower domain rather than incorrectly recommending that both be changed.
+118. Added multi-measure improvement routing across metric-backed visuals. Every named metric retains its own units, threshold, validation needs, owner, guardrails, and predefined action path.
+119. Added governed causal-language handling: the assistant explains the component arithmetic and measured contributors that produce the displayed result, but does not fabricate an operational cause from descriptive synthetic data.
+120. Added exact regressions for multi-domain improvement, causal wording, lower/higher comparisons, target matching, and multi-metric improvement; advanced the build/state contract to `2026.08.20-v15-visual-driver-actions`.
+121. Explicitly verified that named analytical requests are not capped at three. The semantic layer processes every supported item named in the question; only closest-match recovery suggestions intentionally remain concise.
+122. Added exact four-domain averaging, all-six-domain improvement, and four-metric improvement regressions; advanced the build/state contract to `2026.08.20-v16-unbounded-named-items`.
+123. Added dashboard-wide bold-red emphasis for modeled scores below 80/100 in KPI cards and grounded Q&A answers, including supporting score callouts. Non-score measures retain their existing formatting because their units and favorable direction differ.
+124. Advanced the visible build/state contract to `2026.08.20-v17-low-score-emphasis` and added source-contract coverage for the score-emphasis renderer.
 
 ## Validation completed
 - Python syntax compilation: passed.

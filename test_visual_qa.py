@@ -293,16 +293,13 @@ def test_domain_score_patient_experience_improvement_uses_metric_path():
         "1 — CEO", "Executive Health Score by Domain",
         "how can I improve patient experience", daily, encounters,
     )
-    assert "Improvement opportunity — Patient Experience" in result["answer"]
-    assert "displayed Patient Experience domain score is 63/100" in result["answer"]
-    assert "underlying synthetic Patient Experience KPI of 76.8%" in result["answer"]
-    assert "different scales, not conflicting results" in result["answer"]
+    assert "Patient Experience is 63/100" in result["answer"]
     assert "Chief Experience Officer" in result["answer"]
-    assert "Related signals:" in result["answer"]
+    assert "Patient Experience — Patient Experience: 76.8%; modeled component score 63/100" in result["answer"]
     assert "Review the component metrics behind the weakest domain" not in result["answer"]
     assert result["display"]["filters"].startswith("All Hospitals • All Service Lines")
-    assert len(result["display"]["what_matters"]) == 3
-    assert len(result["display"]["actions"]) == 4
+    assert len(result["display"]["what_matters"]) == 1
+    assert len(result["display"]["actions"]) == 1
     assert all(action[0].isupper() for action in result["display"]["actions"])
 
 
@@ -443,16 +440,189 @@ def test_every_funnel_stage_has_stage_level_interpretation():
         assert result["display"]["title"] == title, (question, result["answer"])
 
 
-def test_best_month_uses_monthly_chart_ranking_not_recent_movement():
+def test_best_month_requests_clarification_instead_of_guessing():
     result = answer_visual_question(
         "1 — CEO", "Margin and Flow Pressure by Month",
         "what is my best month", daily, encounters,
     )
-    assert "January 2025 is the best complete month" in result["answer"]
-    assert "Highest Operating Contribution: March 2025 at $8,837,052" in result["answer"]
-    assert "Lowest ED Boarding: July 2026 at 5.67 hours" in result["answer"]
-    assert "August 2026 (7 days)" in result["answer"]
-    assert "Positive movement:" not in result["answer"]
-    assert result["display"]["title"] == "Best Month - Margin and Flow"
-    assert "equal-weight" in result["display"]["why"]
-    assert "percentile rank" in result["calculation"]
+    assert "Choose the outcome" in result["answer"]
+    assert len(result["suggestions"]) == 3
+    assert "highest operating contribution" in result["suggestions"][0].lower()
+    assert "lowest ed boarding" in result["suggestions"][1].lower()
+    assert "best balance" in result["suggestions"][2].lower()
+    assert result["evidence"] == "Validation Required — Clarification"
+
+
+def test_selected_month_interpretations_run_the_requested_calculation():
+    contribution = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "Which month had the highest operating contribution?", daily, encounters,
+    )
+    assert "March 2025 had the highest Operating Contribution" in contribution["answer"]
+    assert "$8,837,052" in contribution["answer"]
+    assert contribution["display"]["title"] == "Highest Operating Contribution Month"
+
+    boarding = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "Which month had the lowest ED boarding?", daily, encounters,
+    )
+    assert "July 2026 had the lowest ED Boarding" in boarding["answer"]
+    assert "5.67 hours" in boarding["answer"]
+    assert boarding["display"]["title"] == "Lowest ED Boarding Month"
+
+    balanced = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "Which month had the best balance of operating contribution and ED boarding?", daily, encounters,
+    )
+    assert "January 2025 is the best complete month" in balanced["answer"]
+    assert "August 2026 (7 days)" in balanced["answer"]
+    assert balanced["display"]["title"] == "Best Balanced Month - Margin and Flow"
+    assert "equal-weight" in balanced["display"]["why"]
+
+
+def test_domain_rankings_preserve_ties_and_report_lowest():
+    highest = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain", "What is my highest domain?", daily, encounters,
+    )
+    assert highest["display"]["title"] == "Highest Domain Score"
+    assert "Financial and Workforce are tied for highest at 90/100" in highest["answer"]
+
+    lowest = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain", "What is my lowest domain?", daily, encounters,
+    )
+    assert lowest["display"]["title"] == "Lowest Domain Score"
+    assert "Patient Experience is lowest at 63/100" in lowest["answer"]
+
+
+def test_domain_averages_support_all_or_any_number_of_named_domains():
+    all_domains = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain", "What is my average score across all domains?", daily, encounters,
+    )
+    assert "average across all six domains is 81.0/100" in all_domains["answer"]
+
+    two = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain", "What is the average of Access and Patient Experience?", daily, encounters,
+    )
+    assert "average across the named domains is 70.0/100" in two["answer"]
+    assert "Access: 77/100" in two["answer"] and "Patient Experience: 63/100" in two["answer"]
+
+    three = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "What is the average of Access, Patient Experience, and Patient Flow?", daily, encounters,
+    )
+    assert "average across the named domains is 75.4/100" in three["answer"]
+    assert "average of the whole-number scores displayed on the chart is 75.3/100" in three["answer"]
+
+
+def test_every_metric_backed_visual_supports_an_explicit_hospital_ranking():
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            metrics = [next((metric for metric in METRICS if metric.key == key), None) for key in spec.get("metrics", ())]
+            metric = next((item for item in metrics if item is not None), None)
+            if metric is None:
+                continue
+            result = answer_visual_question(
+                f"{page} — Sheet", visual, f"Which hospital has the highest {metric.label}?", daily, encounters,
+            )
+            assert not result.get("suggestions"), (page, visual, metric.label, result)
+            assert result.get("display"), (page, visual, metric.label, result)
+            assert metric.label in result["answer"], (page, visual, metric.label, result["answer"])
+
+
+def test_metric_rankings_support_visual_group_dimensions_and_named_subsets():
+    service = answer_visual_question(
+        "5 — Readmission", "Readmission Risk by Service Line and Discharge Barrier",
+        "Which service line has the highest readmission rate?", daily, encounters,
+    )
+    assert "among the service lines" in service["answer"]
+    assert "30-Day Readmission Rate" in service["answer"]
+
+    named_hospitals = answer_visual_question(
+        "2 — Flow", "Discharge Delay and ED Boarding",
+        "What is the average ED boarding for GulfStar Community and GulfStar North?", daily, encounters,
+    )
+    assert "average ED Boarding across the named hospitals" in named_hospitals["answer"]
+    assert "GulfStar Community" in named_hospitals["answer"] and "GulfStar North" in named_hospitals["answer"]
+    assert "GulfStar Medical Center" not in named_hospitals["answer"]
+
+
+def test_multi_measure_visual_clarifies_an_unnamed_ranking_dimension():
+    result = answer_visual_question(
+        "2 — Flow", "Discharge Delay and ED Boarding", "Which is highest?", daily, encounters,
+    )
+    assert result["evidence"] == "Validation Required — Clarification"
+    assert "multiple measures" in result["answer"]
+    assert len(result["suggestions"]) >= 2
+    assert any("ED Boarding" in suggestion for suggestion in result["suggestions"])
+    assert any("Discharge" in suggestion for suggestion in result["suggestions"])
+
+
+def test_multi_domain_driver_improvement_comparison_and_target_gap_questions():
+    improve = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "How can I improve Access and Patient Experience?", daily, encounters,
+    )
+    assert "Access is 77/100" in improve["answer"]
+    assert "Patient Experience is 63/100" in improve["answer"]
+    assert "Chief Operating Officer" in improve["answer"]
+    assert "Chief Experience Officer" in improve["answer"]
+
+    cause = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "What caused Access and Patient Experience to be so low?", daily, encounters,
+    )
+    assert "mathematically explain the displayed result" in cause["answer"]
+    assert "not a proven operational cause" in cause["answer"]
+
+    comparison = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "Why is Access lower than Financial?", daily, encounters,
+    )
+    assert "Access domain score is 77/100" in comparison["answer"]
+    assert "Financial domain score is 90/100" in comparison["answer"]
+
+    target = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "How can I get Access as high as Financial?", daily, encounters,
+    )
+    assert "Access is 77/100, 13 points below" in target["answer"]
+    assert any(action.startswith("Access:") for action in target["display"]["actions"])
+    assert not any(action.startswith("Financial:") for action in target["display"]["actions"])
+
+
+def test_multi_metric_improvement_uses_each_named_measure_separately():
+    result = answer_visual_question(
+        "2 — Flow", "Discharge Delay and ED Boarding",
+        "How can I improve ED boarding and discharge delay?", daily, encounters,
+    )
+    assert "Improvement opportunity — ED Boarding" in result["answer"]
+    assert "Improvement opportunity — Discharge-Order-to-Exit Time" in result["answer"]
+    assert "units, thresholds, and operating pathways are not blended" in result["display"]["why"]
+
+
+def test_named_domain_requests_are_not_limited_to_three_items():
+    four = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "What is the average of Quality and Safety, Patient Flow, Access, and Patient Experience?", daily, encounters,
+    )
+    for domain in ("Quality & Safety", "Patient Flow", "Access", "Patient Experience"):
+        assert f"{domain}:" in four["answer"]
+    assert "average across the named domains" in four["answer"]
+
+    six = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "How can I improve Quality and Safety, Patient Flow, Financial, Workforce, Access, and Patient Experience?", daily, encounters,
+    )
+    for domain in ("Quality & Safety", "Patient Flow", "Financial", "Workforce", "Access", "Patient Experience"):
+        assert f"{domain} is" in six["answer"]
+        assert any(action.startswith(f"{domain}:") for action in six["display"]["actions"])
+
+
+def test_multi_measure_improvement_is_not_limited_to_three_items():
+    result = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards",
+        "How can I improve Operating Margin, ED Boarding, RN Vacancy, and Patient Experience?", daily, encounters,
+    )
+    for metric in ("Operating Margin", "ED Boarding", "RN Vacancy", "Patient Experience"):
+        assert f"Improvement opportunity — {metric}" in result["answer"]
+        assert metric in result["display"]["title"]
