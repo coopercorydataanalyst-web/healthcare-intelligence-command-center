@@ -1,0 +1,60 @@
+{
+  "retrieved_at_utc": "2026-08-21T03:01:32+00:00",
+  "publisher": "Centers for Medicare & Medicaid Services",
+  "sources": {
+    "hospital_general": {
+      "identifier": "xubh-q36u",
+      "title": "Hospital General Information",
+      "landing_page": "https://data.cms.gov/provider-data/dataset/xubh-q36u",
+      "metadata_url": "https://data.cms.gov/provider-data/api/1/metastore/schemas/dataset/items/xubh-q36u",
+      "modified": "2026-07-22",
+      "released": "2026-08-13",
+      "rows": 5419,
+      "sha256": "42705c571c9de28f4110ab8368d7b9d098b966cb342da8c2f6708fad3317adc3",
+      "local_file": "data/cms/hospital_general.csv.gz"
+    },
+    "hcahps_hospital": {
+      "identifier": "dgck-syfz",
+      "title": "Patient survey (HCAHPS) - Hospital",
+      "landing_page": "https://data.cms.gov/provider-data/dataset/dgck-syfz",
+      "metadata_url": "https://data.cms.gov/provider-data/api/1/metastore/schemas/dataset/items/dgck-syfz",
+      "modified": "2026-07-22",
+      "released": "2026-08-13",
+      "rows": 43110,
+      "sha256": "fcfab671f630067a309f3c0bb827d6279ebdd15b607cba6aa9dc6bb5df4e7467",
+      "local_file": "data/cms/hcahps_hospital.csv.gz",
+      "api_filter": {
+        "hcahps_measure_id": [
+          "H_COMP_1_STAR_RATING",
+          "H_COMP_2_STAR_RATING",
+          "H_COMP_5_STAR_RATING",
+          "H_COMP_6_STAR_RATING",
+          "H_CLEAN_STAR_RATING",
+          "H_QUIET_STAR_RATING",
+          "H_HSP_RATING_STAR_RATING",
+          "H_RECMND_STAR_RATING",
+          "H_STAR_RATING"
+        ]
+      }
+    },
+    "hrrp": {
+      "identifier": "9n3s-kdb3",
+      "title": "Hospital Readmissions Reduction Program",
+      "landing_page": "https://data.cms.gov/provider-data/dataset/9n3s-kdb3",
+      "metadata_url": "https://data.cms.gov/provider-data/api/1/metastore/schemas/dataset/items/9n3s-kdb3",
+      "modified": "2026-01-26",
+      "released": "2026-08-13",
+      "rows": 18330,
+      "sha256": "9d40de12e9acb3a3a5d22a0178999656cba6e74e8a358351d84dd4b9089ffe6f",
+      "local_file": "data/cms/hrrp.csv.gz"
+    }
+  },
+  "feature_table": {
+    "rows": 2620,
+    "columns": 19,
+    "sha256": "a303dc65b999d129186e99a024ceb55b3d55eb51a6ab52454bc0ef53b4e47f68",
+    "local_file": "data/cms/cms_hospital_features.csv.gz",
+    "grain": "one row per CMS facility_id with at least two reportable HRRP conditions",
+    "target": "mean reportable excess readmission ratio > 1.0"
+  }
+}

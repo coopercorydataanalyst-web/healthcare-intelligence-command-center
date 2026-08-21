@@ -250,7 +250,7 @@ def _dashboard_overview(daily, encounters):
     else:
         scope = "The current filters contain no operational rows."
     answer = (
-        "GulfStar Intelligence is a 16-sheet executive healthcare analytics dashboard for a fictional three-hospital system. "
+        "GulfStar Intelligence is a 17-sheet executive healthcare analytics dashboard combining a fictional three-hospital operating simulation with a separate official CMS public-data model audit. "
         "It connects clinical quality, patient flow and staffed capacity, workforce, access, patient experience, margin and denials, "
         "OR utilization, equity, privacy, quality improvement, modeled intervention ROI, and validated census forecasting. Its Ask GulfStar page uses a deterministic "
         "local query layer—not a generative LLM—so it answers only supported questions with predefined calculations and refuses to guess. "

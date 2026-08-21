@@ -1,0 +1,37 @@
+{
+  "target": "elevated_readmission_performance",
+  "numeric_features": [
+    "hcahps_h_clean_star_rating",
+    "hcahps_h_comp_1_star_rating",
+    "hcahps_h_comp_2_star_rating",
+    "hcahps_h_comp_5_star_rating",
+    "hcahps_h_comp_6_star_rating",
+    "hcahps_h_hsp_rating_star_rating",
+    "hcahps_h_quiet_star_rating",
+    "hcahps_h_recmnd_star_rating",
+    "hcahps_h_star_rating",
+    "reported_hrrp_conditions"
+  ],
+  "categorical_features": [
+    "hospital_ownership",
+    "emergency_services",
+    "meets_criteria_for_birthing_friendly_designation"
+  ],
+  "required_columns": [
+    "hcahps_h_clean_star_rating",
+    "hcahps_h_comp_1_star_rating",
+    "hcahps_h_comp_2_star_rating",
+    "hcahps_h_comp_5_star_rating",
+    "hcahps_h_comp_6_star_rating",
+    "hcahps_h_hsp_rating_star_rating",
+    "hcahps_h_quiet_star_rating",
+    "hcahps_h_recmnd_star_rating",
+    "hcahps_h_star_rating",
+    "reported_hrrp_conditions",
+    "hospital_ownership",
+    "emergency_services",
+    "meets_criteria_for_birthing_friendly_designation"
+  ],
+  "facility_id_dtype": "zero-padded six-character string",
+  "feature_table": "data/cms/cms_hospital_features.csv.gz"
+}

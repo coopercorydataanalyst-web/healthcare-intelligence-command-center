@@ -156,6 +156,12 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 136. Added Sheet 16 — Census Forecasting & Model Validation. It honors hospital filters and applies the documented service-line allocation, shows observed history, the 30-day forecast, 90% interval, model comparison, validation metrics, model card, and daily forecast table.
 137. Ridge was selected because it achieved the lowest validated MAE: 6.23 beds versus 6.26 for gradient boosting, 8.48 for seasonal naive, and 9.14 for last value. The simpler model improves on the seasonal baseline by 26.6%; calibration coverage is 91.1%.
 138. Added regression and model-artifact tests; advanced the build/state contract to `2026.08.20-v24-census-forecast-and-correctness`.
+139. Replaced the single census conformal radius with horizon-specific day 1–7, 8–21, and 22–30 intervals; added bucket and sequential coverage, fold stability, hospital MAE/MAPE, random-split comparison, standardized coefficients, synthetic drift stress testing, and a PSI 0.20 retraining-review trigger.
+140. Added a capacity decision callout driven by forecast census, current staffed capacity, and the complete horizon-specific uncertainty interval. It activates a validation-first contingency review only when the interval crosses available capacity; otherwise it explicitly maintains routine monitoring.
+141. Added official CMS API ETL with bounded pagination, retries, exact source metadata, deterministic extracts, SHA-256 hashes, and a one-hospital feature table covering 2,620 reportable facilities.
+142. Added an offline grouped-by-state logistic model, nested isotonic calibration, random-split comparison, bootstrap AUC interval, Brier baseline, available subgroup audits, association explanations, feature contract, and model card.
+143. Added Sheet 17 — CMS Real-Data Model Audit with validation comparison, reliability curve, subgroup audit, association explanations, public-record validation queue, provenance, and timing limitations.
+144. Added Makefile reproduction commands and GitHub Actions validation; advanced the build/state contract to `2026.08.20-v25-forecast-discipline-and-cms`.
 
 ## Validation completed
 - Python syntax compilation: passed.

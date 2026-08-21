@@ -32,7 +32,12 @@ def test_committed_forecast_beats_baselines_and_reports_time_aware_validation():
     assert metrics["ridge_mae"] < metrics["naive_last_mae"]
     assert metrics["ridge_mae"] < metrics["gradient_boosting_mae"]
     assert metrics["ridge_improvement_vs_seasonal_pct"] > 20
-    assert 0.85 <= metrics["calibration_empirical_coverage"] <= 1.0
+    assert 0.89 <= metrics["calibration_empirical_coverage"] <= 0.92
+    assert metrics["random_split_ridge_mae"] < metrics["ridge_mae"]
+    assert metrics["complex_model_adoption_rule"].startswith("Adopt gradient boosting only if")
+    assert metrics["complex_model_lift_vs_ridge_pct"] < 5
+    assert len(metrics["horizon_bucket_calibration"]) == 3
+    assert len({row["radius_90"] for row in metrics["horizon_bucket_calibration"]}) == 3
 
 
 def test_committed_forecast_has_complete_hospital_day_grain_and_valid_intervals():
@@ -46,6 +51,7 @@ def test_committed_forecast_has_complete_hospital_day_grain_and_valid_intervals(
     assert (forecast.lower_90 <= forecast.predicted_census).all()
     assert (forecast.predicted_census <= forecast.upper_90).all()
     assert (forecast.lower_90 >= 0).all()
+    assert forecast.radius_90.nunique() == 3
 
 
 def test_dashboard_artifact_loader_returns_runnable_model_and_documentation():
@@ -57,3 +63,5 @@ def test_dashboard_artifact_loader_returns_runnable_model_and_documentation():
     model_card = (ARTIFACTS / "model_card.md").read_text()
     assert "rolling-origin" in model_card.lower()
     assert "not patient-care decision support" in model_card.lower()
+    assert "horizon" in model_card.lower()
+    assert "psi" in model_card.lower()

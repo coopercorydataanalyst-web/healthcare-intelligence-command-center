@@ -1,0 +1,20 @@
+dimension,subgroup,hospitals,observed_rate,mean_probability,brier_score,accuracy_at_0_5
+hospital_ownership,Government - Hospital District or Authority,180,0.5,0.494353,0.245372,0.572222
+hospital_ownership,Government - Local,122,0.540984,0.528992,0.249935,0.581967
+hospital_ownership,Government - State,36,0.527778,0.506131,0.213597,0.611111
+hospital_ownership,Proprietary,480,0.641667,0.623901,0.221399,0.666667
+hospital_ownership,Voluntary non-profit - Church,192,0.411458,0.437295,0.233582,0.614583
+hospital_ownership,Voluntary non-profit - Other,223,0.443946,0.458828,0.237249,0.618834
+hospital_ownership,Voluntary non-profit - Private,1359,0.483444,0.486518,0.239295,0.593083
+emergency_services,No,121,0.528926,0.521617,0.230378,0.644628
+emergency_services,Yes,2499,0.507803,0.508288,0.236732,0.605442
+hcahps_summary_quartile,Q1,629,0.675676,0.655939,0.221273,0.682035
+hcahps_summary_quartile,Q2,628,0.530255,0.496974,0.242094,0.578025
+hcahps_summary_quartile,Q3,628,0.457006,0.491453,0.245857,0.557325
+hcahps_summary_quartile,Q4,629,0.373609,0.391886,0.2345,0.623211
+hcahps_summary_quartile,nan,106,0.5,0.504841,0.248626,0.537736
+reported_hrrp_conditions,2,235,0.480851,0.489011,0.255626,0.544681
+reported_hrrp_conditions,3,481,0.486486,0.486579,0.231479,0.619543
+reported_hrrp_conditions,4,597,0.497487,0.509286,0.232606,0.621441
+reported_hrrp_conditions,5,660,0.548485,0.526265,0.236206,0.613636
+reported_hrrp_conditions,6,647,0.50541,0.514662,0.236931,0.601236

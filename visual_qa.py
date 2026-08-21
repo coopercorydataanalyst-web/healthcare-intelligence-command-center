@@ -60,6 +60,13 @@ VISUALS = {
         "Forecast Model Validation": _v("Compares rolling-origin mean absolute error across Ridge, gradient boosting, seasonal-naive, and last-value baselines.", "Lower MAE is better; confirm the selected model beats a credible simple baseline across time-ordered folds.", "Monitor prospective error and interval coverage, and retrain only after documented drift or performance review.", "Ridge is selected because it has the lowest validated MAE, not because it is the most complex model.", "Backtest performance on synthetic history does not establish performance on real hospital operations.", calculation="Six rolling-origin folds with a 30-day recursive horizon; no random train/test split."),
         "Census Forecast Model Card": _v("Documents intended use, target, features, validation design, uncertainty, and guardrails.", "Confirm intended use and limitations match the decision before using the forecast.", "Require prospective validation, monitoring, ownership, and change control before production use.", "The model card makes the forecast auditable but does not certify it for production.", "External validity has not been established."),
     },
+    "17": {
+        "CMS Validation Protocol Comparison": _v("Compares grouped-by-state, calibrated, random-split, and prevalence-baseline validation results on official CMS hospital data.", "Use grouped-by-state Brier score and AUC as the controlling assessment because deployment to unseen geography is the stated validation problem.", "Reject or constrain the model if grouped performance, calibration, or subgroup results are not decision-appropriate.", "The random split is a diagnostic contrast, not the adoption metric.", "This is cross-sectional public-data association modeling, not patient-level prediction."),
+        "CMS Reliability Calibration": _v("Compares predicted probabilities with observed rates before and after isotonic calibration.", "Points closer to the diagonal are better calibrated; compare Brier scores as well as the visual.", "Recalibrate only with a held-out or cross-fitted protocol and remeasure subgroup performance.", "Calibration changes probability reliability, not discrimination or causality.", "Current HCAHPS and HRRP measurement windows are differently timed."),
+        "CMS Subgroup Audit": _v("Reports Brier score, probability, observed rate, and threshold accuracy across available public-data subgroups.", "Look for materially worse error in a sufficiently large subgroup and distinguish prevalence differences from model error.", "Investigate feature coverage and measurement differences before expanding model use.", "Unavailable bed-size, SVI, and safety-net fields are not inferred.", "Subgroup auditing cannot establish fairness for dimensions absent from the sources."),
+        "CMS Association Explanations": _v("Shows the largest standardized logistic coefficients in the fitted public-data classifier.", "Use direction and magnitude to understand model association structure, not operational cause.", "Validate stability across states and source releases before relying on an association.", "Positive coefficients increase modeled log-odds; negative coefficients decrease them.", "Associations from overlapping or differently timed public measurement windows are not causal effects."),
+        "CMS Data Provenance and Model Card": _v("Documents official CMS dataset identifiers, source dates, row counts, SHA-256 hashes, feature contract, intended use, and limitations.", "Confirm every source and model artifact matches the approved manifest before reproducing or serving results.", "Rerun ETL, validation, calibration, subgroup audit, and manifest review after a CMS refresh.", "Hashes identify exact local extracts; they do not certify the upstream content.", "The HRRP outcome period predates the current HCAHPS snapshot."),
+    },
 }
 
 VISUAL_SUGGESTIONS = (
@@ -1621,6 +1628,21 @@ DOCUMENTED_CONTENT = {
     ),
     "Census Forecast Model Card": (
         (("feature", "target", "intended use", "guardrail", "model card"), "The model card documents what the forecast predicts, how it was validated, its intended planning use, and the conditions under which it should not be used.", "Committed model documentation and validation metadata.", "Validation Required — Model Governance"),
+    ),
+    "CMS Validation Protocol Comparison": (
+        (("grouped", "random split", "brier", "auc", "baseline"), "Grouped-by-state validation withholds entire states so geographic transfer is tested directly; the random split is shown only to expose protocol sensitivity.", "Five outer GroupKFold splits by state; AUC and Brier score compared with random split and prevalence baseline.", "Public Data Model Validation"),
+    ),
+    "CMS Reliability Calibration": (
+        (("calibration", "reliability", "isotonic", "brier"), "Reliability bins compare mean predicted probability with the observed elevated-ratio rate before and after nested isotonic calibration.", "Nested grouped cross-fitting for isotonic calibration; Brier score measures probability error.", "Public Data Model Validation"),
+    ),
+    "CMS Subgroup Audit": (
+        (("subgroup", "ownership", "quartile", "fairness"), "The audit compares probability error and observed rates only for subgroups present in the committed CMS feature contract.", "Brier score, observed rate, mean probability, and threshold accuracy by available subgroup.", "Public Data Model Audit"),
+    ),
+    "CMS Association Explanations": (
+        (("coefficient", "association", "explanation"), "Standardized logistic coefficients describe the fitted association structure and must not be interpreted as causal effects.", "Offline standardized logistic coefficients committed as Parquet.", "Public Data Model Explanation"),
+    ),
+    "CMS Data Provenance and Model Card": (
+        (("hash", "manifest", "source", "model card", "provenance"), "The manifest records official source identifiers, retrieval time, row counts, and SHA-256 hashes so the feature table is reproducible and auditable.", "Official CMS paginated API retrieval and committed feature/model manifests.", "Public Source / Model Governance"),
     ),
 }
 

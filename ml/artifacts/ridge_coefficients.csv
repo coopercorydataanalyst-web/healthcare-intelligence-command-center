@@ -1,0 +1,20 @@
+feature,standardized_coefficient,absolute_coefficient
+numeric__rolling_28,19.361778,19.361778
+numeric__rolling_7,13.145074,13.145074
+categorical__hospital_GulfStar Medical Center,11.10867,11.10867
+categorical__hospital_GulfStar Community,-8.582948,8.582948
+numeric__lag_14,6.09013,6.09013
+numeric__lag_7,5.936266,5.936266
+numeric__lag_1,5.332591,5.332591
+numeric__lag_28,4.33446,4.33446
+categorical__hospital_GulfStar North,-2.525722,2.525722
+categorical__day_of_week_6,0.318684,0.318684
+categorical__day_of_week_1,0.312088,0.312088
+categorical__day_of_week_5,-0.241777,0.241777
+categorical__day_of_week_2,-0.223733,0.223733
+categorical__day_of_week_4,-0.150204,0.150204
+numeric__annual_cos,0.095884,0.095884
+numeric__annual_sin,-0.058466,0.058466
+categorical__day_of_week_3,-0.045622,0.045622
+numeric__trend_day,-0.031519,0.031519
+categorical__day_of_week_0,0.030564,0.030564

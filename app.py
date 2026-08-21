@@ -9,7 +9,8 @@ import streamlit as st
 
 from qa_engine import answer_question
 from service_line_ops import allocate_service_lines, rollup_selected_service_lines, service_filter_is_complete
-from ml.census_forecast import load_forecast_artifacts
+from ml.census_forecast import load_forecast_artifacts, load_forecast_diagnostics
+from models.cms.inference import load_cms_artifacts
 from visual_qa import answer_visual_question, visual_options
 
 ROOT = Path(__file__).resolve().parent
@@ -39,6 +40,7 @@ NAV = [
     "14 — Quality Improvement & Reliability Lab (CPHQ)",
     "15 — Ask GulfStar Intelligence",
     "16 — Census Forecasting & Model Validation",
+    "17 — CMS Real-Data Model Audit",
 ]
 
 CSS = """
@@ -112,7 +114,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v24-census-forecast-and-correctness"
+APP_BUILD = "2026.08.20-v25-forecast-discipline-and-cms"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -131,7 +133,12 @@ def service_line_daily(daily):
 
 @st.cache_resource
 def census_forecast_artifacts():
-    return load_forecast_artifacts(ROOT)
+    return (*load_forecast_artifacts(ROOT), load_forecast_diagnostics(ROOT))
+
+
+@st.cache_resource
+def cms_model_artifacts():
+    return load_cms_artifacts(ROOT)
 
 
 service_daily = service_line_daily(d)
@@ -253,6 +260,8 @@ def title_label(value):
 
 def grounded_scope(daily_frame, encounter_frame):
     """Return visible When/Where language for the global Q&A contract."""
+    if page.startswith("17 —"):
+        return "Current committed CMS source releases retrieved Aug 20, 2026", "2,620 reportable CMS hospitals across 51 states/DC; GulfStar filters do not apply"
     dates = daily_frame["date"] if not daily_frame.empty else encounter_frame["admit_date"]
     when = f"{dates.min():%b %d, %Y} to {dates.max():%b %d, %Y}" if not dates.empty else "No selected dates"
     hospitals = sorted(set(daily_frame.hospital.unique()) | set(encounter_frame.hospital.unique()))
@@ -293,6 +302,15 @@ def hero(title, sub):
 
 
 def evidence():
+    if page.startswith("17 —"):
+        st.markdown(
+            '<div class="sourcebar"><span class="badge">OFFICIAL CMS PUBLIC DATA</span>'
+            '<span class="badge model">CROSS-SECTIONAL MODEL</span>'
+            '<span class="badge validate">VALIDATION REQUIRED</span>'
+            ' Source scope: <b>2,620 reportable CMS hospitals across 51 states/DC</b> • GulfStar simulation filters do not apply.'
+            '</div>', unsafe_allow_html=True,
+        )
+        return
     applicability = ""
     if page.startswith("11 —"):
         applicability = " Intervention assumptions are portfolio scenarios and are not reallocated by service line."
@@ -957,26 +975,34 @@ elif page.startswith("15 —"):
         "Synthetic data only • No PHI • Not patient-care decision support • Descriptive and modeled outputs require validation before operational use"
     )
 
-else:
+elif page.startswith("16 —"):
     hero(
         "Census Forecasting & Model Validation",
         "A validated 30-day synthetic census forecast for capacity and staffing scenario planning, trained offline with time-aware backtesting.",
     )
     evidence()
-    _, forecast_metrics, forecast = census_forecast_artifacts()
+    _, forecast_metrics, forecast, diagnostics = census_forecast_artifacts()
     selected_share = sum(float(fd_allocated.loc[fd_allocated.service_line == name, "service_weight"].iloc[0]) for name in services)
     selected_forecast = forecast[forecast.hospital.isin(hospitals)].copy()
     for column in ("predicted_census", "lower_90", "upper_90"):
         selected_forecast[column] *= selected_share
     system_forecast = selected_forecast.groupby("date", as_index=False)[["predicted_census", "lower_90", "upper_90"]].sum()
+    latest_capacity_date = fd.date.max()
+    staffed_capacity = float(fd.loc[fd.date == latest_capacity_date, "staffed_beds"].sum())
+    system_forecast["staffed_capacity"] = staffed_capacity
+    system_forecast["predicted_available_beds"] = staffed_capacity - system_forecast.predicted_census
+    system_forecast["lower_available_beds"] = staffed_capacity - system_forecast.upper_90
+    system_forecast["upper_available_beds"] = staffed_capacity - system_forecast.lower_90
+    system_forecast["forecast_utilization"] = system_forecast.predicted_census / staffed_capacity
     next_day = system_forecast.iloc[0]
     peak = system_forecast.loc[system_forecast.predicted_census.idxmax()]
+    pressure_day = system_forecast.loc[system_forecast.lower_available_beds.idxmin()]
 
     cards([
         ("Validated Ridge MAE", f"{forecast_metrics['ridge_mae']:.2f} beds", "Six rolling-origin folds"),
         ("Seasonal Baseline MAE", f"{forecast_metrics['seasonal_naive_7_mae']:.2f} beds", "Seven-day naive baseline"),
         ("Baseline Improvement", f"{forecast_metrics['ridge_improvement_vs_seasonal_pct']:.1f}%", "Lower mean absolute error"),
-        ("90% Interval Coverage", f"{100 * forecast_metrics['calibration_empirical_coverage']:.1f}%", "Held-out calibration window"),
+        ("Bucketed 90% Coverage", f"{100 * forecast_metrics['calibration_empirical_coverage']:.1f}%", "Horizon-specific calibration"),
     ])
     cards([
         ("Next-Day Forecast", f"{next_day.predicted_census:,.0f} beds", f"{next_day.date:%b %d, %Y}"),
@@ -984,6 +1010,21 @@ else:
         ("Forecast Horizon", "30 days", "Recursive daily forecast"),
         ("Selected Model", forecast_metrics["model_selected"], "Simpler model beat gradient boosting"),
     ])
+
+    if pressure_day.lower_available_beds < 0:
+        callout(
+            "Capacity Contingency Trigger",
+            f"{pressure_day.date:%A, %b %d}: forecast census is {pressure_day.predicted_census:,.0f} beds against {staffed_capacity:,.0f} staffed beds. "
+            f"The 90% uncertainty range implies available capacity from {pressure_day.lower_available_beds:,.0f} to {pressure_day.upper_available_beds:,.0f} beds. "
+            "Validate scheduled demand, expected discharges, staffed-bed availability, and approved contingency staffing options with the COO and CNO before acting.",
+            "risk",
+        )
+    else:
+        callout(
+            "Capacity Decision",
+            f"No staffed-bed shortfall is projected in the 30-day horizon. The tightest uncertainty-adjusted margin is {pressure_day.lower_available_beds:,.0f} beds on {pressure_day.date:%A, %b %d}; "
+            f"the point forecast is {pressure_day.predicted_census:,.0f} occupied of {staffed_capacity:,.0f} staffed beds. Maintain routine monitoring rather than activating contingency staffing, and validate scheduled demand and discharges as the date approaches.",
+        )
 
     observed = fd.groupby("date", as_index=False).census.sum().tail(60)
     figure = go.Figure()
@@ -996,8 +1037,8 @@ else:
     st.caption("Service-line selections apply the dashboard's documented modeled allocation to the hospital-level census forecast; all service lines reconcile to the original hospital totals.")
 
     comparison = pd.DataFrame({
-        "Model": ["Naive Last Value", "Seasonal Naive (7-Day)", "Gradient Boosting", "Ridge"],
-        "MAE (Beds)": [forecast_metrics["naive_last_mae"], forecast_metrics["seasonal_naive_7_mae"], forecast_metrics["gradient_boosting_mae"], forecast_metrics["ridge_mae"]],
+        "Model": ["Naive Last Value", "Seasonal Naive (7-Day)", "Random-Split Ridge", "Rolling-Origin Gradient Boosting", "Rolling-Origin Ridge"],
+        "MAE (Beds)": [forecast_metrics["naive_last_mae"], forecast_metrics["seasonal_naive_7_mae"], forecast_metrics["random_split_ridge_mae"], forecast_metrics["gradient_boosting_mae"], forecast_metrics["ridge_mae"]],
     }).sort_values("MAE (Beds)")
     c1, c2 = st.columns([1.1, 1])
     with c1:
@@ -1008,19 +1049,126 @@ else:
             ["Intended use", "Capacity and staffing scenario planning"],
             ["Target", "Next-day hospital census, forecast recursively for 30 days"],
             ["Features", "Hospital, weekday, trend, annual terms, lags 1/7/14/28, trailing means 7/28"],
-            ["Validation", "6 rolling-origin folds; 30-day horizon; no random split"],
-            ["Uncertainty", "90% split-conformal interval from a held-out 30-day window"],
+            ["Validation", "6 rolling-origin folds control assessment; random split shown only as a contrast"],
+            ["Selection rule", "Use gradient boosting only if it improves rolling-origin MAE by at least 5%; Ridge retained"],
+            ["Uncertainty", "90% conformal radii calibrated separately for days 1–7, 8–21, and 22–30"],
             ["Guardrail", "Synthetic data only; external validation required; not patient-care decision support"],
         ], columns=["Model Card Field", "Documentation"]))
     st.subheader("Daily Forecast")
     daily_forecast = system_forecast.rename(columns={"predicted_census": "forecast_beds", "lower_90": "lower_90_beds", "upper_90": "upper_90_beds"}).copy()
     daily_forecast["date"] = daily_forecast.date.dt.strftime("%b %d, %Y")
     table(daily_forecast)
+
+    st.subheader("Error, Uncertainty, and Subgroup Audit")
+    ridge_backtest = diagnostics["backtest"][diagnostics["backtest"].model == "ridge"].copy()
+    ridge_backtest["ape"] = ridge_backtest.absolute_error / ridge_backtest.actual
+    hospital_audit = ridge_backtest.groupby("hospital", as_index=False).agg(
+        observations=("absolute_error", "size"), mae_beds=("absolute_error", "mean"), mape=("ape", "mean"),
+    )
+    hospital_audit["mape"] *= 100
+    fold_audit = ridge_backtest.groupby("fold", as_index=False).absolute_error.mean().rename(columns={"absolute_error": "mae_beds"})
+    c3, c4 = st.columns(2)
+    with c3:
+        st.markdown("**Hospital audit**")
+        table(hospital_audit)
+        st.caption("Absolute MAE scales with hospital census, while proportional error is similar across hospitals. This is a synthetic hospital-size audit, not a fairness certification.")
+    with c4:
+        st.markdown("**Fold stability**")
+        table(fold_audit)
+        st.caption(f"Rolling-origin MAE ranges from {forecast_metrics['rolling_origin_mae_range'][0]:.2f} to {forecast_metrics['rolling_origin_mae_range'][1]:.2f} beds across six folds.")
+
+    horizon_table = diagnostics["horizon"].copy()
+    sequential = diagnostics["sequential"].groupby("horizon_bucket", as_index=False).covered.mean().rename(columns={"covered": "sequential_coverage"})
+    horizon_table = horizon_table.merge(sequential, on="horizon_bucket", how="left")
+    horizon_table["empirical_coverage"] *= 100
+    horizon_table["sequential_coverage"] *= 100
+    st.markdown("**Coverage by forecast horizon**")
+    table(horizon_table)
+    st.warning("Error is nearly horizon-invariant in this synthetic series. Real census forecasts commonly degrade with horizon; this behavior is an artifact of the simulator and must not be assumed prospectively.")
+
+    c5, c6 = st.columns(2)
+    with c5:
+        coefficient_view = diagnostics["coefficients"].head(12).sort_values("standardized_coefficient")
+        plot(px.bar(coefficient_view, x="standardized_coefficient", y="feature", orientation="h", title="Standardized Ridge Associations", color="standardized_coefficient", color_continuous_scale="RdBu"))
+        st.caption("Associations from overlapping simulated measurement windows—not causal effects.")
+    with c6:
+        plot(px.line(diagnostics["drift"], x="psi_lag_7", y="mae_beds", markers=True, text="census_level_shift_pct", title="Synthetic Drift Stress Test"))
+        st.caption("Labels show the simulated census-level shift. PSI ≥ 0.20 triggers review and prospective error validation before retraining.")
     callout(
         "Model Limitation",
         "The forecast is trained on synthetic portfolio data and excludes acuity, scheduled procedures, closures, weather, outbreaks, and actual staffing constraints. Use it as a planning signal only and validate it prospectively before operational use.",
         "warning",
     )
+
+else:
+    hero(
+        "CMS Real-Data Model Audit",
+        "A reproducible, grouped, calibrated classification audit using official CMS hospital data—not GulfStar synthetic records.",
+    )
+    evidence()
+    cms = cms_model_artifacts()
+    cms_metrics = cms["metrics"]
+    cards([
+        ("CMS Hospitals", f"{cms_metrics['rows']:,}", "One row per reportable facility"),
+        ("States and DC", f"{cms_metrics['states']}", "Grouped validation boundary"),
+        ("Grouped AUC", f"{cms_metrics['grouped_calibrated_auc']:.3f}", "95% bootstrap interval shown below"),
+        ("Calibrated Brier", f"{cms_metrics['grouped_calibrated_brier']:.3f}", "Lower is better"),
+        ("Baseline Brier", f"{cms_metrics['prevalence_baseline_brier']:.3f}", "Prevalence-only prediction"),
+    ])
+    callout(
+        "Decision Use",
+        "Use this model to audit which public hospital records warrant closer portfolio benchmarking—not to predict an individual patient's outcome or make payment, contracting, or care decisions. Grouped validation estimates transfer to unseen states more honestly than a random split.",
+    )
+
+    comparison = pd.DataFrame([
+        ["Grouped-by-state, uncalibrated", cms_metrics["grouped_raw_auc"], cms_metrics["grouped_raw_brier"]],
+        ["Grouped-by-state, isotonic", cms_metrics["grouped_calibrated_auc"], cms_metrics["grouped_calibrated_brier"]],
+        ["Naive random split", cms_metrics["random_split_auc"], cms_metrics["random_split_brier"]],
+        ["Prevalence baseline", np.nan, cms_metrics["prevalence_baseline_brier"]],
+    ], columns=["Evaluation", "AUC", "Brier Score"])
+    c7, c8 = st.columns(2)
+    with c7:
+        plot(px.bar(comparison, x="Brier Score", y="Evaluation", orientation="h", title="Validation Protocol Comparison — Lower Brier Is Better", color="Brier Score", color_continuous_scale="Tealgrn_r"))
+    with c8:
+        reliability = cms["calibration"]
+        calibration_figure = px.line(reliability, x="mean_predicted", y="observed_rate", color="probability_type", markers=True, title="Reliability Before and After Isotonic Calibration")
+        calibration_figure.add_scatter(x=[0, 1], y=[0, 1], mode="lines", name="Perfect Calibration", line=dict(dash="dash", color="#526071"))
+        calibration_figure.update_xaxes(range=[0, 1], title="Mean Predicted Probability")
+        calibration_figure.update_yaxes(range=[0, 1], title="Observed Elevated-Ratio Rate")
+        plot(calibration_figure)
+
+    st.markdown(
+        f"**Grouped AUC uncertainty:** {cms_metrics['grouped_auc_95_interval'][0]:.3f}–{cms_metrics['grouped_auc_95_interval'][1]:.3f} (95% bootstrap interval). "
+        "The random split is shown as a diagnostic comparison; grouped-by-state performance controls the model assessment."
+    )
+    st.subheader("Subgroup Audit")
+    subgroup_dimension = st.selectbox("Audit dimension", sorted(cms["subgroups"].dimension.unique()), format_func=title_label)
+    table(cms["subgroups"][cms["subgroups"].dimension == subgroup_dimension].sort_values("brier_score"))
+    st.caption("CMS sources used here do not provide a defensible bed-size or SVI field in the joined feature contract. Those requested slices are explicitly unavailable rather than inferred. Hospital ownership, emergency-service status, HCAHPS quartile, and HRRP reporting breadth are audited.")
+
+    c9, c10 = st.columns([1, 1.2])
+    with c9:
+        explanation = cms["explanations"].head(15).sort_values("coefficient")
+        plot(px.bar(explanation, x="coefficient", y="feature", orientation="h", title="Standardized Logistic Associations", color="coefficient", color_continuous_scale="RdBu"))
+        st.caption("Associations from overlapping or differently timed public measurement windows—not causal effects.")
+    with c10:
+        st.subheader("Highest Validation-Priority Public Records")
+        state_choice = st.selectbox("CMS state", ["All States"] + sorted(cms["scored"].state.unique().tolist()))
+        scored = cms["scored"] if state_choice == "All States" else cms["scored"][cms["scored"].state == state_choice]
+        priority_records = scored.nlargest(20, "calibrated_probability")[[
+            "facility_id", "facility_name", "state", "hospital_ownership", "mean_excess_readmission_ratio", "calibrated_probability",
+        ]]
+        table(priority_records)
+        st.caption("This queue prioritizes validation of published portfolio signals. It is not a hospital quality certification, causal ranking, or contracting recommendation.")
+
+    st.subheader("Data Provenance and Model Card")
+    source_rows = []
+    for source in cms["source_manifest"]["sources"].values():
+        source_rows.append([source["title"], source["identifier"], source["modified"], source["rows"], source["sha256"]])
+    table(pd.DataFrame(source_rows, columns=["CMS Source", "Dataset ID", "Modified", "Rows Retrieved", "SHA-256"]))
+    st.warning("The HRRP outcome window predates the current HCAHPS snapshot. This is a cross-sectional association classifier, not a prospective readmission forecast. The timing limitation prevents causal or future-performance claims.")
+    with st.expander("Full CMS model card"):
+        st.markdown(cms["model_card"])
 
 def _fallback_dialog(title):
     """Provide a fixed modal-style container for older local Streamlit runtimes."""

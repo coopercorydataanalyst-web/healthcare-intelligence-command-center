@@ -161,7 +161,7 @@ def test_dashboard_overview_and_help_language_is_supported():
     ]
     for question in questions:
         result = ask(question)
-        assert result["answer"].startswith("GulfStar Intelligence is a 16-sheet"), question
+        assert result["answer"].startswith("GulfStar Intelligence is a 17-sheet"), question
         assert result["evidence"] == "Validation Required — Dashboard Documentation"
         assert "no performance metric aggregation" in result["calculation"]
         assert result["data"] is not None and len(result["data"]) == 6

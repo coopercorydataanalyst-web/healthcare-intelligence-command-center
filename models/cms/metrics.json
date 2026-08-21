@@ -1,0 +1,19 @@
+{
+  "rows": 2620,
+  "states": 51,
+  "positive_rate": 0.5088,
+  "target": "Mean reportable CMS HRRP excess readmission ratio greater than 1.0",
+  "grouped_split": "5-fold GroupKFold by state; no state appears in both train and test within a fold",
+  "grouped_raw_auc": 0.6366,
+  "grouped_calibrated_auc": 0.6312,
+  "grouped_raw_brier": 0.2364,
+  "grouped_calibrated_brier": 0.2364,
+  "grouped_calibrated_log_loss": 0.7045,
+  "grouped_auc_95_interval": [
+    0.61,
+    0.6523
+  ],
+  "random_split_auc": 0.6081,
+  "random_split_brier": 0.2438,
+  "prevalence_baseline_brier": 0.2499
+}

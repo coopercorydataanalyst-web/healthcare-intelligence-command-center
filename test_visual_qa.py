@@ -12,8 +12,8 @@ encounters = pd.read_csv(ROOT / "data/synthetic_encounters.csv.gz", parse_dates=
 
 
 def test_every_analysis_sheet_has_visual_context():
-    assert set(VISUALS) == {str(number) for number in range(1, 15)} | {"16"}
-    for number in list(range(1, 15)) + [16]:
+    assert set(VISUALS) == {str(number) for number in range(1, 15)} | {"16", "17"}
+    for number in list(range(1, 15)) + [16, 17]:
         assert visual_options(f"{number} — Sheet")
 
 

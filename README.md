@@ -25,7 +25,7 @@ The first two analysis sheets are designed as operating command centers rather t
    - Modeled patient-flow funnel
    - What-if bed-day release scenario
 
-The application contains 16 analysis sheets in total, including dedicated demonstrations of:
+The application contains 17 analysis sheets in total, including dedicated demonstrations of:
 
 - Clinical deterioration and rescue surveillance
 - Preventable harm and modeled financial exposure
@@ -41,14 +41,31 @@ The application contains 16 analysis sheets in total, including dedicated demons
 - CPHQ-informed statistical process control, Pareto prioritization, PDSA learning cycles, and reliability management
 - **Ask GulfStar Intelligence**, a deterministic natural-language Q&A layer over the active dashboard filters
 - **Census Forecasting & Model Validation**, a real offline Ridge forecasting model with time-aware backtesting and prediction intervals
+- **CMS Real-Data Model Audit**, a grouped and calibrated classifier built from official public CMS hospital data
 
 ## Census forecasting ML
 
 Analysis Sheet 16 forecasts synthetic hospital census 30 days ahead for capacity and staffing scenario planning. The committed model is a Ridge regression using hospital and weekday indicators, time trend, annual terms, census lags at 1/7/14/28 days, and trailing 7/28-day means. It is trained offline from `data/daily_operations.csv.gz`; Streamlit loads the committed artifact and never retrains during an end-user session.
 
-Validation uses six rolling-origin folds with a 30-day recursive horizon—never a random time-series split. Ridge achieved **6.23 beds MAE**, compared with **8.48 beds** for the seven-day seasonal-naive baseline and **6.26 beds** for gradient boosting. That is a **26.6% improvement over the seasonal baseline**, with Ridge retained because the simpler model performed best. A held-out split-conformal calibration window supplies 90% prediction intervals and achieved 91.1% empirical coverage on the calibration period.
+**Decision and cost of error:** the target is daily occupied census because hospital leadership must decide whether ordinary staffed capacity is sufficient or whether a validated contingency review is needed. Underforecasting is operationally more consequential than overforecasting: as an explicit illustrative portfolio assumption, a 10-bed one-day miss could require 120 unplanned nursing hours, and at $76 per hour that is $9,120 before other labor or capacity costs. The dashboard does not treat that assumption as a public benchmark; a real health system must replace it with approved staffing ratios, wage premiums, skill mix, and policy constraints.
+
+Validation uses six rolling-origin folds with a 30-day recursive horizon and reports a naive random split only as a contrast. Ridge achieved **6.23 beds MAE**, compared with **5.77** under the optimistic random split, **8.48** for the seven-day seasonal-naive baseline, and **6.26** for gradient boosting. The pre-registered decision rule adopts gradient boosting only if it reduces rolling-origin MAE by at least 5%; it did not, so Ridge remains selected. Rolling-origin fold MAE ranges from **5.81 to 6.86 beds**.
+
+Uncertainty is calibrated separately for days 1–7, 8–21, and 22–30. The radii are **±15.34**, **±12.76**, and **±14.31 beds**, with overall bucket-calibration coverage of **90.2%**. Sequential earlier-fold coverage is also disclosed and is lower for some buckets; the staffing/capacity callout therefore reports the complete interval and requires operational validation before action. Error is nearly horizon-invariant in this simulation, which is documented as a synthetic-generator artifact that should not be assumed in real deployment.
 
 Rebuild the committed artifacts with `python ml/train_census_forecast.py`. The model, backtest predictions, 30-day forecast, metrics, and model card are stored in `ml/artifacts/`. These are synthetic-data validation results, not evidence of performance on a real health system; prospective external validation is required before operational use.
+
+## CMS real-data model
+
+Analysis Sheet 17 uses **2,620 real CMS hospitals across 51 states/DC**. `etl/fetch_cms.py` paginates the official Provider Data Catalog API for Hospital General Information, HCAHPS hospital star measures, and the Hospital Readmissions Reduction Program. It records retrieval time, dataset IDs, source dates, row counts, and SHA-256 hashes in `data/cms/manifest.json`, then builds one hospital-level feature table.
+
+The model estimates whether a hospital's mean reportable HRRP excess readmission ratio is above 1.0 from published ownership, service, reporting-breadth, and HCAHPS attributes. Five outer folds hold out complete states; nested grouped predictions calibrate probabilities with isotonic regression. The grouped calibrated AUC is **0.631** (95% bootstrap interval **0.610–0.652**) and Brier score is **0.236**, compared with **0.250** for a prevalence-only baseline. A random split is displayed alongside the grouped protocol but does not control model assessment.
+
+This is deliberately framed as a cross-sectional public-data association classifier. The HRRP outcome period predates the current HCAHPS snapshot, so it is not a prospective readmission forecast. It must not be used for patient-level prediction, payment, contracting, or care decisions. The app exposes calibration, available subgroup audits, association coefficients, provenance, and the full model card; unavailable bed-size, SVI, and safety-net fields are not inferred.
+
+## Reproducibility
+
+From a fresh clone, install `requirements-lock.txt`, then run `make data && make train && make test`. This retrieves the official CMS sources, rebuilds both model families, and runs the full validation suite. `make train` never runs inside Streamlit. GitHub Actions uses the same pinned environment and repeats offline training and tests on pushes and pull requests. Human-readable metrics and forecasts are written at stable precision; source extracts use deterministic gzip output.
 
 ## Ask GulfStar Intelligence
 

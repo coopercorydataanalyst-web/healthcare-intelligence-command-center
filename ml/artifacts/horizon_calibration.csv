@@ -1,0 +1,4 @@
+horizon_bucket,start_day,end_day,n,radius_90,empirical_coverage,mae
+Days 1–7,1,7,126,15.3403,0.9048,6.7046
+Days 8–21,8,21,252,12.7577,0.9008,5.7864
+Days 22–30,22,30,162,14.3149,0.9012,6.5511

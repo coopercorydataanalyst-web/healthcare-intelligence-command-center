@@ -5,12 +5,54 @@
   "training_end": "2026-08-07",
   "folds": 6,
   "horizon_days": 30,
-  "naive_last_mae": 9.14074074074074,
-  "seasonal_naive_7_mae": 8.483333333333333,
-  "ridge_mae": 6.230079315282659,
-  "gradient_boosting_mae": 6.261771539737437,
-  "ridge_improvement_vs_seasonal_pct": 26.560951096864528,
-  "conformal_radius_90": 13.420431489737098,
-  "calibration_empirical_coverage": 0.9111111111111111,
-  "model_selected": "Ridge"
+  "naive_last_mae": 9.1407,
+  "seasonal_naive_7_mae": 8.4833,
+  "ridge_mae": 6.2301,
+  "gradient_boosting_mae": 6.2618,
+  "ridge_improvement_vs_seasonal_pct": 26.561,
+  "random_split_ridge_mae": 5.7731,
+  "rolling_origin_mae_range": [
+    5.8139,
+    6.859
+  ],
+  "horizon_bucket_calibration": [
+    {
+      "horizon_bucket": "Days 1\u20137",
+      "start_day": 1,
+      "end_day": 7,
+      "n": 126,
+      "radius_90": 15.3403,
+      "empirical_coverage": 0.9048,
+      "mae": 6.7046
+    },
+    {
+      "horizon_bucket": "Days 8\u201321",
+      "start_day": 8,
+      "end_day": 21,
+      "n": 252,
+      "radius_90": 12.7577,
+      "empirical_coverage": 0.9008,
+      "mae": 5.7864
+    },
+    {
+      "horizon_bucket": "Days 22\u201330",
+      "start_day": 22,
+      "end_day": 30,
+      "n": 162,
+      "radius_90": 14.3149,
+      "empirical_coverage": 0.9012,
+      "mae": 6.5511
+    }
+  ],
+  "sequential_horizon_coverage": {
+    "Days 1\u20137": 0.9238,
+    "Days 22\u201330": 0.8667,
+    "Days 8\u201321": 0.8571
+  },
+  "calibration_empirical_coverage": 0.9019,
+  "model_selected": "Ridge",
+  "complex_model_adoption_rule": "Adopt gradient boosting only if it reduces rolling-origin MAE by at least 5% versus Ridge.",
+  "complex_model_lift_vs_ridge_pct": -0.5087,
+  "drift_retrain_psi_threshold": 0.2,
+  "first_stress_level_worse_than_seasonal_pct": 25
 }

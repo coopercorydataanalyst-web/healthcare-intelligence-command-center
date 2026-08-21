@@ -50,7 +50,7 @@ Broad executive questions default to the latest 30 days versus the preceding 30 
 
 ## Contextual visual Q&A
 
-Every analytical sheet includes a fixed bottom-center **Ask this visual** launcher. The centered placement avoids Streamlit Cloud's lower-right management badge. It stays available while the page scrolls and opens a compact popover on demand, preventing the full Q&A form from taking permanent dashboard space. A required visual/section selector removes ambiguity when a sheet contains multiple charts, cards, tables, funnels, or governance sections. The catalog covers operational, governance, and forecast-validation contexts across Sheets 1–14 and Sheet 16.
+Every analytical sheet includes a fixed bottom-center **Ask this visual** launcher. The centered placement avoids Streamlit Cloud's lower-right management badge. It stays available while the page scrolls and opens a compact popover on demand, preventing the full Q&A form from taking permanent dashboard space. A required visual/section selector removes ambiguity when a sheet contains multiple charts, cards, tables, funnels, or governance sections. The catalog covers operational, governance, forecast-validation, and CMS model-audit contexts across Sheets 1–14 and Sheets 16–17.
 
 Within a multi-metric visual, the assistant now gives precedence to an explicitly named KPI. A question such as **“What does Patient Experience: 76.8% mean?”** receives a metric-level explanation rather than a generic summary of all Executive KPI Cards. The response includes the filtered value, metric definition, illustrative threshold relationship and modeled component score where available, selected-hospital high/low context, calculation, evidence label, and metric-specific limitation.
 
@@ -101,6 +101,6 @@ The user selects a candidate and explicitly clicks **Ask Selected Suggestion** o
 ## Validation
 
 - Python compilation passes for `app.py` and `qa_engine.py`.
-- All 16 Streamlit analysis sheets execute without exceptions in the runtime harness, including contextual panels on Sheets 1–14 and Sheet 16.
+- All 17 Streamlit analysis sheets execute without exceptions in the runtime harness, including contextual panels on Sheets 1–14 and Sheets 16–17.
 - The Q&A submission form renders a hospital-ranking answer without exceptions.
 - Focused tests cover all required example questions, every metric in the allowlist, unsupported-question refusal, filtered-out hospitals, ROI, priority, exposure, all 26 visual contexts, core visual questions, and combined visual intents.

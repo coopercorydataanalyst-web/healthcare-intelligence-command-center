@@ -88,3 +88,15 @@ def load_forecast_artifacts(root: Path):
         json.loads((artifact_dir / "backtest_metrics.json").read_text()),
         pd.read_csv(artifact_dir / "forecast_30d.csv", parse_dates=["date"]),
     )
+
+
+def load_forecast_diagnostics(root: Path):
+    artifact_dir = Path(root) / "ml" / "artifacts"
+    return {
+        "horizon": pd.read_csv(artifact_dir / "horizon_calibration.csv"),
+        "sequential": pd.read_csv(artifact_dir / "sequential_coverage.csv"),
+        "coefficients": pd.read_csv(artifact_dir / "ridge_coefficients.csv"),
+        "drift": pd.read_csv(artifact_dir / "drift_stress_test.csv"),
+        "backtest": pd.read_csv(artifact_dir / "backtest_predictions.csv.gz", parse_dates=["date"]),
+        "model_card": (artifact_dir / "model_card.md").read_text(),
+    }
