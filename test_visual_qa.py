@@ -118,6 +118,31 @@ def test_explicit_visual_name_overrides_stale_dropdown_selection():
     assert result["evidence"] == "Synthetic Result / Modeled Estimate"
 
 
+def test_named_access_domain_uses_displayed_domain_not_specialty_wait_component():
+    result = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "why is access so low", daily, encounters,
+    )
+    assert "displayed Access domain score is 77/100" in result["answer"]
+    assert "ranked 5 of 6" in result["answer"]
+    assert "Left Without Being Seen: 3.4%" in result["answer"]
+    assert "Specialty Wait: 12.5 days" in result["answer"]
+    assert "unweighted average" in result["answer"]
+    assert "mean daily specialty_wait_days; illustrative component score = 82/100" not in result["calculation"]
+    assert result["display"]["title"] == "Access Domain - Why It Has This Score"
+
+
+def test_every_named_executive_domain_has_domain_level_explanation():
+    for domain in ("quality and safety", "patient flow", "financial", "workforce", "access", "patient experience"):
+        result = answer_visual_question(
+            "1 — CEO", "Executive Health Score by Domain",
+            f"why is {domain} high or low", daily, encounters,
+        )
+        assert "domain score is" in result["answer"], (domain, result["answer"])
+        assert "component score" in result["answer"], (domain, result["answer"])
+        assert result.get("display"), domain
+
+
 def test_generic_this_visual_keeps_dropdown_selection():
     resolved, _ = resolve_visual("1 — CEO", "Executive KPI Cards", "what is this visual telling me")
     assert resolved == "Executive KPI Cards"
@@ -162,14 +187,47 @@ def test_every_mapped_metric_on_every_visual_gets_metric_level_answer():
                 assert result["evidence"] != "Validation Required — Visual Documentation"
 
 
+def test_every_metric_alias_on_every_visual_resolves_to_the_same_visible_measure():
+    by_key = {metric.key: metric for metric in METRICS}
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            for key in spec["metrics"]:
+                metric = by_key[key]
+                for alias in metric.aliases:
+                    result = answer_visual_question(page, visual, f"what does {alias} mean here", daily, encounters)
+                    assert metric.label in result["answer"], (page, visual, key, alias, result["answer"])
+                    assert result["evidence"] != "Validation Required", (page, visual, alias)
+
+
 def test_documented_modeled_and_governance_content_is_explained_specifically():
     for visual, entries in DOCUMENTED_CONTENT.items():
         page = next(page for page, visuals in VISUALS.items() if visual in visuals)
-        alias = entries[0][0][0]
-        result = answer_visual_question(page, visual, f"What does {alias} mean?", daily, encounters)
-        assert result["answer"] == entries[0][1], (visual, alias, result["answer"])
-        assert result["calculation"] == entries[0][2]
-        assert "operational validation" in result["limitation"]
+        for aliases, expected_answer, expected_calculation, expected_evidence in entries:
+            for alias in aliases:
+                result = answer_visual_question(page, visual, f"What does {alias} mean?", daily, encounters)
+                assert result["answer"].startswith(expected_answer), (visual, alias, result["answer"])
+                assert result["calculation"] == expected_calculation
+                assert result["evidence"] == expected_evidence
+                assert "operational validation" in result["limitation"]
+
+
+def test_every_visual_title_resolves_with_human_punctuation_variants():
+    for page, visuals in VISUALS.items():
+        options = list(visuals)
+        for visual in options:
+            selected = next((item for item in options if item != visual), visual)
+            variants = {visual, visual.replace("&", "and"), visual.replace("-", " "), visual.replace(":", "")}
+            for variant in variants:
+                resolved, _ = resolve_visual(page, selected, f"explain {variant}")
+                assert resolved == visual, (page, visual, variant, resolved)
+
+
+def test_every_visual_has_a_complete_semantic_contract():
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            for field in ("purpose", "focus", "action", "callout", "limits", "calculation"):
+                assert spec[field].strip(), (page, visual, field)
+            assert spec["metrics"] or visual in DOCUMENTED_CONTENT, (page, visual)
 
 
 def test_er_boarding_improvement_is_metric_filter_and_hospital_aware():

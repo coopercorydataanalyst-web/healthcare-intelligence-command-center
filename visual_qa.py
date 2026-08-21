@@ -159,9 +159,9 @@ def _higher_score(value, target, bad):
     return 100.0 * (value - bad) / (target - bad)
 
 
-def _executive_domain_interpretation(daily, encounters):
+def _executive_domain_snapshot(daily, encounters):
     if daily.empty:
-        return None
+        return None, None, None
     revenue = daily.revenue.sum()
     staff_hours = max(daily.staff_hours.sum(), 1)
     metrics = {
@@ -180,32 +180,42 @@ def _executive_domain_interpretation(daily, encounters):
         "wait": daily.specialty_wait_days.mean(),
         "experience": daily.patient_experience.mean(),
     }
-    scores = {
-        "Quality & Safety": sum([
-            _lower_score(metrics["readmission"], .12, .18),
-            _lower_score(metrics["mortality"], .020, .035),
-            _lower_score(metrics["harm"], .020, .060),
-        ]) / 3,
-        "Patient Flow": sum([
-            _lower_score(metrics["boarding"], 4.0, 10.0),
-            _lower_score(metrics["occupancy"], .85, .98),
-            _lower_score(metrics["discharge_delay"], 2.0, 5.0),
-        ]) / 3,
-        "Financial": sum([
-            _higher_score(metrics["margin"], .05, -.02),
-            _lower_score(metrics["denial_rate"], .040, .075),
-        ]) / 2,
-        "Workforce": sum([
-            _lower_score(metrics["vacancy"], .08, .18),
-            _lower_score(metrics["overtime_share"], .07, .16),
-            _lower_score(metrics["agency_share"], .04, .10),
-        ]) / 3,
-        "Access": sum([
-            _lower_score(metrics["lwbs"], .02, .07),
-            _lower_score(metrics["wait"], 10.0, 24.0),
-        ]) / 2,
-        "Patient Experience": _higher_score(metrics["experience"], .82, .68),
+    components = {
+        "Quality & Safety": [
+            ("30-Day Readmission", metrics["readmission"], "percent", _lower_score(metrics["readmission"], .12, .18)),
+            ("Mortality", metrics["mortality"], "percent", _lower_score(metrics["mortality"], .020, .035)),
+            ("Harm", metrics["harm"], "percent", _lower_score(metrics["harm"], .020, .060)),
+        ],
+        "Patient Flow": [
+            ("ED Boarding", metrics["boarding"], "hours", _lower_score(metrics["boarding"], 4.0, 10.0)),
+            ("Staffed-Bed Utilization", metrics["occupancy"], "percent", _lower_score(metrics["occupancy"], .85, .98)),
+            ("Discharge Delay", metrics["discharge_delay"], "hours", _lower_score(metrics["discharge_delay"], 2.0, 5.0)),
+        ],
+        "Financial": [
+            ("Operating Margin", metrics["margin"], "percent", _higher_score(metrics["margin"], .05, -.02)),
+            ("Denial Rate", metrics["denial_rate"], "percent", _lower_score(metrics["denial_rate"], .040, .075)),
+        ],
+        "Workforce": [
+            ("RN Vacancy", metrics["vacancy"], "percent", _lower_score(metrics["vacancy"], .08, .18)),
+            ("Overtime Share", metrics["overtime_share"], "percent", _lower_score(metrics["overtime_share"], .07, .16)),
+            ("Agency Share", metrics["agency_share"], "percent", _lower_score(metrics["agency_share"], .04, .10)),
+        ],
+        "Access": [
+            ("Left Without Being Seen", metrics["lwbs"], "percent", _lower_score(metrics["lwbs"], .02, .07)),
+            ("Specialty Wait", metrics["wait"], "days", _lower_score(metrics["wait"], 10.0, 24.0)),
+        ],
+        "Patient Experience": [
+            ("Patient Experience", metrics["experience"], "percent", _higher_score(metrics["experience"], .82, .68)),
+        ],
     }
+    scores = {domain: sum(item[3] for item in items) / len(items) for domain, items in components.items()}
+    return metrics, components, scores
+
+
+def _executive_domain_interpretation(daily, encounters):
+    metrics, components, scores = _executive_domain_snapshot(daily, encounters)
+    if scores is None:
+        return None
     ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
     score_text = "; ".join(f"{name} {score:.0f}" for name, score in ranked)
     high_score = ranked[0][1]
@@ -232,6 +242,58 @@ def _executive_domain_interpretation(daily, encounters):
         "Workforce uses RN vacancy, overtime, and agency share; Access uses LWBS and specialty wait; Patient Experience uses the synthetic experience composite."
     )
     return {"answer": answer, "calculation": calculation, "evidence": "Synthetic Result / Modeled Estimate"}
+
+
+def _named_domain_interpretation(visual, question, daily, encounters):
+    """Explain the named displayed domain before metric aliases such as access."""
+    if visual != "Executive Health Score by Domain":
+        return None
+    q = normalized_text(question)
+    if not ({"why", "high", "low", "highest", "lowest"} & flexible_tokens(question)):
+        return None
+    aliases = {
+        "Quality & Safety": ("quality and safety", "quality safety"),
+        "Patient Flow": ("patient flow", "flow"),
+        "Financial": ("financial", "finance"),
+        "Workforce": ("workforce",),
+        "Access": ("access",),
+        "Patient Experience": ("patient experience",),
+    }
+    domain = next((name for name, names in aliases.items() if any(alias in q for alias in names)), None)
+    if domain is None:
+        return None
+    _, components, scores = _executive_domain_snapshot(daily, encounters)
+    if scores is None:
+        return None
+    ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    rank = next(index for index, item in enumerate(ranked, 1) if item[0] == domain)
+    score = scores[domain]
+    component_rows = [
+        f"{label}: {_format(value, unit)}; modeled component score {component_score:.0f}/100."
+        for label, value, unit, component_score in components[domain]
+    ]
+    position = "highest" if rank == 1 else "lowest" if rank == len(ranked) else f"ranked {rank} of {len(ranked)}"
+    answer = (
+        f"The displayed {domain} domain score is {score:.0f}/100 and is {position}. "
+        f"It is the unweighted average of {len(component_rows)} normalized component score{'s' if len(component_rows) != 1 else ''}. "
+        "Its position is explained mathematically by those component scores; the chart does not establish the operational cause."
+    )
+    actions = [
+        "Validate the component definitions, denominators, and selected-period completeness.",
+        f"Review the underlying {domain} measures by hospital, service line, month, and operating context.",
+        "Investigate the least favorable component first while monitoring the other component measures as guardrails.",
+    ]
+    limitation = "This is a modeled portfolio domain score using illustrative thresholds. It is not a validated benchmark, causal model, or patient-care measure."
+    return {
+        "answer": answer + " " + " ".join(component_rows),
+        "calculation": f"{domain} domain score = unweighted mean of its normalized 0-100 component scores: " + " + ".join(item[0] for item in components[domain]) + ".",
+        "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
+        "display": {
+            "title": f"{domain} Domain - Why It Has This Score", "filters": _selected_filter_summary(daily, encounters),
+            "answer": answer, "what_matters": component_rows, "actions": actions,
+            "action_heading": "What Leadership Should Validate", "limitation": limitation,
+        },
+    }
 
 
 def _dynamic_visual_interpretation(page, visual, daily, encounters):
@@ -1057,14 +1119,16 @@ def answer_visual_question(page, visual, question, daily, encounters):
     if not q:
         return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
     signal = _current_signal(spec, daily, encounters)
+    named_domain = _named_domain_interpretation(visual, question, daily, encounters)
     visual_comparison = _visual_comparison_interpretation(visual, spec, question, daily, encounters)
     entity_position = _entity_position_interpretation(visual, spec, question, daily, encounters)
     funnel_stage = _funnel_stage_interpretation(visual, question, daily, encounters)
+    documented_content = _documented_content_interpretation(visual, question)
     explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
     dynamic = (
-        funnel_stage or visual_comparison or entity_position or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
         if explicit_metrics else
-        funnel_stage or visual_comparison or entity_position or _documented_content_interpretation(visual, question) or _dynamic_visual_interpretation(page, visual, daily, encounters)
+        named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _dynamic_visual_interpretation(page, visual, daily, encounters)
     )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
@@ -1078,7 +1142,7 @@ def answer_visual_question(page, visual, question, daily, encounters):
     wants_action = forward_language and (improvement_word or wants_negative or asks_next_step)
     wants_focus = bool(tokens & {"focus", "important", "interest", "attention", "priority", "matter", "why", "care", "outlier"}) or {"stand", "out"}.issubset(tokens)
     wants_meaning = bool(tokens & {"tell", "mean", "explain", "summarize", "show", "happen", "understand", "interpret", "read"})
-    if visual_comparison or entity_position or funnel_stage:
+    if named_domain or visual_comparison or entity_position or funnel_stage:
         wants_meaning = True
         wants_focus = False
     # A broad what/how/why question about a selected visual should receive a

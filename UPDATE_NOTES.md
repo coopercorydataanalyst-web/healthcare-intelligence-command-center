@@ -99,6 +99,15 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 79. Standardized every rendered answer into explicit `What`, `When`, `Where`, `How`, and `Why` sections using the current filtered dates, hospitals, service lines, calculation, and documented interpretation.
 80. Added visible constraint enforcement: answers may use only visible filtered values and documented dashboard logic, with no outside knowledge, extrapolation, invented cause, or patient-care recommendation.
 81. Versioned the Q&A session state again so browser-cached pre-contract answers are cleared after deployment, and added regression checks for the required headings and both Q&A surfaces.
+82. Corrected Executive Health Score domain routing: `Why is access so low?` now resolves to the displayed Access domain rather than the Specialty Wait metric alias.
+83. Added domain-level explanations for Access, Workforce, Financial, Patient Flow, Quality & Safety, and Patient Experience, including the displayed domain score, rank, raw component values, normalized component scores, and exact aggregation.
+84. Added regression coverage for all six named domain questions and versioned session state to clear cached pre-fix answers after deployment.
+85. Promoted the visual catalog used by the Dashboard Intelligence Guide into a tested semantic contract covering every registered visual title, mapped metric alias, documented score/stage/field alias, calculation, callout, limitation, and action pathway.
+86. Added punctuation and wording-variation coverage for visual titles, including ampersand versus `and`, hyphenated versus spaced wording, and colon-free references.
+87. Added exhaustive metric-alias coverage across every visual where the metric appears, rather than testing only the first canonical alias.
+88. Added exhaustive documented-content alias coverage for modeled priority, exposure, funnel, ROI, governance, privacy, SPC, Pareto, PDSA, and other non-standard visible content.
+89. Corrected semantic precedence so an exact term documented for the selected visual wins over a broad cross-dashboard synonym. This prevents examples such as `financial exposure` on the Executive Priority Queue from being misrouted to Operating Margin.
+90. Added completeness assertions requiring every visual to have purpose, focus, action, callout, limitation, calculation, and either mapped metrics or documented content; versioned state clears cached pre-contract answers.
 
 ## Validation completed
 - Python syntax compilation: passed.

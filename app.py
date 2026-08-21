@@ -102,7 +102,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_STATE_VERSION = "grounded_qa_v5"
+APP_STATE_VERSION = "visual_semantic_contract_v7"
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
         if state_key == "visual_qa" or state_key.startswith(("visual_qa_", "context_visual_", "context_question_", "visual_suggestion_")):
