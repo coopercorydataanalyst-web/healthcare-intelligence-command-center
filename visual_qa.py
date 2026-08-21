@@ -73,6 +73,35 @@ VISUAL_SUGGESTIONS = (
 )
 
 
+NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
+    "nineteen": 19, "twenty": 20,
+}
+
+
+def requested_count(question, default=1):
+    """Extract a requested top/bottom result count without mistaking dates for counts."""
+    q = normalized_text(question)
+    ranking = r"(?:top|bottom|best|worst|highest|lowest|strongest|weakest)"
+    entity_numeric = re.search(r"\b(\d{1,2})\s+(?:months?|hospitals?|domains?|metrics?|measures?|service\s+lines?|payers?|barriers?|days?\b(?!\s+(?:readmission|mortality)))", q)
+    if entity_numeric:
+        return max(1, int(entity_numeric.group(1)))
+    numeric = re.search(rf"\b{ranking}\s+(\d{{1,2}})\b(?!\s+day\b)|\b(\d{{1,2}})\s+{ranking}\b", q)
+    if numeric:
+        return max(1, int(next(group for group in numeric.groups() if group)))
+    words = "|".join(NUMBER_WORDS)
+    word_match = re.search(rf"\b{ranking}\s+({words})\b|\b({words})\s+{ranking}\b", q)
+    if word_match:
+        return NUMBER_WORDS[next(group for group in word_match.groups() if group)]
+    entity_word = re.search(rf"\b({words})\s+(?:months?|hospitals?|domains?|metrics?|measures?|service\s+lines?|payers?|barriers?|days?\b(?!\s+(?:readmission|mortality)))", q)
+    if entity_word:
+        return NUMBER_WORDS[entity_word.group(1)]
+    return default
+
+
 def visual_options(page):
     return list(VISUALS.get(str(page).split(" ", 1)[0], {}).keys())
 
@@ -367,6 +396,7 @@ def _domain_aggregate_interpretation(visual, question, daily, encounters):
     displayed = {domain: round(score) for domain, score in scores.items()}
     wants_average = "average" in tokens
     wants_low = bool(tokens & {"low", "lowest", "bottom"})
+    count = requested_count(question)
     limitation = "These are modeled portfolio scores using illustrative thresholds, not validated benchmarks or causal measures."
     if wants_average:
         selected = named or list(scores)
@@ -388,10 +418,17 @@ def _domain_aggregate_interpretation(visual, question, daily, encounters):
     if not named:
         if _metrics_in(question) and "domain" not in tokens:
             return None
-        extreme = min(displayed.values()) if wants_low else max(displayed.values())
-        leaders = [domain for domain, value in displayed.items() if value == extreme]
+        count = min(requested_count(question), len(displayed))
+        ordered_domains = sorted(displayed.items(), key=lambda item: item[1], reverse=not wants_low)
+        cutoff = ordered_domains[count - 1][1]
+        leaders = [(domain, value) for domain, value in ordered_domains if (value <= cutoff if wants_low else value >= cutoff)]
         direction = "lowest" if wants_low else "highest"
-        answer = f"{' and '.join(leaders)} {'are tied for' if len(leaders) > 1 else 'is'} {direction} at {extreme}/100."
+        if count == 1 and len(leaders) == 1:
+            answer = f"{leaders[0][0]} is {direction} at {leaders[0][1]}/100."
+        elif count == 1:
+            answer = f"{' and '.join(domain for domain, _ in leaders)} are tied for {direction} at {leaders[0][1]}/100."
+        else:
+            answer = f"The requested {direction} {count} domains are: " + "; ".join(f"{rank}. {domain}: {value}/100" for rank, (domain, value) in enumerate(leaders, 1)) + "."
         detail = [f"{domain}: {displayed[domain]}/100" for domain in sorted(displayed, key=displayed.get, reverse=True)]
         return {
             "answer": answer + " Displayed domain scores: " + "; ".join(detail) + ".",
@@ -868,6 +905,7 @@ def _metric_group_ranking_interpretation(visual, spec, question, daily, encounte
         slicer = lambda group: (daily[daily.hospital == group], encounters[encounters.hospital == group])
     wants_average = "average" in tokens
     wants_low = bool(tokens & {"low", "lowest", "bottom"})
+    count = requested_count(question)
     rows, answers = [], []
     for metric in explicit:
         if group_label in {"service line", "payer", "discharge barrier"} and metric.key not in {"readmission", "deterioration", "harm", "followup", "los", "contribution"}:
@@ -888,12 +926,16 @@ def _metric_group_ranking_interpretation(visual, spec, question, daily, encounte
             scope = "named" if named_groups else "selected"
             answers.append(f"The average {metric.label} across the {scope} {group_label}s is {_format(average, metric.unit)}.")
         else:
-            extreme = min(value for _, value in selected_values) if wants_low else max(value for _, value in selected_values)
-            # Match ties at the precision the dashboard displays for the metric.
-            formatted_extreme = _format(extreme, metric.unit)
-            leaders = [name for name, value in selected_values if _format(value, metric.unit) == formatted_extreme]
+            ordered_all = sorted(selected_values, key=lambda item: item[1], reverse=not wants_low)
+            requested = ordered_all[:min(count, len(ordered_all))]
+            cutoff = _format(requested[-1][1], metric.unit)
+            # Preserve every tie at the requested cutoff using displayed precision.
+            leaders = [(name, value) for name, value in ordered_all if name in {item[0] for item in requested} or _format(value, metric.unit) == cutoff]
             direction = "lowest" if wants_low else "highest"
-            answers.append(f"{' and '.join(leaders)} {'are tied for' if len(leaders) > 1 else 'has'} the {direction} {metric.label} among the {group_label}s at {formatted_extreme}.")
+            ranked_text = "; ".join(f"{rank}. {name}: {_format(value, metric.unit)}" for rank, (name, value) in enumerate(leaders, 1))
+            requested_n = min(count, len(ordered_all))
+            tie_note = f" {len(leaders)} results are shown because a tie occurs at the requested cutoff." if len(leaders) > requested_n else ""
+            answers.append(f"The requested {direction} {requested_n} {group_label}{'s' if requested_n != 1 else ''} for {metric.label} {'are' if requested_n != 1 else 'is'}: {ranked_text}.{tie_note}")
         ordered = sorted(selected_values, key=lambda item: item[1], reverse=not wants_low)
         rows.append(f"{metric.label}: " + "; ".join(f"{name}: {_format(value, metric.unit)}" for name, value in ordered) + ".")
     if not answers:
@@ -1139,24 +1181,28 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
     highest_boarding = complete.loc[complete.boarding.idxmax()]
     lowest_contribution = complete.loc[complete.contribution.idxmin()]
     label = "worst" if asks_worst else "best"
+    count = min(requested_count(question), len(complete))
     asks_contribution = bool(tokens & {"contribution", "margin", "financial", "finance"})
     asks_boarding = "boarding" in tokens
     asks_balanced = bool(tokens & {"balance", "balanced", "overall", "combined"})
     if asks_contribution and not asks_balanced:
-        chosen = lowest_contribution if asks_worst else highest_contribution
-        title = f"{'Lowest' if asks_worst else 'Highest'} Operating Contribution Month"
-        answer = f"{chosen.date:%B %Y} had the {'lowest' if asks_worst else 'highest'} Operating Contribution among complete months at ${chosen.contribution:,.0f}."
+        selected = complete.sort_values("contribution", ascending=asks_worst).head(count)
+        title = f"{'Bottom' if asks_worst else 'Top'} {count} Operating Contribution Month{'s' if count != 1 else ''}"
+        listed = "; ".join(f"{rank}. {row.date:%B %Y}: ${row.contribution:,.0f}" for rank, row in enumerate(selected.itertuples(), 1))
+        answer = f"The requested {'lowest' if asks_worst else 'highest'} {count} complete month{'s are' if count != 1 else ' is'}: {listed}."
     elif asks_boarding and not asks_balanced:
-        chosen = highest_boarding if asks_worst else lowest_boarding
-        title = f"{'Highest' if asks_worst else 'Lowest'} ED Boarding Month"
-        answer = f"{chosen.date:%B %Y} had the {'highest' if asks_worst else 'lowest'} ED Boarding among complete months at {chosen.boarding:.2f} hours."
+        selected = complete.sort_values("boarding", ascending=not asks_worst).head(count)
+        title = f"{'Highest' if asks_worst else 'Lowest'} {count} ED Boarding Month{'s' if count != 1 else ''}"
+        listed = "; ".join(f"{rank}. {row.date:%B %Y}: {row.boarding:.2f} hours" for rank, row in enumerate(selected.itertuples(), 1))
+        answer = f"The requested {'highest' if asks_worst else 'lowest'} {count} complete month{'s are' if count != 1 else ' is'}: {listed}."
     else:
-        title = f"{label.title()} Balanced Month - Margin and Flow"
-        answer = (
-            f"Using an equal-weight balanced ranking of higher Operating Contribution and lower ED Boarding, "
-            f"{balanced.date:%B %Y} is the {label} complete month. It recorded ${balanced.contribution:,.0f} in Operating Contribution "
-            f"and {balanced.boarding:.2f} hours of ED Boarding."
+        selected = complete.sort_values("balanced_score", ascending=asks_worst).head(count)
+        title = f"{label.title()} {count} Balanced Month{'s' if count != 1 else ''} - Margin and Flow"
+        listed = "; ".join(
+            f"{rank}. {row.date:%B %Y}: ${row.contribution:,.0f} contribution and {row.boarding:.2f} boarding hours"
+            for rank, row in enumerate(selected.itertuples(), 1)
         )
+        answer = f"Using the equal-weight balanced ranking, the requested {label} {count} complete month{'s are' if count != 1 else ' is'}: {listed}."
     what_matters = [
         f"Highest Operating Contribution: {highest_contribution.date:%B %Y} at ${highest_contribution.contribution:,.0f}.",
         f"Lowest ED Boarding: {lowest_boarding.date:%B %Y} at {lowest_boarding.boarding:.2f} hours.",
@@ -1167,7 +1213,7 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
         partial_names = ", ".join(f"{row.date:%B %Y} ({int(row.covered_days)} days)" for row in partial.itertuples())
         what_matters.append(f"Excluded partial month(s) from ranking: {partial_names}.")
     why = (
-        f"{balanced.date:%B %Y} has the {label} equal-weight average percentile rank when monthly Operating Contribution is ranked higher-is-better "
+        f"The displayed order uses the {label} equal-weight average percentile ranks when monthly Operating Contribution is ranked higher-is-better "
         "and ED Boarding is ranked lower-is-better with equal weight. The separate contribution and boarding leaders are shown because "
         "'best' depends on which outcome leadership prioritizes."
     )
@@ -1193,21 +1239,23 @@ def _ambiguous_visual_question(visual, spec, question):
     """Return safe choices only when different interpretations change the answer."""
     tokens = flexible_tokens(question)
     if visual == "Margin and Flow Pressure by Month" and "month" in tokens:
+        count = requested_count(question)
+        month_phrase = f"{count} months" if count > 1 else "month"
         broad_best = bool(tokens & {"good", "bad", "best", "worst", "high", "low", "highest", "lowest"})
         has_outcome = bool(tokens & {"contribution", "margin", "financial", "finance", "boarding", "balance", "balanced", "overall", "combined"})
         if broad_best and not has_outcome:
             direction = "worst" if bool(tokens & {"bad", "worst", "low", "lowest"}) else "best"
             if direction == "best":
                 suggestions = [
-                    "Which month had the highest operating contribution?",
-                    "Which month had the lowest ED boarding?",
-                    "Which month had the best balance of operating contribution and ED boarding?",
+                    f"Which {month_phrase} had the highest operating contribution?",
+                    f"Which {month_phrase} had the lowest ED boarding?",
+                    f"Which {month_phrase} had the best balance of operating contribution and ED boarding?",
                 ]
             else:
                 suggestions = [
-                    "Which month had the lowest operating contribution?",
-                    "Which month had the highest ED boarding?",
-                    "Which month had the worst balance of operating contribution and ED boarding?",
+                    f"Which {month_phrase} had the lowest operating contribution?",
+                    f"Which {month_phrase} had the highest ED boarding?",
+                    f"Which {month_phrase} had the worst balance of operating contribution and ED boarding?",
                 ]
             return {
                 "answer": "That wording can mean different things on this visual. Choose the outcome that matches your decision so the dashboard does not guess.",
@@ -1224,6 +1272,8 @@ def _ambiguous_visual_question(visual, spec, question):
         if directional and not explicit and not names_hospital:
             wants_low = bool(tokens & {"bad", "low", "lowest", "bottom"})
             wants_average = "average" in tokens
+            count = requested_count(question)
+            hospital_phrase = f"{count} hospitals" if count > 1 else "hospital"
             suggestions = []
             for key in spec["metrics"]:
                 metric = _metric_by_key(key)
@@ -1233,7 +1283,7 @@ def _ambiguous_visual_question(visual, spec, question):
                     suggestions.append(f"What is the average {metric.label} across the selected hospitals?")
                 else:
                     direction = "lowest" if wants_low else "highest"
-                    suggestions.append(f"Which hospital has the {direction} {metric.label}?")
+                    suggestions.append(f"Which {hospital_phrase} {'have' if count > 1 else 'has'} the {direction} {metric.label}?")
                 if len(suggestions) == 3:
                     break
             if suggestions:

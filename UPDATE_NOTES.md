@@ -142,6 +142,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 122. Added exact four-domain averaging, all-six-domain improvement, and four-metric improvement regressions; advanced the build/state contract to `2026.08.20-v16-unbounded-named-items`.
 123. Added dashboard-wide bold-red emphasis for modeled scores below 80/100 in KPI cards and grounded Q&A answers, including supporting score callouts. Non-score measures retain their existing formatting because their units and favorable direction differ.
 124. Advanced the visible build/state contract to `2026.08.20-v17-low-score-emphasis` and added source-contract coverage for the score-emphasis renderer.
+125. Added a shared quantity-aware ranking parser for numeric and written counts. Monthly, domain, hospital, service-line, payer, barrier, and applicable day rankings now honor the requested top/bottom count rather than returning one result.
+126. Clarification choices preserve quantities such as `best two months`, and ranking ties at the requested cutoff are retained with an explicit tie note.
+127. Added exact `best two months`, top-two domain, top-two hospital, top-five service-line, every-visual top-two, and `30-Day Readmission` count-safety regressions; advanced the build/state contract to `2026.08.20-v18-quantity-aware-rankings`.
 
 ## Validation completed
 - Python syntax compilation: passed.

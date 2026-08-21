@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from qa_engine import METRICS
-from visual_qa import DOCUMENTED_CONTENT, DOCUMENTED_IMPROVEMENTS, VISUALS, answer_visual_question, resolve_visual, visual_options
+from visual_qa import DOCUMENTED_CONTENT, DOCUMENTED_IMPROVEMENTS, VISUALS, answer_visual_question, requested_count, resolve_visual, visual_options
 
 
 ROOT = Path(__file__).resolve().parent
@@ -458,25 +458,25 @@ def test_selected_month_interpretations_run_the_requested_calculation():
         "1 — CEO", "Margin and Flow Pressure by Month",
         "Which month had the highest operating contribution?", daily, encounters,
     )
-    assert "March 2025 had the highest Operating Contribution" in contribution["answer"]
+    assert "1. March 2025: $8,837,052" in contribution["answer"]
     assert "$8,837,052" in contribution["answer"]
-    assert contribution["display"]["title"] == "Highest Operating Contribution Month"
+    assert contribution["display"]["title"] == "Top 1 Operating Contribution Month"
 
     boarding = answer_visual_question(
         "1 — CEO", "Margin and Flow Pressure by Month",
         "Which month had the lowest ED boarding?", daily, encounters,
     )
-    assert "July 2026 had the lowest ED Boarding" in boarding["answer"]
+    assert "1. July 2026: 5.67 hours" in boarding["answer"]
     assert "5.67 hours" in boarding["answer"]
-    assert boarding["display"]["title"] == "Lowest ED Boarding Month"
+    assert boarding["display"]["title"] == "Lowest 1 ED Boarding Month"
 
     balanced = answer_visual_question(
         "1 — CEO", "Margin and Flow Pressure by Month",
         "Which month had the best balance of operating contribution and ED boarding?", daily, encounters,
     )
-    assert "January 2025 is the best complete month" in balanced["answer"]
+    assert "1. January 2025: $8,415,670 contribution and 5.85 boarding hours" in balanced["answer"]
     assert "August 2026 (7 days)" in balanced["answer"]
-    assert balanced["display"]["title"] == "Best Balanced Month - Margin and Flow"
+    assert balanced["display"]["title"] == "Best 1 Balanced Month - Margin and Flow"
     assert "equal-weight" in balanced["display"]["why"]
 
 
@@ -534,7 +534,7 @@ def test_metric_rankings_support_visual_group_dimensions_and_named_subsets():
         "5 — Readmission", "Readmission Risk by Service Line and Discharge Barrier",
         "Which service line has the highest readmission rate?", daily, encounters,
     )
-    assert "among the service lines" in service["answer"]
+    assert "highest 1 service line for 30-Day Readmission Rate" in service["answer"]
     assert "30-Day Readmission Rate" in service["answer"]
 
     named_hospitals = answer_visual_question(
@@ -626,3 +626,62 @@ def test_multi_measure_improvement_is_not_limited_to_three_items():
     for metric in ("Operating Margin", "ED Boarding", "RN Vacancy", "Patient Experience"):
         assert f"Improvement opportunity — {metric}" in result["answer"]
         assert metric in result["display"]["title"]
+
+
+def test_requested_result_counts_apply_to_month_domain_and_group_rankings():
+    ambiguous_months = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month", "What are my best two months?", daily, encounters,
+    )
+    assert ambiguous_months["evidence"] == "Validation Required — Clarification"
+    assert all("2 months" in suggestion for suggestion in ambiguous_months["suggestions"])
+
+    balanced_months = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "Which 2 months had the best balance of operating contribution and ED boarding?", daily, encounters,
+    )
+    assert "requested best 2 complete months" in balanced_months["answer"]
+    assert "1. January 2025" in balanced_months["answer"]
+    assert "2." in balanced_months["answer"]
+
+    top_domains = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain", "What are my top two domains?", daily, encounters,
+    )
+    assert "requested highest 2 domains" in top_domains["answer"]
+    assert "Financial: 90/100" in top_domains["answer"]
+    assert "Workforce: 90/100" in top_domains["answer"]
+
+    top_hospitals = answer_visual_question(
+        "2 — Flow", "Discharge Delay and ED Boarding",
+        "Which 2 hospitals have the highest ED boarding?", daily, encounters,
+    )
+    assert "requested highest 2 hospitals for ED Boarding" in top_hospitals["answer"]
+    assert "1." in top_hospitals["answer"] and "2." in top_hospitals["answer"]
+
+    top_services = answer_visual_question(
+        "5 — Readmission", "Readmission Risk by Service Line and Discharge Barrier",
+        "Which top five service lines have the highest readmission rate?", daily, encounters,
+    )
+    assert "requested highest 5 service lines" in top_services["answer"]
+    assert "5." in top_services["answer"]
+
+
+def test_every_metric_backed_visual_honors_a_requested_top_two_count():
+    by_key = {metric.key: metric for metric in METRICS}
+    for page, visuals in VISUALS.items():
+        for visual, spec in visuals.items():
+            metric = next((by_key[key] for key in spec.get("metrics", ()) if key in by_key), None)
+            if metric is None:
+                continue
+            result = answer_visual_question(
+                f"{page} — Sheet", visual,
+                f"Which 2 hospitals have the highest {metric.label}?", daily, encounters,
+            )
+            assert not result.get("suggestions"), (page, visual, result)
+            assert "highest 2 hospitals" in result["answer"], (page, visual, result["answer"])
+            assert "1." in result["answer"] and "2." in result["answer"], (page, visual, result["answer"])
+
+
+def test_result_count_parser_does_not_mistake_30_day_metric_name_for_thirty_results():
+    assert requested_count("Which hospital has the highest 30-Day Readmission Rate?") == 1
+    assert requested_count("Which 2 hospitals have the highest 30-Day Readmission Rate?") == 2
+    assert requested_count("Which two days have the highest ED boarding?") == 2
