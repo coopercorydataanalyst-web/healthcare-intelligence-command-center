@@ -18,7 +18,7 @@ def _v(purpose, focus, action, callout, limits, metrics=(), calculation="See the
 
 VISUALS = {
     "1": {
-        "Executive KPI Cards": _v("Summarizes current system performance, capacity, workforce, experience, and evidence readiness.", "Start with the lowest-performing domain and whether its movement is material versus the comparable period.", "Validate the underlying denominator and operating context, assign an accountable owner, and use a time-bounded improvement cycle.", "Scores and targets are illustrative portfolio constructs; stable displayed deltas are not described as directional changes.", "The Executive Health Score is not a validated clinical score or forecast.", ("margin", "bed_utilization", "boarding", "readmission", "rn_vacancy", "experience")),
+        "Executive KPI Cards": _v("Summarizes current system performance, capacity, workforce, experience, and evidence readiness.", "Start with the lowest-performing domain and whether its movement is material versus the comparable period.", "Validate the underlying denominator and operating context, assign an accountable owner, and use a time-bounded improvement cycle.", "Scores and targets are illustrative portfolio constructs; stable displayed deltas are not described as directional changes.", "The Executive Health Score is not a validated clinical score or forecast.", ("margin", "bed_utilization", "boarding", "readmission", "rn_vacancy", "agency_share", "experience")),
         "Executive Health Score by Domain": _v("Compares Quality & Safety, Patient Flow, Financial, Workforce, Access, and Patient Experience on a 0–100 modeled portfolio scale. A higher bar means the selected synthetic results are closer to the dashboard's illustrative target thresholds; a lower bar means a larger modeled performance gap to validate.", "The shortest bar is the largest modeled performance gap and deserves validation first.", "Review the component metrics behind the weakest domain before selecting an intervention.", "Quality, flow, finance, workforce, access, and experience use transparent illustrative weights and thresholds.", "Bars compare a modeled composite, not certified external benchmarks.", ("readmission", "mortality", "harm", "boarding", "bed_utilization", "discharge_delay", "margin", "denial_rate", "rn_vacancy", "overtime_share", "agency_share", "lwbs", "specialty_wait", "experience"), calculation="Weighted higher/lower-is-better component scores on a 0–100 illustrative scale."),
         "Margin and Flow Pressure by Month": _v("Shows monthly operating contribution beside an indexed ED-boarding pressure series.", "Look for months where contribution weakens while boarding pressure rises; treat this as a co-movement signal.", "Validate throughput timestamps, discharge constraints, staffing, volume, and payer mix before acting.", "Boarding is multiplied only to share a readable axis with dollars; it is not a dollar value.", "The dual-scale view does not establish that boarding caused margin movement.", ("margin", "boarding")),
         "Executive Priority Queue": _v("Ranks hospital-domain priorities by modeled severity and then modeled exposure.", "Priority #1 is the first validation target; review its owner, severity components, and exposure assumptions.", "Assign the listed executive owner, validate inputs, and move an approved response into a PDSA cycle.", "The orange #1 treatment identifies the highest current modeled portfolio priority.", "The queue is not a clinical risk score or validated forecast.", ("readmission", "mortality", "harm", "boarding", "bed_utilization", "discharge_delay", "margin", "denial_rate", "rn_vacancy", "overtime_share", "agency_share", "lwbs", "specialty_wait", "experience"), calculation="Severity descending; modeled exposure descending as tie-breaker."),
@@ -1377,6 +1377,116 @@ def _weakest_visual_metric(spec, daily, encounters):
     return _metric_by_key(spec.get("metrics", (None,))[0]) if spec.get("metrics") else None
 
 
+def _kpi_card_performance_interpretation(visual, question, daily, encounters):
+    """Rank unlike KPI cards safely on their disclosed normalized threshold scores."""
+    if visual != "Executive KPI Cards" or daily.empty:
+        return None
+    tokens = flexible_tokens(question)
+    q = normalized_text(question)
+    explicitly_asks_about_kpis = bool(re.search(r"\bkpis?\b|\bkey performance indicators?\b", q))
+    ranking_language = bool(tokens & {
+        "best", "strong", "strongest", "highest", "top", "lowest", "low", "weak",
+        "weakest", "worst", "bottom", "critical", "concern", "improve", "improvement",
+    }) or bool(re.search(r"\b(best|strongest|highest|top|lowest|weakest|worst|bottom|critical|improv\w*)\b", q))
+    if not explicitly_asks_about_kpis or not ranking_language:
+        return None
+    named_metrics = [
+        metric for metric in _metrics_in(question)
+        if metric.key in VISUALS["1"]["Executive KPI Cards"]["metrics"]
+    ]
+    if named_metrics and bool(re.search(r"\b(improve|improvement|better|fix)\b", q)):
+        # Preserve the existing metric-specific improvement response, which is
+        # more detailed than a portfolio ranking for explicitly named measures.
+        return None
+    rows = []
+    for key in VISUALS["1"]["Executive KPI Cards"]["metrics"]:
+        metric = _metric_by_key(key)
+        detail = METRIC_DETAIL.get(key, {})
+        if metric is None or not {"target", "bad", "direction"}.issubset(detail):
+            continue
+        value = _value(metric, daily, encounters)
+        if pd.isna(value):
+            continue
+        score = (
+            _higher_score(value, detail["target"], detail["bad"])
+            if detail["direction"] == "high"
+            else _lower_score(value, detail["target"], detail["bad"])
+        )
+        rows.append((metric, value, score))
+    if not rows:
+        return None
+
+    wants_improvement = bool(re.search(r"\b(improve|improvement|better|fix|action)\b", q))
+    wants_critical = bool(re.search(r"\b(critical|urgent|red flag|danger)\b", q))
+    wants_low = wants_critical or bool(re.search(r"\b(lowest|low|weak|weakest|worst|bottom|concern)\b", q))
+    count = min(requested_count(question, default=3), len(rows))
+    ordered = sorted(rows, key=lambda row: row[2], reverse=not wants_low)
+    selected = [row for row in ordered if row[0] in named_metrics] if named_metrics else ordered[:count]
+    if wants_critical:
+        critical = [row for row in rows if row[2] < 50]
+        if critical:
+            selected = sorted(critical, key=lambda row: row[2])
+        else:
+            selected = sorted(rows, key=lambda row: row[2])[:count]
+
+    def status(score):
+        if score < 50:
+            return "Critical"
+        if score < 80:
+            return "Needs attention"
+        return "Favorable"
+
+    matters = [
+        f"{rank}. {metric.label}: {_format(value, metric.unit)}; modeled performance score {score:.0f}/100; {status(score)}."
+        for rank, (metric, value, score) in enumerate(selected, 1)
+    ]
+    if wants_critical and not any(score < 50 for _, _, score in rows):
+        answer = "No operating KPI meets the dashboard's modeled critical threshold below 50/100. The least favorable KPIs are shown for attention."
+        title = "Critical KPI Review"
+    elif wants_improvement:
+        answer = "The improvement priorities are the named KPIs, or otherwise the three least favorable current KPI results, ranked on a common 0–100 threshold scale."
+        title = "KPI Improvement Priorities"
+    elif wants_low:
+        answer = f"The least favorable {len(selected)} operating KPI{'s' if len(selected) != 1 else ''} are ranked below using each metric's documented direction and thresholds."
+        title = "Lowest-Performing KPIs"
+    else:
+        answer = f"The strongest {len(selected)} operating KPI{'s' if len(selected) != 1 else ''} are ranked below using each metric's documented direction and thresholds."
+        title = "Best-Performing KPIs"
+
+    actions = []
+    if wants_improvement or wants_low or wants_critical:
+        for metric, _, _ in selected:
+            owner, validation, intervention = IMPROVEMENT_PATHS.get(
+                metric.key,
+                ("accountable operational executive", metric.calculation, "run a time-bounded improvement cycle"),
+            )
+            actions.append(
+                f"{metric.label}: assign the {owner}; validate {validation}; then {intervention}."
+            )
+    else:
+        actions = [
+            "Confirm that the favorable position persists by hospital, service line, and comparable period.",
+            "Use the modeled score for portfolio screening—not as a certified external benchmark.",
+        ]
+    limitation = (
+        "Raw KPI values use different units and cannot be ranked directly. This answer uses transparent illustrative threshold scores; "
+        "it does not establish cause, statistical significance, or patient-care guidance. Decision Integrity and the Executive Health Score "
+        "are separate governance/composite cards and are not mixed into the operating-KPI ranking."
+    )
+    return {
+        "answer": answer + " " + " ".join(matters),
+        "calculation": "For each operating KPI, map the current result to 0–100 between its documented favorable and unfavorable thresholds, honor higher- or lower-is-better direction, then rank the normalized scores.",
+        "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
+        "display": {
+            "title": title, "filters": _selected_filter_summary(daily, encounters),
+            "answer": answer, "what_matters": matters, "actions": actions,
+            "action_heading": "What Leadership Should Do" if actions else "What Leadership Should Know",
+            "why": "The ranking compares each KPI with its own disclosed favorable and unfavorable thresholds, avoiding invalid comparisons of percentages, hours, rates, counts, and composite scores.",
+            "limitation": limitation,
+        },
+    }
+
+
 def _metric_improvement(metric, daily, encounters, visual=None):
     value = _value(metric, daily, encounters)
     if pd.isna(value):
@@ -1631,7 +1741,8 @@ def answer_visual_question(page, visual, question, daily, encounters):
     q = re.sub(r"[^a-z0-9]+", " ", str(question).lower()).strip()
     if not q:
         return {"answer": "Enter a question about the selected visual.", "evidence": "Validation Required", "calculation": "No calculation run.", "limitation": "Try asking what the visual means, what to focus on, what its callouts mean, or what may improve the result.", "resolved_visual": visual, "selection_note": selection_note}
-    ambiguity = _ambiguous_visual_question(visual, spec, question)
+    kpi_performance = _kpi_card_performance_interpretation(visual, question, daily, encounters)
+    ambiguity = None if kpi_performance else _ambiguous_visual_question(visual, spec, question)
     if ambiguity:
         ambiguity.update({"resolved_visual": visual, "selection_note": selection_note})
         return ambiguity
@@ -1647,9 +1758,9 @@ def answer_visual_question(page, visual, question, daily, encounters):
     documented_content = _documented_content_interpretation(visual, question)
     explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
     dynamic = (
-        monthly_margin_flow or domain_aggregate or domain_action or named_domain or metric_ranking or funnel_stage or visual_comparison or entity_position or documented_content or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        kpi_performance or monthly_margin_flow or domain_aggregate or domain_action or named_domain or metric_ranking or funnel_stage or visual_comparison or entity_position or documented_content or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
         if explicit_metrics else
-        monthly_margin_flow or domain_aggregate or domain_action or named_domain or metric_ranking or funnel_stage or visual_comparison or entity_position or documented_content or _dynamic_visual_interpretation(page, visual, daily, encounters)
+        kpi_performance or monthly_margin_flow or domain_aggregate or domain_action or named_domain or metric_ranking or funnel_stage or visual_comparison or entity_position or documented_content or _dynamic_visual_interpretation(page, visual, daily, encounters)
     )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
@@ -1663,13 +1774,17 @@ def answer_visual_question(page, visual, question, daily, encounters):
     wants_action = forward_language and (improvement_word or wants_negative or asks_next_step)
     wants_focus = bool(tokens & {"focus", "important", "interest", "attention", "priority", "matter", "why", "care", "outlier"}) or {"stand", "out"}.issubset(tokens)
     wants_meaning = bool(tokens & {"tell", "mean", "explain", "summarize", "show", "happen", "understand", "interpret", "read"})
-    if domain_aggregate or domain_action or named_domain or metric_ranking or visual_comparison or entity_position or funnel_stage or monthly_margin_flow:
+    if kpi_performance or domain_aggregate or domain_action or named_domain or metric_ranking or visual_comparison or entity_position or funnel_stage or monthly_margin_flow:
         wants_meaning = True
         wants_focus = False
     if monthly_margin_flow:
         # A month ranking is distinct from a recent movement summary.
         wants_positive = False
         wants_negative = False
+    if kpi_performance:
+        wants_positive = False
+        wants_negative = False
+        wants_action = False
     if domain_action:
         wants_action = False
     # A broad what/how/why question about a selected visual should receive a

@@ -106,7 +106,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v21-entity-aware-dialog"
+APP_BUILD = "2026.08.20-v22-kpi-performance-intents"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):

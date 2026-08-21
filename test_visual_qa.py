@@ -195,6 +195,35 @@ def test_named_kpi_inside_visual_gets_granular_data_aware_explanation():
     assert "Operating Margin:" not in result["answer"]
 
 
+def test_kpi_card_best_lowest_critical_and_improvement_intents_use_threshold_rankings():
+    best = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards", "Which KPIs are the best?", daily, encounters,
+    )
+    assert best["display"]["title"] == "Best-Performing KPIs"
+    assert "modeled performance score" in best["answer"]
+    assert "Positive movement" not in best["answer"]
+    assert "different units and cannot be ranked directly" in best["limitation"]
+
+    lowest = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards", "What are the lowest KPIs?", daily, encounters,
+    )
+    assert lowest["display"]["title"] == "Lowest-Performing KPIs"
+    assert "Patient Experience" in lowest["answer"]
+    assert lowest["display"]["actions"]
+
+    critical = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards", "Which KPI is critical?", daily, encounters,
+    )
+    assert critical["display"]["title"] == "Critical KPI Review"
+    assert "modeled critical threshold" in critical["answer"]
+
+    improve = answer_visual_question(
+        "1 — CEO", "Executive KPI Cards", "How can I improve these KPIs?", daily, encounters,
+    )
+    assert improve["display"]["title"] == "KPI Improvement Priorities"
+    assert any("assign the" in action.lower() for action in improve["display"]["actions"])
+
+
 def test_other_named_kpi_inside_visual_uses_its_own_definition():
     result = answer_visual_question(
         "1 — CEO", "Executive KPI Cards",
