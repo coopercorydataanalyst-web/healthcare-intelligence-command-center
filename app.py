@@ -106,7 +106,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v22-kpi-performance-intents"
+APP_BUILD = "2026.08.20-v23-continuous-visual-qa"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -986,10 +986,10 @@ def show_visual_clarification(page_name, visual_name, pending_result, filtered_d
             "page": page_name, "visual": visual_name,
             "question": visual_choice, "result": answered_result,
         }
+        st.session_state[f"context_question_override_{page_name.split(' —')[0]}"] = visual_choice
         st.rerun()
     if st.button("Return to My Question", key=f"cancel_visual_dialog_{page_name.split(' —')[0]}"):
         st.session_state.pop("visual_qa_result", None)
-        st.session_state.pop(f"context_question_{page_name.split(' —')[0]}", None)
         st.rerun()
 
 
@@ -1009,6 +1009,14 @@ if not page.startswith("15 —"):
                     contextual_options,
                     key=f"context_visual_{page.split(' —')[0]}",
                 )
+                page_prefix = page.split(" —")[0]
+                question_key = f"context_question_{page_prefix}"
+                question_override_key = f"context_question_override_{page_prefix}"
+                question_clear_key = f"context_question_clear_{page_prefix}"
+                if st.session_state.pop(question_clear_key, False):
+                    st.session_state[question_key] = ""
+                if question_override_key in st.session_state:
+                    st.session_state[question_key] = st.session_state.pop(question_override_key)
                 saved_visual_result = st.session_state.get("visual_qa_result")
                 if not isinstance(saved_visual_result, dict):
                     st.session_state.pop("visual_qa_result", None)
@@ -1019,44 +1027,38 @@ if not page.startswith("15 —"):
                     and saved_visual_result.get("visual") == selected_visual
                 )
 
-                if not has_current_visual_result:
-                    with st.form(f"context_question_form_{page.split(' —')[0]}"):
-                        visual_question = st.text_input(
-                            "Ask about the selected visual",
-                            placeholder="What is this visual telling me, and what should I focus on?",
-                            key=f"context_question_{page.split(' —')[0]}",
+                with st.form(f"context_question_form_{page_prefix}"):
+                    visual_question = st.text_input(
+                        "Ask about the selected visual",
+                        placeholder="Ask a question or type a follow-up…",
+                        key=question_key,
+                    )
+                    ask_col, clear_col = st.columns([1, 1])
+                    with ask_col:
+                        visual_submitted = st.form_submit_button("Ask", **STRETCH_BUTTON)
+                    with clear_col:
+                        visual_cleared = st.form_submit_button(
+                            "Clear",
+                            **STRETCH_BUTTON,
                         )
-                        visual_submitted = st.form_submit_button("Ask About This Visual")
-                    if visual_submitted:
-                        visual_result = answer_visual_question(page, selected_visual, visual_question, fd, fe)
-                        saved_visual_result = {
-                            "page": page, "visual": selected_visual,
-                            "question": visual_question, "result": visual_result,
-                        }
-                        st.session_state["visual_qa_result"] = saved_visual_result
-                        st.rerun()
-                else:
+                if visual_cleared:
+                    st.session_state.pop("visual_qa_result", None)
+                    st.session_state.pop(f"visual_dialog_choice_{page_prefix}", None)
+                    st.session_state[question_clear_key] = True
+                    st.rerun()
+                if visual_submitted:
+                    visual_result = answer_visual_question(page, selected_visual, visual_question, fd, fe)
+                    st.session_state["visual_qa_result"] = {
+                        "page": page, "visual": selected_visual,
+                        "question": visual_question, "result": visual_result,
+                    }
+                    st.rerun()
+
+                if has_current_visual_result:
                     visual_result = saved_visual_result["result"]
                     if visual_result.get("suggestions"):
-                        st.text_input(
-                            "Your question",
-                            value=saved_visual_result["question"],
-                            disabled=True,
-                            key=f"pending_visual_question_{page.split(' —')[0]}",
-                        )
                         show_visual_clarification(page, selected_visual, saved_visual_result, fd, fe)
                     else:
-                        st.text_input(
-                            "Selected question",
-                            value=saved_visual_result["question"],
-                            disabled=True,
-                            key=f"answered_visual_question_{page.split(' —')[0]}",
-                        )
-                        if st.button("Ask Another Question", key=f"clear_visual_answer_{page.split(' —')[0]}"):
-                            st.session_state.pop("visual_qa_result", None)
-                            st.session_state.pop(f"context_question_{page.split(' —')[0]}", None)
-                            st.session_state.pop(f"answered_visual_question_{page.split(' —')[0]}", None)
-                            st.rerun()
                         resolved_visual = visual_result.get("resolved_visual", selected_visual)
                         st.markdown(f"**{resolved_visual}**")
                         if visual_result.get("selection_note"):
