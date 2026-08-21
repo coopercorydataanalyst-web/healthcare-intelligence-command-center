@@ -145,6 +145,22 @@ def test_every_named_executive_domain_has_domain_level_explanation():
         assert result.get("display"), domain
 
 
+def test_multi_domain_question_answers_every_named_domain_and_compares_them():
+    result = answer_visual_question(
+        "1 — CEO", "Executive Health Score by Domain",
+        "why is access and patient experience so low", daily, encounters,
+    )
+    assert "displayed Access domain score is 77/100" in result["answer"]
+    assert "displayed Patient Experience domain score is 63/100" in result["answer"]
+    assert "Access - Left Without Being Seen: 3.4%" in result["answer"]
+    assert "Access - Specialty Wait: 12.5 days" in result["answer"]
+    assert "Patient Experience - Patient Experience: 76.8%" in result["answer"]
+    assert "Access is 14 points higher than Patient Experience" in result["display"]["why"]
+    assert result["display"]["title"] == "Access vs. Patient Experience - Why These Scores Are Low"
+    assert "Access = unweighted mean" in result["calculation"]
+    assert "Patient Experience = unweighted mean" in result["calculation"]
+
+
 def test_generic_this_visual_keeps_dropdown_selection():
     resolved, _ = resolve_visual("1 — CEO", "Executive KPI Cards", "what is this visual telling me")
     assert resolved == "Executive KPI Cards"

@@ -259,45 +259,57 @@ def _named_domain_interpretation(visual, question, daily, encounters):
         "Access": ("access",),
         "Patient Experience": ("patient experience",),
     }
-    domain = next((name for name, names in aliases.items() if any(alias in q for alias in names)), None)
-    if domain is None:
+    named_domains = [name for name, names in aliases.items() if any(alias in q for alias in names)]
+    if not named_domains:
         return None
     _, components, scores = _executive_domain_snapshot(daily, encounters)
     if scores is None:
         return None
     ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
-    rank = next(index for index, item in enumerate(ranked, 1) if item[0] == domain)
-    score = scores[domain]
-    component_rows = [
-        f"{label}: {_format(value, unit)}; modeled component score {component_score:.0f}/100."
-        for label, value, unit, component_score in components[domain]
-    ]
-    position = "highest" if rank == 1 else "lowest" if rank == len(ranked) else f"ranked {rank} of {len(ranked)}"
-    component_average = sum(item[3] for item in components[domain]) / len(components[domain])
-    higher_domains = [f"{name} ({value:.0f})" for name, value in ranked if value > score]
-    lower_domains = [f"{name} ({value:.0f})" for name, value in ranked if value < score]
-    why = (
-        f"{domain} has this displayed position because its component scores average to {component_average:.1f}, which rounds to {score:.0f}/100. "
-        + (f"Domains scoring higher are {', '.join(higher_domains)}. " if higher_domains else "No selected domain scores higher. ")
-        + (f"Domains scoring lower are {', '.join(lower_domains)}." if lower_domains else "No selected domain scores lower.")
-    )
-    answer = (
-        f"The displayed {domain} domain score is {score:.0f}/100 and is {position}. "
-        f"It is the unweighted average of {len(component_rows)} normalized component score{'s' if len(component_rows) != 1 else ''}. "
-        "Its position is explained mathematically by those component scores; the chart does not establish the operational cause."
-    )
+    details = []
+    for domain in named_domains:
+        rank = next(index for index, item in enumerate(ranked, 1) if item[0] == domain)
+        score = scores[domain]
+        component_rows = [
+            f"{domain} - {label}: {_format(value, unit)}; modeled component score {component_score:.0f}/100."
+            for label, value, unit, component_score in components[domain]
+        ]
+        position = "highest" if rank == 1 else "lowest" if rank == len(ranked) else f"ranked {rank} of {len(ranked)}"
+        component_average = sum(item[3] for item in components[domain]) / len(components[domain])
+        higher_domains = [f"{name} ({value:.0f})" for name, value in ranked if value > score]
+        lower_domains = [f"{name} ({value:.0f})" for name, value in ranked if value < score]
+        domain_why = (
+            f"{domain} has this displayed position because its component scores average to {component_average:.1f}, which rounds to {score:.0f}/100. "
+            + (f"Domains scoring higher are {', '.join(higher_domains)}. " if higher_domains else "No selected domain scores higher. ")
+            + (f"Domains scoring lower are {', '.join(lower_domains)}." if lower_domains else "No selected domain scores lower.")
+        )
+        domain_answer = (
+            f"The displayed {domain} domain score is {score:.0f}/100 and is {position}. It is the unweighted average of "
+            f"{len(component_rows)} normalized component score{'s' if len(component_rows) != 1 else ''}."
+        )
+        calculation = f"{domain} = unweighted mean of " + " + ".join(item[0] for item in components[domain]) + "."
+        details.append({"domain": domain, "score": score, "answer": domain_answer, "components": component_rows, "why": domain_why, "calculation": calculation})
+
+    answer = " ".join(item["answer"] for item in details)
+    component_rows = [row for item in details for row in item["components"]]
+    why = " ".join(item["why"] for item in details)
+    if len(details) > 1:
+        high = max(details, key=lambda item: item["score"])
+        low = min(details, key=lambda item: item["score"])
+        why += f" Among the named domains, {high['domain']} is {high['score'] - low['score']:.0f} points higher than {low['domain']}."
+    domain_label = " and ".join(item["domain"] for item in details)
     actions = [
         "Validate the component definitions, denominators, and selected-period completeness.",
-        f"Review the underlying {domain} measures by hospital, service line, month, and operating context.",
-        "Investigate the least favorable component first while monitoring the other component measures as guardrails.",
+        f"Review the underlying {domain_label} measures by hospital, service line, month, and operating context.",
+        "Investigate the least favorable component within each named domain while monitoring the other components as guardrails.",
     ]
     limitation = "This is a modeled portfolio domain score using illustrative thresholds. It is not a validated benchmark, causal model, or patient-care measure."
     return {
         "answer": answer + " " + " ".join(component_rows),
-        "calculation": f"{domain} domain score = unweighted mean of its normalized 0-100 component scores: " + " + ".join(item[0] for item in components[domain]) + ".",
+        "calculation": " ".join(item["calculation"] for item in details),
         "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
         "display": {
-            "title": f"{domain} Domain - Why It Has This Score", "filters": _selected_filter_summary(daily, encounters),
+            "title": (f"{details[0]['domain']} Domain - Why It Has This Score" if len(details) == 1 else f"{' vs. '.join(item['domain'] for item in details)} - Why These Scores Are Low"),
             "answer": answer, "what_matters": component_rows, "why": why, "actions": actions,
             "action_heading": "What Leadership Should Validate", "limitation": limitation,
         },

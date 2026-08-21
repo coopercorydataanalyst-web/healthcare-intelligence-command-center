@@ -115,6 +115,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 95. Added domain-specific Why logic: Executive Health Score answers now show the precise component-score average, rounded displayed score, and domains ranked above and below the named domain.
 96. Kept causal and patient-care warnings in the limitation rather than using them as a substitute for the requested Why explanation.
 97. Advanced the visible build and state contract to `2026.08.20-v9-evidence-based-why` and added exact regression coverage for the Access arithmetic and peer-domain comparison.
+98. Added multi-domain Executive Health Score interpretation. A single question may name any combination of Quality & Safety, Patient Flow, Financial, Workforce, Access, and Patient Experience without dropping later domains.
+99. Multi-domain answers now return each named displayed score, rank, raw component values, normalized component scores, exact domain calculation, peer-domain position, and point difference between the named domains.
+100. Added exact regression coverage for `Why is Access and Patient Experience so low?` and advanced the visible build/state contract to `2026.08.20-v10-multi-domain-why`.
 
 ## Validation completed
 - Python syntax compilation: passed.
