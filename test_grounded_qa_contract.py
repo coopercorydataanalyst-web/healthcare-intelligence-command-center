@@ -20,7 +20,7 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
 
 
 def test_build_version_and_clear_answer_controls_are_visible():
-    assert 'APP_BUILD = "2026.08.20-v23-continuous-visual-qa"' in APP
+    assert 'APP_BUILD = "2026.08.20-v24-census-forecast-and-correctness"' in APP
     assert "Dashboard build: {APP_BUILD}" in APP
 
 

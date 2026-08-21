@@ -25,7 +25,7 @@ The first two analysis sheets are designed as operating command centers rather t
    - Modeled patient-flow funnel
    - What-if bed-day release scenario
 
-The application contains 15 analysis sheets in total, including dedicated demonstrations of:
+The application contains 16 analysis sheets in total, including dedicated demonstrations of:
 
 - Clinical deterioration and rescue surveillance
 - Preventable harm and modeled financial exposure
@@ -40,6 +40,15 @@ The application contains 15 analysis sheets in total, including dedicated demons
 - CIPP-informed privacy governance and responsible analytics
 - CPHQ-informed statistical process control, Pareto prioritization, PDSA learning cycles, and reliability management
 - **Ask GulfStar Intelligence**, a deterministic natural-language Q&A layer over the active dashboard filters
+- **Census Forecasting & Model Validation**, a real offline Ridge forecasting model with time-aware backtesting and prediction intervals
+
+## Census forecasting ML
+
+Analysis Sheet 16 forecasts synthetic hospital census 30 days ahead for capacity and staffing scenario planning. The committed model is a Ridge regression using hospital and weekday indicators, time trend, annual terms, census lags at 1/7/14/28 days, and trailing 7/28-day means. It is trained offline from `data/daily_operations.csv.gz`; Streamlit loads the committed artifact and never retrains during an end-user session.
+
+Validation uses six rolling-origin folds with a 30-day recursive horizon—never a random time-series split. Ridge achieved **6.23 beds MAE**, compared with **8.48 beds** for the seven-day seasonal-naive baseline and **6.26 beds** for gradient boosting. That is a **26.6% improvement over the seasonal baseline**, with Ridge retained because the simpler model performed best. A held-out split-conformal calibration window supplies 90% prediction intervals and achieved 91.1% empirical coverage on the calibration period.
+
+Rebuild the committed artifacts with `python ml/train_census_forecast.py`. The model, backtest predictions, 30-day forecast, metrics, and model card are stored in `ml/artifacts/`. These are synthetic-data validation results, not evidence of performance on a real health system; prospective external validation is required before operational use.
 
 ## Ask GulfStar Intelligence
 
@@ -58,7 +67,7 @@ Hospital and date filters apply to all Q&A results. The service-line filter appl
 
 ### Contextual visual Q&A on every sheet
 
-Each of the 14 analytical sheets now includes a floating **Ask this visual** control. It remains fixed at the bottom center while the dashboard scrolls, avoiding Streamlit Cloud's lower-right management badge. The closed state is a small pill that does not interrupt the page layout; clicking it opens a compact, independently scrollable popover. The user selects the visual or section currently in view and can immediately ask:
+Each analytical sheet, including the forecast-validation sheet, includes a floating **Ask this visual** control. It remains fixed at the bottom center while the dashboard scrolls, avoiding Streamlit Cloud's lower-right management badge. The closed state is a small pill that does not interrupt the page layout; clicking it opens a compact, independently scrollable popover. The user selects the visual or section currently in view and can immediately ask:
 
 - What is this visual telling me?
 - What happened on this visual?

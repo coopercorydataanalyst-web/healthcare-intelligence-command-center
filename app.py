@@ -9,6 +9,7 @@ import streamlit as st
 
 from qa_engine import answer_question
 from service_line_ops import allocate_service_lines, rollup_selected_service_lines, service_filter_is_complete
+from ml.census_forecast import load_forecast_artifacts
 from visual_qa import answer_visual_question, visual_options
 
 ROOT = Path(__file__).resolve().parent
@@ -37,6 +38,7 @@ NAV = [
     "13 — Privacy, Ethics & Responsible Analytics (CIPP)",
     "14 — Quality Improvement & Reliability Lab (CPHQ)",
     "15 — Ask GulfStar Intelligence",
+    "16 — Census Forecasting & Model Validation",
 ]
 
 CSS = """
@@ -97,7 +99,11 @@ st.markdown(CSS, unsafe_allow_html=True)
 @st.cache_data
 def load():
     d = pd.read_csv(DATA / "daily_operations.csv.gz", parse_dates=["date"])
-    e = pd.read_csv(DATA / "synthetic_encounters.csv.gz", parse_dates=["admit_date", "discharge_date"])
+    e = pd.read_csv(
+        DATA / "synthetic_encounters.csv.gz",
+        parse_dates=["admit_date", "discharge_date"],
+        keep_default_na=False,
+    )
     p = pd.read_csv(DATA / "privacy_events.csv", parse_dates=["date"])
     return d, e, p, pd.read_csv(DATA / "interventions.csv"), pd.read_csv(DATA / "source_registry.csv")
 
@@ -106,7 +112,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v23-continuous-visual-qa"
+APP_BUILD = "2026.08.20-v24-census-forecast-and-correctness"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -121,6 +127,11 @@ if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
 @st.cache_data
 def service_line_daily(daily):
     return allocate_service_lines(daily)
+
+
+@st.cache_resource
+def census_forecast_artifacts():
+    return load_forecast_artifacts(ROOT)
 
 
 service_daily = service_line_daily(d)
@@ -847,7 +858,7 @@ elif page.startswith("14 —"):
         table(pd.DataFrame([["Plan","Define aim, population, measure, prediction"],["Do","Test on small scale; document deviations"],["Study","Compare result with prediction; examine variation"],["Act","Adopt, adapt, or abandon; define next cycle"]],columns=["phase","evidence_required"]))
     callout("Quality Action","Treat points beyond limits as investigation signals, not proof of performance failure. Confirm denominator stability, coding changes, seasonality, and workflow context before intervention.")
 
-else:
+elif page.startswith("15 —"):
     hero(
         "Ask GulfStar Intelligence",
         "Ask plain-language questions of the currently filtered synthetic data using a deterministic, auditable local query layer—no external LLM or API key."
@@ -944,6 +955,71 @@ else:
 
     st.caption(
         "Synthetic data only • No PHI • Not patient-care decision support • Descriptive and modeled outputs require validation before operational use"
+    )
+
+else:
+    hero(
+        "Census Forecasting & Model Validation",
+        "A validated 30-day synthetic census forecast for capacity and staffing scenario planning, trained offline with time-aware backtesting.",
+    )
+    evidence()
+    _, forecast_metrics, forecast = census_forecast_artifacts()
+    selected_share = sum(float(fd_allocated.loc[fd_allocated.service_line == name, "service_weight"].iloc[0]) for name in services)
+    selected_forecast = forecast[forecast.hospital.isin(hospitals)].copy()
+    for column in ("predicted_census", "lower_90", "upper_90"):
+        selected_forecast[column] *= selected_share
+    system_forecast = selected_forecast.groupby("date", as_index=False)[["predicted_census", "lower_90", "upper_90"]].sum()
+    next_day = system_forecast.iloc[0]
+    peak = system_forecast.loc[system_forecast.predicted_census.idxmax()]
+
+    cards([
+        ("Validated Ridge MAE", f"{forecast_metrics['ridge_mae']:.2f} beds", "Six rolling-origin folds"),
+        ("Seasonal Baseline MAE", f"{forecast_metrics['seasonal_naive_7_mae']:.2f} beds", "Seven-day naive baseline"),
+        ("Baseline Improvement", f"{forecast_metrics['ridge_improvement_vs_seasonal_pct']:.1f}%", "Lower mean absolute error"),
+        ("90% Interval Coverage", f"{100 * forecast_metrics['calibration_empirical_coverage']:.1f}%", "Held-out calibration window"),
+    ])
+    cards([
+        ("Next-Day Forecast", f"{next_day.predicted_census:,.0f} beds", f"{next_day.date:%b %d, %Y}"),
+        ("Forecast Peak", f"{peak.predicted_census:,.0f} beds", f"{peak.date:%b %d, %Y}"),
+        ("Forecast Horizon", "30 days", "Recursive daily forecast"),
+        ("Selected Model", forecast_metrics["model_selected"], "Simpler model beat gradient boosting"),
+    ])
+
+    observed = fd.groupby("date", as_index=False).census.sum().tail(60)
+    figure = go.Figure()
+    figure.add_scatter(x=observed.date, y=observed.census, name="Observed Census", mode="lines", line=dict(color="#082f49", width=3))
+    figure.add_scatter(x=system_forecast.date, y=system_forecast.upper_90, mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip")
+    figure.add_scatter(x=system_forecast.date, y=system_forecast.lower_90, name="90% Prediction Interval", mode="lines", line=dict(width=0), fill="tonexty", fillcolor="rgba(3,105,161,.18)")
+    figure.add_scatter(x=system_forecast.date, y=system_forecast.predicted_census, name="Ridge Forecast", mode="lines+markers", line=dict(color="#0f766e", width=3))
+    figure.update_layout(title="30-Day Census Forecast", xaxis_title="Date", yaxis_title="Census Beds", hovermode="x unified")
+    plot(figure)
+    st.caption("Service-line selections apply the dashboard's documented modeled allocation to the hospital-level census forecast; all service lines reconcile to the original hospital totals.")
+
+    comparison = pd.DataFrame({
+        "Model": ["Naive Last Value", "Seasonal Naive (7-Day)", "Gradient Boosting", "Ridge"],
+        "MAE (Beds)": [forecast_metrics["naive_last_mae"], forecast_metrics["seasonal_naive_7_mae"], forecast_metrics["gradient_boosting_mae"], forecast_metrics["ridge_mae"]],
+    }).sort_values("MAE (Beds)")
+    c1, c2 = st.columns([1.1, 1])
+    with c1:
+        plot(px.bar(comparison, x="MAE (Beds)", y="Model", orientation="h", title="Forecast Model Validation — Lower Is Better", color="MAE (Beds)", color_continuous_scale="Tealgrn_r"))
+    with c2:
+        st.subheader("Model Card")
+        table(pd.DataFrame([
+            ["Intended use", "Capacity and staffing scenario planning"],
+            ["Target", "Next-day hospital census, forecast recursively for 30 days"],
+            ["Features", "Hospital, weekday, trend, annual terms, lags 1/7/14/28, trailing means 7/28"],
+            ["Validation", "6 rolling-origin folds; 30-day horizon; no random split"],
+            ["Uncertainty", "90% split-conformal interval from a held-out 30-day window"],
+            ["Guardrail", "Synthetic data only; external validation required; not patient-care decision support"],
+        ], columns=["Model Card Field", "Documentation"]))
+    st.subheader("Daily Forecast")
+    daily_forecast = system_forecast.rename(columns={"predicted_census": "forecast_beds", "lower_90": "lower_90_beds", "upper_90": "upper_90_beds"}).copy()
+    daily_forecast["date"] = daily_forecast.date.dt.strftime("%b %d, %Y")
+    table(daily_forecast)
+    callout(
+        "Model Limitation",
+        "The forecast is trained on synthetic portfolio data and excludes acuity, scheduled procedures, closures, weather, outbreaks, and actual staffing constraints. Use it as a planning signal only and validate it prospectively before operational use.",
+        "warning",
     )
 
 def _fallback_dialog(title):

@@ -91,7 +91,8 @@ def _metrics_in(question):
     found = []
     for metric in METRICS:
         if any(
-            _norm(alias) in q or flexible_tokens(alias).issubset(question_tokens)
+            re.search(rf"\b{re.escape(_norm(alias))}\b", q)
+            or (len(_norm(alias)) >= 4 and flexible_tokens(alias).issubset(question_tokens))
             for alias in metric.aliases
         ):
             found.append(metric)
@@ -249,9 +250,9 @@ def _dashboard_overview(daily, encounters):
     else:
         scope = "The current filters contain no operational rows."
     answer = (
-        "GulfStar Intelligence is a 15-sheet executive healthcare analytics dashboard for a fictional three-hospital system. "
+        "GulfStar Intelligence is a 16-sheet executive healthcare analytics dashboard for a fictional three-hospital system. "
         "It connects clinical quality, patient flow and staffed capacity, workforce, access, patient experience, margin and denials, "
-        "OR utilization, equity, privacy, quality improvement, and modeled intervention ROI. Its Ask GulfStar page uses a deterministic "
+        "OR utilization, equity, privacy, quality improvement, modeled intervention ROI, and validated census forecasting. Its Ask GulfStar page uses a deterministic "
         "local query layer—not a generative LLM—so it answers only supported questions with predefined calculations and refuses to guess. "
         + scope
     )
@@ -398,8 +399,9 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
         return _response(f"{requested_hospital} is excluded by the current Hospital filter.", "No calculation run.", "Validation Required", "Add that hospital to the global filter or ask about one of the currently selected hospitals.")
     named_hospital = requested_hospital
 
+    metrics = _metrics_in(question)
     executive_intent = _summary_intent(question)
-    if executive_intent:
+    if executive_intent and not metrics:
         return _executive_trends(question, executive_intent, daily, encounters, priority)
 
     if any(term in q for term in ("intervention", "roi", "return on investment")):
@@ -416,11 +418,12 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
         shown = ranked[["intervention", "domain", "annual_cost", "annual_value", "net_value", "roi", "capacity_days", "confidence"]].copy()
         return _response(answer, "ROI = (modeled annual value - annual cost) / annual cost; interventions are not changed by hospital, service-line, or date filters.", "Modeled Estimate", "Scenario inputs are illustrative and benefits are not guaranteed; validate costs, attribution, feasibility, and realized outcomes.", shown)
 
-    if ("top priority" in q or "highest priority" in q or "modeled exposure" in q or "financial exposure" in q or ("why" in q and "priority" in q)):
+    priority_intent = bool(re.search(r"\b(?:top|highest)(?: executive)? priority\b", q))
+    if (priority_intent or "modeled exposure" in q or "financial exposure" in q or ("why" in q and "priority" in q)):
         if priority.empty:
             return _response("No priority score is available for the current filters.", "No calculation run.", "Modeled Estimate")
         row = priority.iloc[0]
-        exposure_only = ("modeled exposure" in q or "financial exposure" in q) and "priority" not in q
+        exposure_only = "modeled exposure" in q or "financial exposure" in q
         if exposure_only:
             ascending = any(word in q.split() for word in ("lowest", "least"))
             row = priority.sort_values("modeled_exposure", ascending=ascending).iloc[0]
@@ -440,9 +443,9 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
             rationale = "It ranks first because its predefined severity score is highest, with modeled exposure used as the tie-breaker—not because the dashboard proved a cause."
             calculation = "Priority order = severity score descending, then modeled exposure descending. Domain scores use the dashboard's documented synthetic metric thresholds."
         answer = f"{prefix} at {row.hospital} is {row.domain} (severity {row.severity_score:.1f}/100; modeled exposure {_format(row.modeled_exposure, 'currency')}; owner {row.accountable_owner}). {rationale}"
-        return _response(answer, calculation, "Modeled Estimate", "This is an illustrative portfolio ranking, not a clinical risk score, causal finding, or validated forecast.", priority.head(5))
+        shown = priority.sort_values("modeled_exposure", ascending=ascending).head(5) if exposure_only else priority.head(5)
+        return _response(answer, calculation, "Modeled Estimate", "This is an illustrative portfolio ranking, not a clinical risk score, causal finding, or validated forecast.", shown)
 
-    metrics = _metrics_in(question)
     if not metrics:
         keywords = extracted_keywords(question)
         suggestions = closest_suggestions(question, MAIN_SUGGESTIONS)
@@ -509,8 +512,8 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
 
     metric = metrics[0]
     words = set(q.split())
-    high = any(word in words for word in ("highest", "most", "maximum", "max"))
-    low = any(word in words for word in ("lowest", "least", "minimum", "min"))
+    high = any(word in words for word in ("highest", "most", "maximum", "max", "longest"))
+    low = any(word in words for word in ("lowest", "least", "minimum", "min", "shortest"))
     if "best" in words:
         high, low = metric.better == "high", metric.better == "low"
     elif "worst" in words:
@@ -520,7 +523,13 @@ def answer_question(question, daily, encounters, prior_daily, prior_encounters, 
         ranked = comparison.sort_values(metric.label, ascending=ascending)
         row = ranked.iloc[0]
         direction = "lowest" if low else "highest"
-        answer = f"{row.Hospital} has the {direction} {metric.label} at {_format(row[metric.label], metric.unit)} under the current filters."
+        winning_display = _format(row[metric.label], metric.unit)
+        tied = ranked[ranked[metric.label].map(lambda value: _format(value, metric.unit)) == winning_display]
+        if len(tied) > 1:
+            hospital_names = ", ".join(tied.Hospital.tolist()[:-1]) + f", and {tied.Hospital.iloc[-1]}" if len(tied) > 2 else " and ".join(tied.Hospital)
+            answer = f"{hospital_names} are tied for the {direction} {metric.label} at {winning_display} under the current filters."
+        else:
+            answer = f"{row.Hospital} has the {direction} {metric.label} at {winning_display} under the current filters."
         return _response(answer, f"Hospital-level {metric.calculation}; ranked {'ascending' if low else 'descending'}.", data=_display_comparison(ranked, metrics))
 
     if named_hospital and len(metrics) == 1:

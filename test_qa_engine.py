@@ -7,7 +7,7 @@ from qa_engine import METRICS, answer_question
 
 ROOT = Path(__file__).resolve().parent
 daily = pd.read_csv(ROOT / "data/daily_operations.csv.gz", parse_dates=["date"])
-encounters = pd.read_csv(ROOT / "data/synthetic_encounters.csv.gz", parse_dates=["admit_date", "discharge_date"])
+encounters = pd.read_csv(ROOT / "data/synthetic_encounters.csv.gz", parse_dates=["admit_date", "discharge_date"], keep_default_na=False)
 interventions = pd.read_csv(ROOT / "data/interventions.csv")
 priority = pd.DataFrame([
     {"hospital": "GulfStar Medical Center", "domain": "Patient Flow", "severity_score": 71.0,
@@ -71,6 +71,54 @@ def test_priority_and_exposure_intents_are_distinct():
     assert "GulfStar North" in exposure["answer"]
 
 
+def test_six_reviewer_regressions_are_fixed():
+    reviewer_priority = pd.DataFrame([
+        {"hospital": "GulfStar North", "domain": "Patient Experience", "severity_score": 90.0,
+         "modeled_exposure": 0.0, "accountable_owner": "Chief Experience Officer"},
+        {"hospital": "GulfStar Medical Center", "domain": "Patient Flow", "severity_score": 14.3,
+         "modeled_exposure": 55_911_946.0, "accountable_owner": "COO"},
+    ])
+    def reviewer_ask(question):
+        return answer_question(
+            question, daily, encounters, daily.iloc[0:0], encounters.iloc[0:0],
+            interventions, reviewer_priority, all_hospitals=hospitals,
+        )
+
+    exposure = reviewer_ask("Which priority has the highest modeled exposure?")
+    assert "$55,911,946" in exposure["answer"]
+    assert "GulfStar Medical Center" in exposure["answer"]
+
+    readmission = reviewer_ask("Which hospital has the worst readmission rate?")
+    assert "trend summary" not in readmission["answer"].lower()
+    assert "readmission" in readmission["answer"].lower()
+
+    wait = reviewer_ask("Which hospital has the longest specialty wait?")
+    assert "has the highest Access / Specialty Wait" in wait["answer"] or "tied for the highest Access / Specialty Wait" in wait["answer"]
+
+    top = reviewer_ask("What is the top executive priority?")
+    assert "#1 filtered priority" in top["answer"]
+
+    mortality = reviewer_ask("Which hospital has the highest mortality rate?")
+    displayed = []
+    for hospital, group in daily.groupby("hospital"):
+        displayed.append((hospital, f"{100 * group.mortality_rate.mean():.1f}%"))
+    winning = max(value for _, value in displayed)
+    tied_names = [hospital for hospital, value in displayed if value == winning]
+    if len(tied_names) > 1:
+        assert "tied" in mortality["answer"].lower()
+        assert all(name in mortality["answer"] for name in tied_names)
+
+    unsupported = reviewer_ask("Is the chair rail broken?")
+    assert unsupported["evidence"] == "Validation Required"
+    assert "HAI" not in unsupported["answer"]
+
+
+def test_encounter_none_categories_are_preserved_as_values():
+    assert len(encounters) == 18_000
+    assert encounters.discharge_barrier.isna().sum() == 0
+    assert (encounters.discharge_barrier == "None").sum() == 9_979
+
+
 def test_executive_language_intents_return_auditable_summaries():
     questions = {
         "What has happened positively in the last 30 days?": "Positive changes",
@@ -113,7 +161,7 @@ def test_dashboard_overview_and_help_language_is_supported():
     ]
     for question in questions:
         result = ask(question)
-        assert result["answer"].startswith("GulfStar Intelligence is a 15-sheet"), question
+        assert result["answer"].startswith("GulfStar Intelligence is a 16-sheet"), question
         assert result["evidence"] == "Validation Required — Dashboard Documentation"
         assert "no performance metric aggregation" in result["calculation"]
         assert result["data"] is not None and len(result["data"]) == 6

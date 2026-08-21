@@ -8,12 +8,12 @@ from visual_qa import DOCUMENTED_CONTENT, DOCUMENTED_IMPROVEMENTS, VISUALS, answ
 
 ROOT = Path(__file__).resolve().parent
 daily = pd.read_csv(ROOT / "data/daily_operations.csv.gz", parse_dates=["date"])
-encounters = pd.read_csv(ROOT / "data/synthetic_encounters.csv.gz", parse_dates=["admit_date", "discharge_date"])
+encounters = pd.read_csv(ROOT / "data/synthetic_encounters.csv.gz", parse_dates=["admit_date", "discharge_date"], keep_default_na=False)
 
 
 def test_every_analysis_sheet_has_visual_context():
-    assert set(VISUALS) == {str(number) for number in range(1, 15)}
-    for number in range(1, 15):
+    assert set(VISUALS) == {str(number) for number in range(1, 15)} | {"16"}
+    for number in list(range(1, 15)) + [16]:
         assert visual_options(f"{number} — Sheet")
 
 

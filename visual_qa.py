@@ -55,6 +55,11 @@ VISUALS = {
         "Pareto: Discharge Barriers": _v("Ranks discharge barriers by frequency to show where a small number of categories may drive most recorded barriers.", "Start with the largest categories while checking severity and whether categories are consistently coded.", "Select one high-frequency barrier for a small test, then measure outcome and unintended effects.", "Frequency alone does not determine clinical or operational importance.", "Synthetic categories do not establish root cause."),
         "PDSA Learning System": _v("Defines the Plan-Do-Study-Act evidence cycle used to test and refine improvements.", "Focus on a specific aim, prediction, small-scale test, learning, and documented next decision.", "Adopt, adapt, or abandon based on measured results rather than preference.", "PDSA is a learning framework, not evidence that an intervention works.", "Production changes require governance and sustainment monitoring."),
     },
+    "16": {
+        "30-Day Census Forecast": _v("Shows 60 observed days followed by a 30-day Ridge census forecast and its 90% prediction interval.", "Focus on the forecast peak, interval width, and whether prospective actuals remain inside the interval.", "Use the signal for capacity and staffing scenario planning, then validate against actual census before operational use.", "The shaded band represents forecast uncertainty, not guaranteed minimum and maximum census.", "The model uses synthetic history and omits acuity, scheduled procedures, closures, weather, outbreaks, and real staffing constraints.", calculation="Recursive Ridge forecast using hospital and weekday indicators, trend, annual terms, lags 1/7/14/28, and trailing means 7/28; uncertainty uses split conformal calibration."),
+        "Forecast Model Validation": _v("Compares rolling-origin mean absolute error across Ridge, gradient boosting, seasonal-naive, and last-value baselines.", "Lower MAE is better; confirm the selected model beats a credible simple baseline across time-ordered folds.", "Monitor prospective error and interval coverage, and retrain only after documented drift or performance review.", "Ridge is selected because it has the lowest validated MAE, not because it is the most complex model.", "Backtest performance on synthetic history does not establish performance on real hospital operations.", calculation="Six rolling-origin folds with a 30-day recursive horizon; no random train/test split."),
+        "Census Forecast Model Card": _v("Documents intended use, target, features, validation design, uncertainty, and guardrails.", "Confirm intended use and limitations match the decision before using the forecast.", "Require prospective validation, monitoring, ownership, and change control before production use.", "The model card makes the forecast auditable but does not certify it for production.", "External validity has not been established."),
+    },
 }
 
 VISUAL_SUGGESTIONS = (
@@ -1607,6 +1612,15 @@ DOCUMENTED_CONTENT = {
     ),
     "PDSA Learning System": (
         (("plan", "do", "study", "act", "pdsa"), "Plan defines the aim and prediction; Do runs a small test; Study compares results with the prediction; Act decides whether to adopt, adapt, or abandon. The framework organizes learning but does not prove effectiveness.", "Documented Plan–Do–Study–Act learning cycle; evidence must come from the measured test.", "Validation Required — Improvement Method"),
+    ),
+    "30-Day Census Forecast": (
+        (("forecast", "prediction", "census", "interval", "peak"), "The line is the Ridge model's daily census estimate for the next 30 days; the shaded 90% interval communicates uncertainty around that estimate.", "Recursive Ridge forecast from time-ordered census history; interval from held-out split-conformal calibration.", "Modeled Estimate / Validation Required"),
+    ),
+    "Forecast Model Validation": (
+        (("mae", "ridge", "gradient boosting", "baseline", "validation"), "Mean absolute error is the average number of beds by which a forecast missed observed synthetic census. Lower is better; Ridge is selected because it has the lowest rolling-origin MAE.", "Six rolling-origin folds with a 30-day recursive horizon; no random split.", "Model Validation Result"),
+    ),
+    "Census Forecast Model Card": (
+        (("feature", "target", "intended use", "guardrail", "model card"), "The model card documents what the forecast predicts, how it was validated, its intended planning use, and the conditions under which it should not be used.", "Committed model documentation and validation metadata.", "Validation Required — Model Governance"),
     ),
 }
 

@@ -1,0 +1,16 @@
+{
+  "training_rows": 1668,
+  "source_hospital_days": 1752,
+  "training_start": "2025-01-01",
+  "training_end": "2026-08-07",
+  "folds": 6,
+  "horizon_days": 30,
+  "naive_last_mae": 9.14074074074074,
+  "seasonal_naive_7_mae": 8.483333333333333,
+  "ridge_mae": 6.230079315282659,
+  "gradient_boosting_mae": 6.261771539737437,
+  "ridge_improvement_vs_seasonal_pct": 26.560951096864528,
+  "conformal_radius_90": 13.420431489737098,
+  "calibration_empirical_coverage": 0.9111111111111111,
+  "model_selected": "Ridge"
+}
