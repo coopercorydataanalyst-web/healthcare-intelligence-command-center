@@ -20,8 +20,15 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
 
 
 def test_build_version_and_clear_answer_controls_are_visible():
-    assert 'APP_BUILD = "2026.08.20-v18-quantity-aware-rankings"' in APP
+    assert 'APP_BUILD = "2026.08.20-v19-visible-clarification-choices"' in APP
     assert "Dashboard build: {APP_BUILD}" in APP
+
+
+def test_ambiguous_visual_questions_show_direct_one_click_choices():
+    assert 'st.markdown("Select one option below to answer immediately:")' in APP
+    assert 'for choice_number, visual_choice in enumerate(visual_result["suggestions"], start=1)' in APP
+    assert 'key=f"visual_suggestion_{page.split(\' —\')[0]}_{choice_number}"' in APP
+    assert 'width="stretch"' in APP
     assert "def emphasize_low_scores(text):" in APP
     assert "value < 80" in APP
     assert 'class="qa-low-score"' in APP

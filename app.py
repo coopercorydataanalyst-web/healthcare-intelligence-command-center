@@ -103,7 +103,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v18-quantity-aware-rankings"
+APP_BUILD = "2026.08.20-v19-visible-clarification-choices"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -986,18 +986,34 @@ if not page.startswith("15 —"):
                         st.markdown("##### Choose what you mean" if clarification else "##### Did you mean one of these?")
                         if visual_result.get("keywords"):
                             st.caption("Keywords detected: " + ", ".join(visual_result["keywords"]))
-                        visual_suggestion = st.selectbox(
-                            "Select an interpretation" if clarification else "Closest supported visual question",
-                            visual_result["suggestions"],
-                            key=f"visual_suggestion_{page.split(' —')[0]}",
-                        )
-                        if st.button("Answer This Question" if clarification else "Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
-                            visual_result = answer_visual_question(page, selected_visual, visual_suggestion, fd, fe)
-                            saved_visual_result = {
-                                "page": page, "visual": selected_visual,
-                                "question": visual_suggestion, "result": visual_result,
-                            }
-                            st.session_state["visual_qa_result"] = saved_visual_result
+                        if clarification:
+                            st.markdown("Select one option below to answer immediately:")
+                            for choice_number, visual_choice in enumerate(visual_result["suggestions"], start=1):
+                                if st.button(
+                                    visual_choice,
+                                    key=f"visual_suggestion_{page.split(' —')[0]}_{choice_number}",
+                                    width="stretch",
+                                ):
+                                    visual_result = answer_visual_question(page, selected_visual, visual_choice, fd, fe)
+                                    saved_visual_result = {
+                                        "page": page, "visual": selected_visual,
+                                        "question": visual_choice, "result": visual_result,
+                                    }
+                                    st.session_state["visual_qa_result"] = saved_visual_result
+                                    st.rerun()
+                        else:
+                            visual_suggestion = st.selectbox(
+                                "Closest supported visual question",
+                                visual_result["suggestions"],
+                                key=f"visual_suggestion_{page.split(' —')[0]}",
+                            )
+                            if st.button("Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
+                                visual_result = answer_visual_question(page, selected_visual, visual_suggestion, fd, fe)
+                                saved_visual_result = {
+                                    "page": page, "visual": selected_visual,
+                                    "question": visual_suggestion, "result": visual_result,
+                                }
+                                st.session_state["visual_qa_result"] = saved_visual_result
                     resolved_visual = visual_result.get("resolved_visual", selected_visual)
                     st.markdown(f"**{resolved_visual}**")
                     if visual_result.get("selection_note"):
