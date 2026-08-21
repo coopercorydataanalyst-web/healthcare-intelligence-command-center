@@ -114,7 +114,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v25-forecast-discipline-and-cms"
+APP_BUILD = "2026.08.20-v26-model-governance-and-validation"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -1093,7 +1093,7 @@ elif page.startswith("16 —"):
         st.caption("Associations from overlapping simulated measurement windows—not causal effects.")
     with c6:
         plot(px.line(diagnostics["drift"], x="psi_lag_7", y="mae_beds", markers=True, text="census_level_shift_pct", title="Synthetic Drift Stress Test"))
-        st.caption("Labels show the simulated census-level shift. PSI ≥ 0.20 triggers review and prospective error validation before retraining.")
+        st.caption("PSI ≥ 0.20 triggers review—not automatic retraining. In this stress test, error first loses to seasonal naive near a 25% level shift. PSI becomes non-monotonic at extreme shifts because fixed reference bins saturate.")
     callout(
         "Model Limitation",
         "The forecast is trained on synthetic portfolio data and excludes acuity, scheduled procedures, closures, weather, outbreaks, and actual staffing constraints. Use it as a planning signal only and validate it prospectively before operational use.",
@@ -1117,13 +1117,14 @@ else:
     ])
     callout(
         "Decision Use",
-        "Use this model to audit which public hospital records warrant closer portfolio benchmarking—not to predict an individual patient's outcome or make payment, contracting, or care decisions. Grouped validation estimates transfer to unseen states more honestly than a random split.",
+        "Use this page to look up a hospital record for validation—not to rank hospitals, evaluate quality, predict an individual patient's outcome, or make payment, contracting, or care decisions. CMS's published measures remain authoritative.",
     )
+    st.info("Patient-experience and public structural features carry a real but weak association signal: most variation in hospital readmission performance remains unexplained. The model's modest AUC and uncertainty are displayed beside every lookup result.")
 
     comparison = pd.DataFrame([
         ["Grouped-by-state, uncalibrated", cms_metrics["grouped_raw_auc"], cms_metrics["grouped_raw_brier"]],
         ["Grouped-by-state, isotonic", cms_metrics["grouped_calibrated_auc"], cms_metrics["grouped_calibrated_brier"]],
-        ["Naive random split", cms_metrics["random_split_auc"], cms_metrics["random_split_brier"]],
+        ["Five-fold stratified OOF", cms_metrics["random_split_auc"], cms_metrics["random_split_brier"]],
         ["Prevalence baseline", np.nan, cms_metrics["prevalence_baseline_brier"]],
     ], columns=["Evaluation", "AUC", "Brier Score"])
     c7, c8 = st.columns(2)
@@ -1139,7 +1140,12 @@ else:
 
     st.markdown(
         f"**Grouped AUC uncertainty:** {cms_metrics['grouped_auc_95_interval'][0]:.3f}–{cms_metrics['grouped_auc_95_interval'][1]:.3f} (95% bootstrap interval). "
-        "The random split is shown as a diagnostic comparison; grouped-by-state performance controls the model assessment."
+        f"**Stratified AUC uncertainty:** {cms_metrics['random_split_auc_95_interval'][0]:.3f}–{cms_metrics['random_split_auc_95_interval'][1]:.3f}. "
+        "Both use identical features, preprocessing, estimator, five out-of-fold evaluations, and scoring; only the splitter changes. Their overlapping intervals show that the small difference is not meaningful and that state is a weak clustering boundary for this target."
+    )
+    st.markdown(
+        f"**Calibration finding:** isotonic calibration changed Brier from {cms_metrics['grouped_raw_brier']:.4f} to {cms_metrics['grouped_calibrated_brier']:.4f} and AUC from {cms_metrics['grouped_raw_auc']:.4f} to {cms_metrics['grouped_calibrated_auc']:.4f}. "
+        "It did not improve Brier at displayed precision and slightly reduced discrimination; no calibration benefit is claimed."
     )
     st.subheader("Subgroup Audit")
     subgroup_dimension = st.selectbox("Audit dimension", sorted(cms["subgroups"].dimension.unique()), format_func=title_label)
@@ -1152,14 +1158,25 @@ else:
         plot(px.bar(explanation, x="coefficient", y="feature", orientation="h", title="Standardized Logistic Associations", color="coefficient", color_continuous_scale="RdBu"))
         st.caption("Associations from overlapping or differently timed public measurement windows—not causal effects.")
     with c10:
-        st.subheader("Highest Validation-Priority Public Records")
+        st.subheader("Hospital Record Validation Lookup")
         state_choice = st.selectbox("CMS state", ["All States"] + sorted(cms["scored"].state.unique().tolist()))
         scored = cms["scored"] if state_choice == "All States" else cms["scored"][cms["scored"].state == state_choice]
-        priority_records = scored.nlargest(20, "calibrated_probability")[[
-            "facility_id", "facility_name", "state", "hospital_ownership", "mean_excess_readmission_ratio", "calibrated_probability",
-        ]]
-        table(priority_records)
-        st.caption("This queue prioritizes validation of published portfolio signals. It is not a hospital quality certification, causal ranking, or contracting recommendation.")
+        lookup = scored.copy()
+        lookup["lookup_label"] = lookup.facility_name + " — " + lookup.state + " (" + lookup.facility_id.astype(str) + ")"
+        selected_label = st.selectbox("Search for a hospital", ["Choose a hospital record…"] + sorted(lookup.lookup_label.tolist()))
+        if selected_label != "Choose a hospital record…":
+            selected = lookup[lookup.lookup_label == selected_label].iloc[0]
+            st.markdown(f"### {selected.facility_name}")
+            st.metric("Model association probability", f"{100 * selected.calibrated_probability:.1f}%")
+            st.markdown(
+                f"**Model strength:** grouped AUC {cms_metrics['grouped_calibrated_auc']:.3f} "
+                f"(95% interval {cms_metrics['grouped_auc_95_interval'][0]:.3f}–{cms_metrics['grouped_auc_95_interval'][1]:.3f})  \n"
+                f"**CMS published ratio used as the model target:** {selected.mean_excess_readmission_ratio:.3f}  \n"
+                "**Uncertainty:** an institution-specific probability interval is not available; the model-level AUC interval is shown instead."
+            )
+            st.warning("This is a cross-sectional association model on public aggregate data. It does not evaluate this hospital's quality, and CMS's published measures are the authoritative source.")
+        else:
+            st.caption("Choose a specific facility to review its public record. The app intentionally does not publish a ranked hospital list.")
 
     st.subheader("Data Provenance and Model Card")
     source_rows = []

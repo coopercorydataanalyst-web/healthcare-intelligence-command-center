@@ -56,9 +56,19 @@ def test_cms_model_beats_prevalence_baseline_and_reports_calibration_and_subgrou
     assert metrics["grouped_calibrated_brier"] < metrics["prevalence_baseline_brier"]
     assert metrics["grouped_calibrated_auc"] > 0.60
     assert len(metrics["grouped_auc_95_interval"]) == 2
+    assert len(metrics["random_split_auc_95_interval"]) == 2
+    assert abs(metrics["grouped_raw_auc"] - metrics["random_split_auc"]) < 0.03
+    assert "only the splitter changes" in metrics["validation_comparison"]
     assert {"Uncalibrated", "Calibrated"} == set(artifacts["calibration"].probability_type)
     assert {"hospital_ownership", "emergency_services", "hcahps_summary_quartile", "reported_hrrp_conditions"}.issubset(set(artifacts["subgroups"].dimension))
     assert "not causal effects" in artifacts["model_card"].lower()
+
+
+def test_public_hospital_interface_is_lookup_not_ranked_accusation_list():
+    app_source = (ROOT / "app.py").read_text()
+    assert "Hospital Record Validation Lookup" in app_source
+    assert "Choose a hospital record…" in app_source
+    assert "Highest Validation-Priority Public Records" not in app_source
 
 
 def test_cms_serving_loader_enforces_feature_contract_and_loads_only_artifacts():

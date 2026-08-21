@@ -162,6 +162,11 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 142. Added an offline grouped-by-state logistic model, nested isotonic calibration, random-split comparison, bootstrap AUC interval, Brier baseline, available subgroup audits, association explanations, feature contract, and model card.
 143. Added Sheet 17 — CMS Real-Data Model Audit with validation comparison, reliability curve, subgroup audit, association explanations, public-record validation queue, provenance, and timing limitations.
 144. Added Makefile reproduction commands and GitHub Actions validation; advanced the build/state contract to `2026.08.20-v25-forecast-discipline-and-cms`.
+145. Re-ran grouped-state and stratified CMS validation through identical five-fold out-of-fold pipelines and confirmed essentially equal raw AUC (0.6366 vs 0.6364); documented overlapping uncertainty intervals and removed the non-comparable single-holdout contrast.
+146. Disclosed that isotonic calibration did not improve Brier score at displayed precision and slightly reduced AUC, and reframed the CMS model as a weak but nonzero cross-sectional association signal.
+147. Replaced the named-hospital top-N table with a search-based validation lookup that displays model strength and uncertainty beside the selected record and explicitly defers to authoritative CMS measures.
+148. Changed PSI ≥ 0.20 from an automatic retraining implication to a conservative review trigger; retraining now requires sustained prospective error degradation or performance worse than seasonal naive, with fixed-bin saturation disclosed.
+149. Added an MIT license, repository screenshots, and regression coverage preventing restoration of a ranked named-hospital list; advanced the build/state contract to `2026.08.20-v26-model-governance-and-validation`.
 
 ## Validation completed
 - Python syntax compilation: passed.

@@ -211,6 +211,10 @@ def main():
     unacceptable = drift[drift.mae_beds > seasonal_mae]
     metrics["drift_retrain_psi_threshold"] = 0.20
     metrics["first_stress_level_worse_than_seasonal_pct"] = int(unacceptable.census_level_shift_pct.iloc[0]) if not unacceptable.empty else None
+    metrics["drift_policy"] = (
+        "PSI >= 0.20 triggers review, not automatic retraining. Retrain only after sustained prospective error "
+        "degradation or performance worse than the seasonal-naive baseline."
+    )
     joblib.dump(final_model, ARTIFACTS / "census_ridge.joblib")
     backtest.round(6).to_csv(ARTIFACTS / "backtest_predictions.csv.gz", index=False, compression={"method": "gzip", "mtime": 0})
     future.round(4).to_csv(ARTIFACTS / "forecast_30d.csv", index=False)

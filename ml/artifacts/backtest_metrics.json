@@ -54,5 +54,6 @@
   "complex_model_adoption_rule": "Adopt gradient boosting only if it reduces rolling-origin MAE by at least 5% versus Ridge.",
   "complex_model_lift_vs_ridge_pct": -0.5087,
   "drift_retrain_psi_threshold": 0.2,
-  "first_stress_level_worse_than_seasonal_pct": 25
+  "first_stress_level_worse_than_seasonal_pct": 25,
+  "drift_policy": "PSI >= 0.20 triggers review, not automatic retraining. Retrain only after sustained prospective error degradation or performance worse than the seasonal-naive baseline."
 }

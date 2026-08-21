@@ -59,9 +59,13 @@ Rebuild the committed artifacts with `python ml/train_census_forecast.py`. The m
 
 Analysis Sheet 17 uses **2,620 real CMS hospitals across 51 states/DC**. `etl/fetch_cms.py` paginates the official Provider Data Catalog API for Hospital General Information, HCAHPS hospital star measures, and the Hospital Readmissions Reduction Program. It records retrieval time, dataset IDs, source dates, row counts, and SHA-256 hashes in `data/cms/manifest.json`, then builds one hospital-level feature table.
 
-The model estimates whether a hospital's mean reportable HRRP excess readmission ratio is above 1.0 from published ownership, service, reporting-breadth, and HCAHPS attributes. Five outer folds hold out complete states; nested grouped predictions calibrate probabilities with isotonic regression. The grouped calibrated AUC is **0.631** (95% bootstrap interval **0.610–0.652**) and Brier score is **0.236**, compared with **0.250** for a prevalence-only baseline. A random split is displayed alongside the grouped protocol but does not control model assessment.
+The model estimates whether a hospital's mean reportable HRRP excess readmission ratio is above 1.0 from published ownership, service, reporting-breadth, and HCAHPS attributes. Five outer folds hold out complete states; nested grouped predictions calibrate probabilities with isotonic regression. The grouped calibrated AUC is modest and the Brier score improves only slightly over a prevalence-only baseline: patient-experience and structural features carry a weak but nonzero association signal, while most variance remains unexplained. Grouped and stratified comparisons now use identical five-fold out-of-fold pipelines differing only in the splitter, with bootstrap intervals shown for both.
 
-This is deliberately framed as a cross-sectional public-data association classifier. The HRRP outcome period predates the current HCAHPS snapshot, so it is not a prospective readmission forecast. It must not be used for patient-level prediction, payment, contracting, or care decisions. The app exposes calibration, available subgroup audits, association coefficients, provenance, and the full model card; unavailable bed-size, SVI, and safety-net fields are not inferred.
+This is deliberately framed as a cross-sectional public-data association classifier. The HRRP outcome period predates the current HCAHPS snapshot, so it is not a prospective readmission forecast. It must not be used for patient-level prediction, hospital ranking, payment, contracting, quality judgment, or care decisions. The app provides a search-by-hospital validation lookup rather than a leaderboard, displays probability beside model uncertainty, and states that CMS measures are authoritative. Isotonic calibration did not improve Brier score at displayed precision and slightly reduced AUC; that negative result is disclosed directly.
+
+![GulfStar Healthcare Intelligence Command Center](docs/dashboard-overview.png)
+
+![Contextual grounded Q&A](docs/contextual-qa.png)
 
 ## Reproducibility
 
