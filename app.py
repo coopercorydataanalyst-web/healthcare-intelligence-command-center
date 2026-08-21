@@ -102,7 +102,8 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_STATE_VERSION = "visual_semantic_contract_v7"
+APP_BUILD = "2026.08.20-v8-grounded-visuals"
+APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
         if state_key == "visual_qa" or state_key.startswith(("visual_qa_", "context_visual_", "context_question_", "visual_suggestion_")):
@@ -882,6 +883,10 @@ else:
     result = st.session_state.get("gulfstar_last_answer")
     asked = st.session_state.get("gulfstar_last_question")
     if result:
+        if st.button("Clear Saved Q&A Answer", key="clear_gulfstar_answer"):
+            for key in ("gulfstar_last_answer", "gulfstar_last_question", "gulfstar_closest_question"):
+                st.session_state.pop(key, None)
+            st.rerun()
         if result.get("suggestions"):
             st.markdown("#### Did you mean one of these?")
             if result.get("keywords"):
@@ -960,6 +965,9 @@ if not page.startswith("15 —"):
                     and saved_visual_result.get("visual") == selected_visual
                 ):
                     visual_result = saved_visual_result["result"]
+                    if st.button("Clear This Visual Answer", key=f"clear_visual_answer_{page.split(' —')[0]}"):
+                        st.session_state.pop("visual_qa_result", None)
+                        st.rerun()
                     if visual_result.get("suggestions"):
                         st.markdown("##### Did you mean one of these?")
                         if visual_result.get("keywords"):
@@ -1016,3 +1024,4 @@ st.caption(
     "Public agencies provide benchmark definitions and context. Portfolio targets and composite scores are illustrative. "
     "This portfolio demonstrates healthcare analytics leadership; it is not clinical, legal, privacy, or financial advice."
 )
+st.caption(f"Dashboard build: {APP_BUILD}")

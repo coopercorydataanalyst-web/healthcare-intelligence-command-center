@@ -17,3 +17,10 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
     assert APP.count("render_grounded_contract(") >= 4
     assert "Grounded data-analyst role" in APP
     assert "Grounded data-analyst mode applies on every sheet" in APP
+
+
+def test_build_version_and_clear_answer_controls_are_visible():
+    assert 'APP_BUILD = "2026.08.20-v8-grounded-visuals"' in APP
+    assert "Dashboard build: {APP_BUILD}" in APP
+    assert "Clear Saved Q&A Answer" in APP
+    assert "Clear This Visual Answer" in APP

@@ -94,6 +94,8 @@ General explanation questions on hospital-comparison visuals also enumerate ever
 
 Contextual Q&A state is versioned for Streamlit Cloud deployments. Browser sessions holding older widget or result structures are migrated automatically so a redeploy cannot fail with a stale `visual_qa` key or incompatible saved-result shape.
 
+The footer displays the active dashboard build identifier, allowing the deployed Streamlit instance to be reconciled with the expected release. Both Q&A surfaces include a clear-answer control so a user can discard a persisted response immediately after a semantic or formatting update.
+
 Modeled funnel-stage questions use the actual selected scenario math. Questions about Modeled Delayed Placements report the count, share of admissions, complementary within-target count, boarding-pressure input, formula, and the fact that discharges are a separate operating total rather than the next patient-level subset.
 
 Every displayed funnel stage now has its own interpretation: ED Arrivals, Admissions, Bed Placement Within Portfolio Target, Modeled Delayed Placements, and Discharges. High/low/why questions use the correct count, denominator, evidence label, stage relationship, and cohort limitation instead of returning generic focus guidance.

@@ -108,6 +108,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 88. Added exhaustive documented-content alias coverage for modeled priority, exposure, funnel, ROI, governance, privacy, SPC, Pareto, PDSA, and other non-standard visible content.
 89. Corrected semantic precedence so an exact term documented for the selected visual wins over a broad cross-dashboard synonym. This prevents examples such as `financial exposure` on the Executive Priority Queue from being misrouted to Operating Margin.
 90. Added completeness assertions requiring every visual to have purpose, focus, action, callout, limitation, calculation, and either mapped metrics or documented content; versioned state clears cached pre-contract answers.
+91. Added a visible dashboard build identifier so the live Streamlit deployment can be compared directly with the expected code version.
+92. Added Clear Saved Q&A Answer and Clear This Visual Answer controls to remove persisted answers without requiring a new browser session.
+93. Advanced the state contract to `2026.08.20-v8-grounded-visuals`, forcing older Q&A results to clear on deployment, and added build-marker runtime validation.
 
 ## Validation completed
 - Python syntax compilation: passed.
