@@ -5,5 +5,5 @@ plotly==5.22.0
 statsmodels==0.14.2
 scikit-learn==1.4.2
 joblib==1.4.2
-pyarrow==14.0.2
+pyarrow==24.0.0
 pytest==7.4.4
