@@ -643,6 +643,36 @@ def test_requested_result_counts_apply_to_month_domain_and_group_rankings():
     assert "1. January 2025" in balanced_months["answer"]
     assert "2." in balanced_months["answer"]
 
+
+def test_named_month_lists_and_ranges_limit_the_comparison_scope():
+    two_months = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "Compare February and August", daily, encounters,
+    )
+    assert "Only the requested month selections are compared" in two_months["answer"]
+    assert "February" in two_months["answer"] and "August" in two_months["answer"]
+    assert two_months["display"]["answer"].count("February") == 1
+    assert two_months["display"]["answer"].count("August") == 1
+    assert "March" not in two_months["answer"] and "December" not in two_months["answer"]
+
+    seven_months = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "Compare January through June and December", daily, encounters,
+    )
+    for month in ("January", "February", "March", "April", "May", "June", "December"):
+        assert month in seven_months["answer"]
+    for month in ("July", "August", "September", "October", "November"):
+        assert month not in seven_months["answer"]
+
+
+def test_month_clarification_preserves_every_named_month():
+    result = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "What is the best month among February and August?", daily, encounters,
+    )
+    assert result["evidence"] == "Validation Required — Clarification"
+    assert all("February, August" in suggestion for suggestion in result["suggestions"])
+
     top_domains = answer_visual_question(
         "1 — CEO", "Executive Health Score by Domain", "What are my top two domains?", daily, encounters,
     )

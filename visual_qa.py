@@ -81,6 +81,37 @@ NUMBER_WORDS = {
     "nineteen": 19, "twenty": 20,
 }
 
+MONTH_ALIASES = {
+    1: ("january", "jan"), 2: ("february", "feb"), 3: ("march", "mar"),
+    4: ("april", "apr"), 5: ("may",), 6: ("june", "jun"),
+    7: ("july", "jul"), 8: ("august", "aug"), 9: ("september", "sep", "sept"),
+    10: ("october", "oct"), 11: ("november", "nov"), 12: ("december", "dec"),
+}
+MONTH_LOOKUP = {alias: number for number, aliases in MONTH_ALIASES.items() for alias in aliases}
+
+
+def requested_month_numbers(question):
+    """Return every explicitly named calendar month, expanding inclusive ranges."""
+    q = normalized_text(question)
+    found = set()
+    aliases = "|".join(sorted(MONTH_LOOKUP, key=len, reverse=True))
+    for start_name, end_name in re.findall(rf"\b({aliases})\b\s*(?:through|thru|to|-)\s*\b({aliases})\b", q):
+        start, end = MONTH_LOOKUP[start_name], MONTH_LOOKUP[end_name]
+        current = start
+        while True:
+            found.add(current)
+            if current == end:
+                break
+            current = 1 if current == 12 else current + 1
+    for month_name in re.findall(rf"\b({aliases})\b", q):
+        found.add(MONTH_LOOKUP[month_name])
+    return sorted(found)
+
+
+def requested_month_phrase(question):
+    months = requested_month_numbers(question)
+    return ", ".join(pd.Timestamp(2000, month, 1).strftime("%B") for month in months)
+
 
 def requested_count(question, default=1):
     """Extract a requested top/bottom result count without mistaking dates for counts."""
@@ -1159,7 +1190,12 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
     if visual != "Margin and Flow Pressure by Month" or daily.empty:
         return None
     tokens = flexible_tokens(question)
-    if "month" not in tokens or not (tokens & {"good", "bad", "high", "low", "highest", "lowest", "best", "worst"}):
+    named_months = requested_month_numbers(question)
+    directional = bool(tokens & {"good", "bad", "high", "low", "highest", "lowest", "best", "worst", "top", "bottom"})
+    comparison = bool(tokens & {"compare", "versus", "between", "average", "mean"})
+    if not named_months and ("month" not in tokens or not directional):
+        return None
+    if named_months and not (directional or comparison or "month" in tokens):
         return None
     dated = daily.assign(month=pd.to_datetime(daily["date"]).dt.to_period("M").dt.to_timestamp())
     monthly = dated.groupby("month", as_index=False).agg(
@@ -1169,6 +1205,21 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
     monthly["contribution"] = monthly.revenue - monthly.cost
     monthly["complete"] = monthly.covered_days == monthly.date.dt.days_in_month
     complete = monthly[monthly.complete].copy()
+    if named_months:
+        complete = complete[complete.date.dt.month.isin(named_months)].copy()
+        complete["calendar_month"] = complete.date.dt.month
+        complete = complete.groupby("calendar_month", as_index=False).agg(
+            contribution=("contribution", "mean"), boarding=("boarding", "mean"),
+            occurrences=("date", "size"),
+        )
+        complete["date"] = pd.to_datetime({
+            "year": [2000] * len(complete),
+            "month": complete.calendar_month,
+            "day": [1] * len(complete),
+        })
+        complete["label"] = complete.date.dt.strftime("%B")
+    else:
+        complete["label"] = complete.date.dt.strftime("%B %Y")
     if complete.empty:
         return None
     complete["contribution_percentile"] = complete.contribution.rank(pct=True, method="average")
@@ -1185,30 +1236,40 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
     asks_contribution = bool(tokens & {"contribution", "margin", "financial", "finance"})
     asks_boarding = "boarding" in tokens
     asks_balanced = bool(tokens & {"balance", "balanced", "overall", "combined"})
-    if asks_contribution and not asks_balanced:
+    if named_months and not directional and not any((asks_contribution, asks_boarding, asks_balanced)):
+        selected = complete.sort_values("date")
+        title = f"Requested Months - Margin and Flow"
+        listed = "; ".join(
+            f"{row.label}: ${row.contribution:,.0f} average monthly contribution and {row.boarding:.2f} average boarding hours"
+            for row in selected.itertuples()
+        )
+        answer = f"Only the requested month selections are compared: {listed}."
+    elif asks_contribution and not asks_balanced:
         selected = complete.sort_values("contribution", ascending=asks_worst).head(count)
         title = f"{'Bottom' if asks_worst else 'Top'} {count} Operating Contribution Month{'s' if count != 1 else ''}"
-        listed = "; ".join(f"{rank}. {row.date:%B %Y}: ${row.contribution:,.0f}" for rank, row in enumerate(selected.itertuples(), 1))
+        listed = "; ".join(f"{rank}. {row.label}: ${row.contribution:,.0f}" for rank, row in enumerate(selected.itertuples(), 1))
         answer = f"The requested {'lowest' if asks_worst else 'highest'} {count} complete month{'s are' if count != 1 else ' is'}: {listed}."
     elif asks_boarding and not asks_balanced:
         selected = complete.sort_values("boarding", ascending=not asks_worst).head(count)
         title = f"{'Highest' if asks_worst else 'Lowest'} {count} ED Boarding Month{'s' if count != 1 else ''}"
-        listed = "; ".join(f"{rank}. {row.date:%B %Y}: {row.boarding:.2f} hours" for rank, row in enumerate(selected.itertuples(), 1))
+        listed = "; ".join(f"{rank}. {row.label}: {row.boarding:.2f} hours" for rank, row in enumerate(selected.itertuples(), 1))
         answer = f"The requested {'highest' if asks_worst else 'lowest'} {count} complete month{'s are' if count != 1 else ' is'}: {listed}."
     else:
         selected = complete.sort_values("balanced_score", ascending=asks_worst).head(count)
         title = f"{label.title()} {count} Balanced Month{'s' if count != 1 else ''} - Margin and Flow"
         listed = "; ".join(
-            f"{rank}. {row.date:%B %Y}: ${row.contribution:,.0f} contribution and {row.boarding:.2f} boarding hours"
+            f"{rank}. {row.label}: ${row.contribution:,.0f} contribution and {row.boarding:.2f} boarding hours"
             for rank, row in enumerate(selected.itertuples(), 1)
         )
         answer = f"Using the equal-weight balanced ranking, the requested {label} {count} complete month{'s are' if count != 1 else ' is'}: {listed}."
     what_matters = [
-        f"Highest Operating Contribution: {highest_contribution.date:%B %Y} at ${highest_contribution.contribution:,.0f}.",
-        f"Lowest ED Boarding: {lowest_boarding.date:%B %Y} at {lowest_boarding.boarding:.2f} hours.",
-        f"Balanced {label.title()} Month: {balanced.date:%B %Y} at ${balanced.contribution:,.0f} and {balanced.boarding:.2f} hours.",
+        f"Highest Operating Contribution: {highest_contribution.label} at ${highest_contribution.contribution:,.0f}.",
+        f"Lowest ED Boarding: {lowest_boarding.label} at {lowest_boarding.boarding:.2f} hours.",
+        f"Balanced {label.title()} Month: {balanced.label} at ${balanced.contribution:,.0f} and {balanced.boarding:.2f} hours.",
     ]
     partial = monthly[~monthly.complete]
+    if named_months:
+        partial = partial[partial.date.dt.month.isin(named_months)]
     if not partial.empty:
         partial_names = ", ".join(f"{row.date:%B %Y} ({int(row.covered_days)} days)" for row in partial.itertuples())
         what_matters.append(f"Excluded partial month(s) from ranking: {partial_names}.")
@@ -1220,7 +1281,7 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
     limitation = "The balanced ranking is an explicit dashboard interpretation rule, not a validated enterprise target or causal conclusion. Partial months are excluded from month-total comparisons."
     return {
         "answer": answer + " " + " ".join(what_matters),
-        "calculation": "Monthly Operating Contribution = sum(revenue) - sum(cost). Monthly ED Boarding = mean(boarding_hours). Balanced score = mean(percentile rank of contribution, percentile rank of negative boarding) across complete months.",
+        "calculation": "Monthly Operating Contribution = sum(revenue) - sum(cost). Monthly ED Boarding = mean(boarding_hours). Named calendar months are averaged across their complete occurrences in the selected date range. Balanced score = mean(percentile rank of contribution, percentile rank of negative boarding) across the requested comparison set.",
         "evidence": "Synthetic Result / Analytical Signal", "limitation": limitation,
         "display": {
             "title": title, "filters": _selected_filter_summary(daily, encounters),
@@ -1238,24 +1299,26 @@ def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
 def _ambiguous_visual_question(visual, spec, question):
     """Return safe choices only when different interpretations change the answer."""
     tokens = flexible_tokens(question)
-    if visual == "Margin and Flow Pressure by Month" and "month" in tokens:
+    if visual == "Margin and Flow Pressure by Month" and ("month" in tokens or requested_month_numbers(question)):
         count = requested_count(question)
+        named_month_phrase = requested_month_phrase(question)
         month_phrase = f"{count} months" if count > 1 else "month"
+        comparison_scope = f" among {named_month_phrase}" if named_month_phrase else ""
         broad_best = bool(tokens & {"good", "bad", "best", "worst", "high", "low", "highest", "lowest"})
         has_outcome = bool(tokens & {"contribution", "margin", "financial", "finance", "boarding", "balance", "balanced", "overall", "combined"})
         if broad_best and not has_outcome:
             direction = "worst" if bool(tokens & {"bad", "worst", "low", "lowest"}) else "best"
             if direction == "best":
                 suggestions = [
-                    f"Which {month_phrase} had the highest operating contribution?",
-                    f"Which {month_phrase} had the lowest ED boarding?",
-                    f"Which {month_phrase} had the best balance of operating contribution and ED boarding?",
+                    f"Which {month_phrase} had the highest operating contribution{comparison_scope}?",
+                    f"Which {month_phrase} had the lowest ED boarding{comparison_scope}?",
+                    f"Which {month_phrase} had the best balance of operating contribution and ED boarding{comparison_scope}?",
                 ]
             else:
                 suggestions = [
-                    f"Which {month_phrase} had the lowest operating contribution?",
-                    f"Which {month_phrase} had the highest ED boarding?",
-                    f"Which {month_phrase} had the worst balance of operating contribution and ED boarding?",
+                    f"Which {month_phrase} had the lowest operating contribution{comparison_scope}?",
+                    f"Which {month_phrase} had the highest ED boarding{comparison_scope}?",
+                    f"Which {month_phrase} had the worst balance of operating contribution and ED boarding{comparison_scope}?",
                 ]
             return {
                 "answer": "That wording can mean different things on this visual. Choose the outcome that matches your decision so the dashboard does not guess.",

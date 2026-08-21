@@ -20,11 +20,15 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
 
 
 def test_build_version_and_clear_answer_controls_are_visible():
-    assert 'APP_BUILD = "2026.08.20-v20-in-panel-clarification"' in APP
+    assert 'APP_BUILD = "2026.08.20-v21-entity-aware-dialog"' in APP
     assert "Dashboard build: {APP_BUILD}" in APP
 
 
-def test_ambiguous_visual_questions_require_an_in_panel_choice_before_answering():
+def test_ambiguous_visual_questions_require_a_temporary_dialog_choice_before_answering():
+    assert 'dialog = getattr(st, "dialog", _fallback_dialog)' in APP
+    assert '@dialog("Choose what you mean")' in APP
+    assert 'visual-clarification-dialog-marker' in APP
+    assert 'def show_visual_clarification(' in APP
     assert '"Choose the question you want answered"' in APP
     assert 'index=None' in APP
     assert 'placeholder="Select one interpretation…"' in APP
@@ -33,7 +37,9 @@ def test_ambiguous_visual_questions_require_an_in_panel_choice_before_answering(
     assert '"Selected question"' in APP
     assert 'value=saved_visual_result["question"]' in APP
     assert 'disabled=True' in APP
-    assert 'width="stretch"' in APP
+    assert 'STRETCH_BUTTON = {"width": "stretch"}' in APP
+    assert '**STRETCH_BUTTON' in APP
+    assert 'show_visual_clarification(page, selected_visual, saved_visual_result, fd, fe)' in APP
     assert "def emphasize_low_scores(text):" in APP
     assert "value < 80" in APP
     assert 'class="qa-low-score"' in APP

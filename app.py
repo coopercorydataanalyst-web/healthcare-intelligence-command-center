@@ -1,4 +1,5 @@
 from pathlib import Path
+import inspect
 import re
 import numpy as np
 import pandas as pd
@@ -79,6 +80,8 @@ CSS = """
 h1,h2,h3{color:#082f49!important}.stTabs [data-baseweb="tab"]{font-weight:700}
 [data-testid="stDataFrame"]{border:1px solid #d8e2ea;border-radius:12px;overflow:hidden}
 #floating-visual-qa-marker{display:none}
+#visual-clarification-dialog-marker{display:none}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(#visual-clarification-dialog-marker),div[data-testid="stLayoutWrapper"]:has(#visual-clarification-dialog-marker){position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1000001!important;width:min(520px,calc(100vw - 2rem))!important;max-height:80vh!important;overflow-y:auto!important;background:#fff!important;border:2px solid #0f766e!important;border-radius:18px!important;padding:22px!important;box-shadow:0 24px 80px rgba(2,24,38,.38)!important}
 div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker),div[data-testid="stLayoutWrapper"]:has(#floating-visual-qa-marker){position:fixed!important;left:50%!important;right:auto!important;bottom:1.15rem;transform:translateX(-50%)!important;z-index:999999;width:auto!important;max-width:calc(100vw - 2rem);margin:0!important;filter:drop-shadow(0 8px 22px rgba(8,47,73,.22))}
 div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker)>div,div[data-testid="stLayoutWrapper"]:has(#floating-visual-qa-marker)>div{background:transparent!important;border:0!important;padding:0!important;width:auto!important}
 div[data-testid="stVerticalBlockBorderWrapper"]:has(#floating-visual-qa-marker) button,div[data-testid="stLayoutWrapper"]:has(#floating-visual-qa-marker) button{border-radius:999px!important;background:rgba(15,118,110,.30)!important;color:#fff!important;border:1px solid rgba(94,234,212,.72)!important;font-weight:800!important;min-height:46px!important;backdrop-filter:blur(7px) saturate(135%);-webkit-backdrop-filter:blur(7px) saturate(135%);text-shadow:0 1px 3px rgba(0,30,35,.70);transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease!important}
@@ -103,11 +106,14 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v20-in-panel-clarification"
+APP_BUILD = "2026.08.20-v21-entity-aware-dialog"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
-        if state_key == "visual_qa" or state_key.startswith(("visual_qa_", "context_visual_", "context_question_", "visual_suggestion_")):
+        if state_key == "visual_qa" or state_key.startswith((
+            "visual_qa_", "context_visual_", "context_question_", "visual_suggestion_",
+            "visual_dialog_choice_", "pending_visual_question_", "answered_visual_question_",
+        )):
             del st.session_state[state_key]
     st.session_state["_gulfstar_app_state_version"] = APP_STATE_VERSION
 
@@ -940,6 +946,53 @@ else:
         "Synthetic data only • No PHI • Not patient-care decision support • Descriptive and modeled outputs require validation before operational use"
     )
 
+def _fallback_dialog(title):
+    """Provide a fixed modal-style container for older local Streamlit runtimes."""
+    def decorator(function):
+        def wrapped(*args, **kwargs):
+            with st.container(border=True):
+                st.markdown('<span id="visual-clarification-dialog-marker"></span>', unsafe_allow_html=True)
+                st.markdown(f"### {title}")
+                return function(*args, **kwargs)
+        return wrapped
+    return decorator
+
+
+dialog = getattr(st, "dialog", _fallback_dialog)
+STRETCH_BUTTON = {"width": "stretch"} if "width" in inspect.signature(st.button).parameters else {"use_container_width": True}
+
+
+@dialog("Choose what you mean")
+def show_visual_clarification(page_name, visual_name, pending_result, filtered_daily, filtered_encounters):
+    """Require a safe interpretation in a temporary modal, then close it."""
+    st.caption("The wording could change the calculation. Select the interpretation that matches your question.")
+    visual_choice = st.selectbox(
+        "Choose the question you want answered",
+        pending_result["result"]["suggestions"],
+        index=None,
+        placeholder="Select one interpretation…",
+        key=f"visual_dialog_choice_{page_name.split(' —')[0]}",
+    )
+    if st.button(
+        "Use This Question",
+        key=f"run_visual_dialog_choice_{page_name.split(' —')[0]}",
+        disabled=visual_choice is None,
+        **STRETCH_BUTTON,
+    ):
+        answered_result = answer_visual_question(
+            page_name, visual_name, visual_choice, filtered_daily, filtered_encounters,
+        )
+        st.session_state["visual_qa_result"] = {
+            "page": page_name, "visual": visual_name,
+            "question": visual_choice, "result": answered_result,
+        }
+        st.rerun()
+    if st.button("Return to My Question", key=f"cancel_visual_dialog_{page_name.split(' —')[0]}"):
+        st.session_state.pop("visual_qa_result", None)
+        st.session_state.pop(f"context_question_{page_name.split(' —')[0]}", None)
+        st.rerun()
+
+
 if not page.startswith("15 —"):
     contextual_options = visual_options(page)
     if contextual_options:
@@ -985,34 +1038,13 @@ if not page.startswith("15 —"):
                 else:
                     visual_result = saved_visual_result["result"]
                     if visual_result.get("suggestions"):
-                        clarification = visual_result.get("evidence") == "Validation Required — Clarification"
-                        st.markdown("##### Choose what you mean" if clarification else "##### Did you mean one of these?")
-                        st.caption(f"Your question: {saved_visual_result['question']}")
-                        if visual_result.get("keywords"):
-                            st.caption("Keywords detected: " + ", ".join(visual_result["keywords"]))
-                        visual_choice = st.selectbox(
-                            "Choose the question you want answered",
-                            visual_result["suggestions"],
-                            index=None,
-                            placeholder="Select one interpretation…",
-                            key=f"visual_suggestion_{page.split(' —')[0]}",
+                        st.text_input(
+                            "Your question",
+                            value=saved_visual_result["question"],
+                            disabled=True,
+                            key=f"pending_visual_question_{page.split(' —')[0]}",
                         )
-                        if st.button(
-                            "Use This Question",
-                            key=f"run_visual_suggestion_{page.split(' —')[0]}",
-                            disabled=visual_choice is None,
-                            width="stretch",
-                        ):
-                            answered_result = answer_visual_question(page, selected_visual, visual_choice, fd, fe)
-                            st.session_state["visual_qa_result"] = {
-                                "page": page, "visual": selected_visual,
-                                "question": visual_choice, "result": answered_result,
-                            }
-                            st.rerun()
-                        if st.button("Ask a Different Question", key=f"cancel_visual_suggestion_{page.split(' —')[0]}"):
-                            st.session_state.pop("visual_qa_result", None)
-                            st.session_state.pop(f"context_question_{page.split(' —')[0]}", None)
-                            st.rerun()
+                        show_visual_clarification(page, selected_visual, saved_visual_result, fd, fe)
                     else:
                         st.text_input(
                             "Selected question",
