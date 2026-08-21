@@ -102,7 +102,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v8-grounded-visuals"
+APP_BUILD = "2026.08.20-v9-evidence-based-why"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -994,10 +994,14 @@ if not page.startswith("15 —"):
                         st.markdown(f"##### {display['title']}")
                         if display.get("filters"):
                             st.markdown(f"**Filters:** {display['filters']}")
-                        why_text = (
-                            "The interpretation follows from the values and relative positions listed under What matters. "
-                            "It does not establish why an operational difference occurred."
-                        )
+                        why_text = display.get("why")
+                        if not why_text:
+                            supporting_points = display.get("what_matters", [])[:3]
+                            why_text = (
+                                "This interpretation follows from these displayed facts: " + " ".join(supporting_points)
+                                if supporting_points else
+                                "The displayed result follows from the documented calculation and current filtered values shown above."
+                            )
                         render_grounded_contract(
                             display["answer"], visual_result["calculation"], visual_result["limitation"], fd, fe, why=why_text,
                         )

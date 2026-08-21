@@ -111,6 +111,10 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 91. Added a visible dashboard build identifier so the live Streamlit deployment can be compared directly with the expected code version.
 92. Added Clear Saved Q&A Answer and Clear This Visual Answer controls to remove persisted answers without requiring a new browser session.
 93. Advanced the state contract to `2026.08.20-v8-grounded-visuals`, forcing older Q&A results to clear on deployment, and added build-marker runtime validation.
+94. Replaced the generic `Why` disclaimer with an evidence-based explanation derived from the selected visual's actual values, component arithmetic, ranks, or comparison facts.
+95. Added domain-specific Why logic: Executive Health Score answers now show the precise component-score average, rounded displayed score, and domains ranked above and below the named domain.
+96. Kept causal and patient-care warnings in the limitation rather than using them as a substitute for the requested Why explanation.
+97. Advanced the visible build and state contract to `2026.08.20-v9-evidence-based-why` and added exact regression coverage for the Access arithmetic and peer-domain comparison.
 
 ## Validation completed
 - Python syntax compilation: passed.

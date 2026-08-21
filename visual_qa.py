@@ -273,6 +273,14 @@ def _named_domain_interpretation(visual, question, daily, encounters):
         for label, value, unit, component_score in components[domain]
     ]
     position = "highest" if rank == 1 else "lowest" if rank == len(ranked) else f"ranked {rank} of {len(ranked)}"
+    component_average = sum(item[3] for item in components[domain]) / len(components[domain])
+    higher_domains = [f"{name} ({value:.0f})" for name, value in ranked if value > score]
+    lower_domains = [f"{name} ({value:.0f})" for name, value in ranked if value < score]
+    why = (
+        f"{domain} has this displayed position because its component scores average to {component_average:.1f}, which rounds to {score:.0f}/100. "
+        + (f"Domains scoring higher are {', '.join(higher_domains)}. " if higher_domains else "No selected domain scores higher. ")
+        + (f"Domains scoring lower are {', '.join(lower_domains)}." if lower_domains else "No selected domain scores lower.")
+    )
     answer = (
         f"The displayed {domain} domain score is {score:.0f}/100 and is {position}. "
         f"It is the unweighted average of {len(component_rows)} normalized component score{'s' if len(component_rows) != 1 else ''}. "
@@ -290,7 +298,7 @@ def _named_domain_interpretation(visual, question, daily, encounters):
         "evidence": "Synthetic Result / Modeled Estimate", "limitation": limitation,
         "display": {
             "title": f"{domain} Domain - Why It Has This Score", "filters": _selected_filter_summary(daily, encounters),
-            "answer": answer, "what_matters": component_rows, "actions": actions,
+            "answer": answer, "what_matters": component_rows, "why": why, "actions": actions,
             "action_heading": "What Leadership Should Validate", "limitation": limitation,
         },
     }

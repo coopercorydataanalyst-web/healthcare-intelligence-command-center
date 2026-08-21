@@ -20,7 +20,9 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
 
 
 def test_build_version_and_clear_answer_controls_are_visible():
-    assert 'APP_BUILD = "2026.08.20-v8-grounded-visuals"' in APP
+    assert 'APP_BUILD = "2026.08.20-v9-evidence-based-why"' in APP
     assert "Dashboard build: {APP_BUILD}" in APP
     assert "Clear Saved Q&A Answer" in APP
     assert "Clear This Visual Answer" in APP
+    assert 'why_text = display.get("why")' in APP
+    assert "This interpretation follows from these displayed facts" in APP

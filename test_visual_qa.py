@@ -130,6 +130,8 @@ def test_named_access_domain_uses_displayed_domain_not_specialty_wait_component(
     assert "unweighted average" in result["answer"]
     assert "mean daily specialty_wait_days; illustrative component score = 82/100" not in result["calculation"]
     assert result["display"]["title"] == "Access Domain - Why It Has This Score"
+    assert "component scores average to 76.8, which rounds to 77/100" in result["display"]["why"]
+    assert "Patient Experience (63)" in result["display"]["why"]
 
 
 def test_every_named_executive_domain_has_domain_level_explanation():
