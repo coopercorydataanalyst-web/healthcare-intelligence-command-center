@@ -103,7 +103,7 @@ d, e, p, iv, src = load()
 
 # Browser sessions can survive a Streamlit Cloud code redeploy. Version the
 # contextual-Q&A state so an older widget/result shape cannot crash new code.
-APP_BUILD = "2026.08.20-v19-visible-clarification-choices"
+APP_BUILD = "2026.08.20-v20-in-panel-clarification"
 APP_STATE_VERSION = APP_BUILD
 if st.session_state.get("_gulfstar_app_state_version") != APP_STATE_VERSION:
     for state_key in list(st.session_state):
@@ -956,101 +956,111 @@ if not page.startswith("15 —"):
                     contextual_options,
                     key=f"context_visual_{page.split(' —')[0]}",
                 )
-                with st.form(f"context_question_form_{page.split(' —')[0]}"):
-                    visual_question = st.text_input(
-                        "Ask about the selected visual",
-                        placeholder="What is this visual telling me, and what should I focus on?",
-                        key=f"context_question_{page.split(' —')[0]}",
-                    )
-                    visual_submitted = st.form_submit_button("Ask About This Visual")
-                if visual_submitted:
-                    visual_result = answer_visual_question(page, selected_visual, visual_question, fd, fe)
-                    st.session_state["visual_qa_result"] = {
-                        "page": page, "visual": selected_visual, "question": visual_question, "result": visual_result,
-                    }
                 saved_visual_result = st.session_state.get("visual_qa_result")
                 if not isinstance(saved_visual_result, dict):
                     st.session_state.pop("visual_qa_result", None)
                     saved_visual_result = None
-                if (
+                has_current_visual_result = bool(
                     saved_visual_result
                     and saved_visual_result.get("page") == page
                     and saved_visual_result.get("visual") == selected_visual
-                ):
-                    visual_result = saved_visual_result["result"]
-                    if st.button("Clear This Visual Answer", key=f"clear_visual_answer_{page.split(' —')[0]}"):
-                        st.session_state.pop("visual_qa_result", None)
+                )
+
+                if not has_current_visual_result:
+                    with st.form(f"context_question_form_{page.split(' —')[0]}"):
+                        visual_question = st.text_input(
+                            "Ask about the selected visual",
+                            placeholder="What is this visual telling me, and what should I focus on?",
+                            key=f"context_question_{page.split(' —')[0]}",
+                        )
+                        visual_submitted = st.form_submit_button("Ask About This Visual")
+                    if visual_submitted:
+                        visual_result = answer_visual_question(page, selected_visual, visual_question, fd, fe)
+                        saved_visual_result = {
+                            "page": page, "visual": selected_visual,
+                            "question": visual_question, "result": visual_result,
+                        }
+                        st.session_state["visual_qa_result"] = saved_visual_result
                         st.rerun()
+                else:
+                    visual_result = saved_visual_result["result"]
                     if visual_result.get("suggestions"):
                         clarification = visual_result.get("evidence") == "Validation Required — Clarification"
                         st.markdown("##### Choose what you mean" if clarification else "##### Did you mean one of these?")
+                        st.caption(f"Your question: {saved_visual_result['question']}")
                         if visual_result.get("keywords"):
                             st.caption("Keywords detected: " + ", ".join(visual_result["keywords"]))
-                        if clarification:
-                            st.markdown("Select one option below to answer immediately:")
-                            for choice_number, visual_choice in enumerate(visual_result["suggestions"], start=1):
-                                if st.button(
-                                    visual_choice,
-                                    key=f"visual_suggestion_{page.split(' —')[0]}_{choice_number}",
-                                    width="stretch",
-                                ):
-                                    visual_result = answer_visual_question(page, selected_visual, visual_choice, fd, fe)
-                                    saved_visual_result = {
-                                        "page": page, "visual": selected_visual,
-                                        "question": visual_choice, "result": visual_result,
-                                    }
-                                    st.session_state["visual_qa_result"] = saved_visual_result
-                                    st.rerun()
-                        else:
-                            visual_suggestion = st.selectbox(
-                                "Closest supported visual question",
-                                visual_result["suggestions"],
-                                key=f"visual_suggestion_{page.split(' —')[0]}",
-                            )
-                            if st.button("Ask Selected Visual Suggestion", key=f"run_visual_suggestion_{page.split(' —')[0]}"):
-                                visual_result = answer_visual_question(page, selected_visual, visual_suggestion, fd, fe)
-                                saved_visual_result = {
-                                    "page": page, "visual": selected_visual,
-                                    "question": visual_suggestion, "result": visual_result,
-                                }
-                                st.session_state["visual_qa_result"] = saved_visual_result
-                    resolved_visual = visual_result.get("resolved_visual", selected_visual)
-                    st.markdown(f"**{resolved_visual}**")
-                    if visual_result.get("selection_note"):
-                        st.info(visual_result["selection_note"])
-                    st.caption(f"Question: {saved_visual_result['question']}")
-                    display = visual_result.get("display")
-                    if display:
-                        st.markdown(f"##### {display['title']}")
-                        if display.get("filters"):
-                            st.markdown(f"**Filters:** {display['filters']}")
-                        why_text = display.get("why")
-                        if not why_text:
-                            supporting_points = display.get("what_matters", [])[:3]
-                            why_text = (
-                                "This interpretation follows from these displayed facts: " + " ".join(supporting_points)
-                                if supporting_points else
-                                "The displayed result follows from the documented calculation and current filtered values shown above."
-                            )
-                        render_grounded_contract(
-                            display["answer"], visual_result["calculation"], visual_result["limitation"], fd, fe, why=why_text,
+                        visual_choice = st.selectbox(
+                            "Choose the question you want answered",
+                            visual_result["suggestions"],
+                            index=None,
+                            placeholder="Select one interpretation…",
+                            key=f"visual_suggestion_{page.split(' —')[0]}",
                         )
-                        if display.get("what_matters"):
-                            st.markdown("**What matters**")
-                            for item in display["what_matters"]:
-                                st.markdown(f"- {emphasize_low_scores(item)}", unsafe_allow_html=True)
-                        st.markdown(f"**{display.get('action_heading', 'What Leadership Should Do')}**")
-                        for number, action in enumerate(display.get("actions", []), 1):
-                            st.markdown(f"{number}. {action}")
-                        st.caption(display["limitation"])
+                        if st.button(
+                            "Use This Question",
+                            key=f"run_visual_suggestion_{page.split(' —')[0]}",
+                            disabled=visual_choice is None,
+                            width="stretch",
+                        ):
+                            answered_result = answer_visual_question(page, selected_visual, visual_choice, fd, fe)
+                            st.session_state["visual_qa_result"] = {
+                                "page": page, "visual": selected_visual,
+                                "question": visual_choice, "result": answered_result,
+                            }
+                            st.rerun()
+                        if st.button("Ask a Different Question", key=f"cancel_visual_suggestion_{page.split(' —')[0]}"):
+                            st.session_state.pop("visual_qa_result", None)
+                            st.session_state.pop(f"context_question_{page.split(' —')[0]}", None)
+                            st.rerun()
                     else:
-                        render_grounded_contract(
-                            visual_result["answer"], visual_result["calculation"], visual_result["limitation"], fd, fe,
+                        st.text_input(
+                            "Selected question",
+                            value=saved_visual_result["question"],
+                            disabled=True,
+                            key=f"answered_visual_question_{page.split(' —')[0]}",
                         )
-                    with st.expander("Evidence, calculation, and limitations"):
-                        st.markdown(f"**Evidence type:** {visual_result['evidence']}")
-                        st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
-                        st.warning(f"**Limitation:** {visual_result['limitation']}")
+                        if st.button("Ask Another Question", key=f"clear_visual_answer_{page.split(' —')[0]}"):
+                            st.session_state.pop("visual_qa_result", None)
+                            st.session_state.pop(f"context_question_{page.split(' —')[0]}", None)
+                            st.session_state.pop(f"answered_visual_question_{page.split(' —')[0]}", None)
+                            st.rerun()
+                        resolved_visual = visual_result.get("resolved_visual", selected_visual)
+                        st.markdown(f"**{resolved_visual}**")
+                        if visual_result.get("selection_note"):
+                            st.info(visual_result["selection_note"])
+                        display = visual_result.get("display")
+                        if display:
+                            st.markdown(f"##### {display['title']}")
+                            if display.get("filters"):
+                                st.markdown(f"**Filters:** {display['filters']}")
+                            why_text = display.get("why")
+                            if not why_text:
+                                supporting_points = display.get("what_matters", [])[:3]
+                                why_text = (
+                                    "This interpretation follows from these displayed facts: " + " ".join(supporting_points)
+                                    if supporting_points else
+                                    "The displayed result follows from the documented calculation and current filtered values shown above."
+                                )
+                            render_grounded_contract(
+                                display["answer"], visual_result["calculation"], visual_result["limitation"], fd, fe, why=why_text,
+                            )
+                            if display.get("what_matters"):
+                                st.markdown("**What matters**")
+                                for item in display["what_matters"]:
+                                    st.markdown(f"- {emphasize_low_scores(item)}", unsafe_allow_html=True)
+                            st.markdown(f"**{display.get('action_heading', 'What Leadership Should Do')}**")
+                            for number, action in enumerate(display.get("actions", []), 1):
+                                st.markdown(f"{number}. {action}")
+                            st.caption(display["limitation"])
+                        else:
+                            render_grounded_contract(
+                                visual_result["answer"], visual_result["calculation"], visual_result["limitation"], fd, fe,
+                            )
+                        with st.expander("Evidence, calculation, and limitations"):
+                            st.markdown(f"**Evidence type:** {visual_result['evidence']}")
+                            st.markdown(f"**Calculation / visual logic:** {visual_result['calculation']}")
+                            st.warning(f"**Limitation:** {visual_result['limitation']}")
 
 st.markdown("---")
 st.caption(

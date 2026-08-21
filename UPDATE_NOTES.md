@@ -146,6 +146,7 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 126. Clarification choices preserve quantities such as `best two months`, and ranking ties at the requested cutoff are retained with an explicit tie note.
 127. Added exact `best two months`, top-two domain, top-two hospital, top-five service-line, every-visual top-two, and `30-Day Readmission` count-safety regressions; advanced the build/state contract to `2026.08.20-v18-quantity-aware-rankings`.
 128. Replaced the easy-to-miss clarification dropdown with visible, full-width, one-click interpretation choices. Ambiguous requests such as “best two months” now present each supported ranking directly and preserve the requested quantity; advanced the build/state contract to `2026.08.20-v19-visible-clarification-choices`.
+129. Moved ambiguity resolution fully inside the active floating Q&A panel. The dashboard now withholds the answer until the user selects an interpretation, replaces the original question field with a required choice box, then removes that box and displays the selected interpretation in a read-only question field above the answer; advanced the build/state contract to `2026.08.20-v20-in-panel-clarification`.
 
 ## Validation completed
 - Python syntax compilation: passed.

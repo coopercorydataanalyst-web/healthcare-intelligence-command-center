@@ -20,20 +20,25 @@ def test_grounded_contract_is_used_on_both_qa_surfaces():
 
 
 def test_build_version_and_clear_answer_controls_are_visible():
-    assert 'APP_BUILD = "2026.08.20-v19-visible-clarification-choices"' in APP
+    assert 'APP_BUILD = "2026.08.20-v20-in-panel-clarification"' in APP
     assert "Dashboard build: {APP_BUILD}" in APP
 
 
-def test_ambiguous_visual_questions_show_direct_one_click_choices():
-    assert 'st.markdown("Select one option below to answer immediately:")' in APP
-    assert 'for choice_number, visual_choice in enumerate(visual_result["suggestions"], start=1)' in APP
-    assert 'key=f"visual_suggestion_{page.split(\' —\')[0]}_{choice_number}"' in APP
+def test_ambiguous_visual_questions_require_an_in_panel_choice_before_answering():
+    assert '"Choose the question you want answered"' in APP
+    assert 'index=None' in APP
+    assert 'placeholder="Select one interpretation…"' in APP
+    assert 'disabled=visual_choice is None' in APP
+    assert '"Use This Question"' in APP
+    assert '"Selected question"' in APP
+    assert 'value=saved_visual_result["question"]' in APP
+    assert 'disabled=True' in APP
     assert 'width="stretch"' in APP
     assert "def emphasize_low_scores(text):" in APP
     assert "value < 80" in APP
     assert 'class="qa-low-score"' in APP
     assert 'score_class = " low-score"' in APP
     assert "Clear Saved Q&A Answer" in APP
-    assert "Clear This Visual Answer" in APP
+    assert "Ask Another Question" in APP
     assert 'why_text = display.get("why")' in APP
     assert "This interpretation follows from these displayed facts" in APP
