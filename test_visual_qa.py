@@ -441,3 +441,18 @@ def test_every_funnel_stage_has_stage_level_interpretation():
         result = answer_visual_question("2 — Flow", "System Patient-Flow Funnel", question, daily, encounters)
         assert result.get("display"), question
         assert result["display"]["title"] == title, (question, result["answer"])
+
+
+def test_best_month_uses_monthly_chart_ranking_not_recent_movement():
+    result = answer_visual_question(
+        "1 — CEO", "Margin and Flow Pressure by Month",
+        "what is my best month", daily, encounters,
+    )
+    assert "January 2025 is the best complete month" in result["answer"]
+    assert "Highest Operating Contribution: March 2025 at $8,837,052" in result["answer"]
+    assert "Lowest ED Boarding: July 2026 at 5.67 hours" in result["answer"]
+    assert "August 2026 (7 days)" in result["answer"]
+    assert "Positive movement:" not in result["answer"]
+    assert result["display"]["title"] == "Best Month - Margin and Flow"
+    assert "equal-weight" in result["display"]["why"]
+    assert "percentile rank" in result["calculation"]

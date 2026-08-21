@@ -890,6 +890,68 @@ def _funnel_stage_interpretation(visual, question, daily, encounters):
     }
 
 
+def _monthly_margin_flow_interpretation(visual, question, daily, encounters):
+    """Rank complete months on contribution, boarding, or a disclosed balanced rule."""
+    if visual != "Margin and Flow Pressure by Month" or daily.empty:
+        return None
+    tokens = flexible_tokens(question)
+    if "month" not in tokens or not (tokens & {"good", "bad", "high", "low", "highest", "lowest", "best", "worst"}):
+        return None
+    dated = daily.assign(month=pd.to_datetime(daily["date"]).dt.to_period("M").dt.to_timestamp())
+    monthly = dated.groupby("month", as_index=False).agg(
+        revenue=("revenue", "sum"), cost=("cost", "sum"),
+        boarding=("boarding_hours", "mean"), covered_days=("date", "nunique"),
+    ).rename(columns={"month": "date"})
+    monthly["contribution"] = monthly.revenue - monthly.cost
+    monthly["complete"] = monthly.covered_days == monthly.date.dt.days_in_month
+    complete = monthly[monthly.complete].copy()
+    if complete.empty:
+        return None
+    complete["contribution_percentile"] = complete.contribution.rank(pct=True, method="average")
+    complete["boarding_percentile"] = (-complete.boarding).rank(pct=True, method="average")
+    complete["balanced_score"] = (complete.contribution_percentile + complete.boarding_percentile) / 2
+    asks_worst = bool(tokens & {"bad", "worst", "low", "lowest"}) and "boarding" not in tokens
+    balanced = complete.loc[complete.balanced_score.idxmin() if asks_worst else complete.balanced_score.idxmax()]
+    highest_contribution = complete.loc[complete.contribution.idxmax()]
+    lowest_boarding = complete.loc[complete.boarding.idxmin()]
+    label = "worst" if asks_worst else "best"
+    answer = (
+        f"Using an equal-weight balanced ranking of higher Operating Contribution and lower ED Boarding, "
+        f"{balanced.date:%B %Y} is the {label} complete month. It recorded ${balanced.contribution:,.0f} in Operating Contribution "
+        f"and {balanced.boarding:.2f} hours of ED Boarding."
+    )
+    what_matters = [
+        f"Highest Operating Contribution: {highest_contribution.date:%B %Y} at ${highest_contribution.contribution:,.0f}.",
+        f"Lowest ED Boarding: {lowest_boarding.date:%B %Y} at {lowest_boarding.boarding:.2f} hours.",
+        f"Balanced {label.title()} Month: {balanced.date:%B %Y} at ${balanced.contribution:,.0f} and {balanced.boarding:.2f} hours.",
+    ]
+    partial = monthly[~monthly.complete]
+    if not partial.empty:
+        partial_names = ", ".join(f"{row.date:%B %Y} ({int(row.covered_days)} days)" for row in partial.itertuples())
+        what_matters.append(f"Excluded partial month(s) from ranking: {partial_names}.")
+    why = (
+        f"{balanced.date:%B %Y} has the {label} equal-weight average percentile rank when monthly Operating Contribution is ranked higher-is-better "
+        "and ED Boarding is ranked lower-is-better with equal weight. The separate contribution and boarding leaders are shown because "
+        "'best' depends on which outcome leadership prioritizes."
+    )
+    limitation = "The balanced ranking is an explicit dashboard interpretation rule, not a validated enterprise target or causal conclusion. Partial months are excluded from month-total comparisons."
+    return {
+        "answer": answer + " " + " ".join(what_matters),
+        "calculation": "Monthly Operating Contribution = sum(revenue) - sum(cost). Monthly ED Boarding = mean(boarding_hours). Balanced score = mean(percentile rank of contribution, percentile rank of negative boarding) across complete months.",
+        "evidence": "Synthetic Result / Analytical Signal", "limitation": limitation,
+        "display": {
+            "title": f"{label.title()} Month - Margin and Flow", "filters": _selected_filter_summary(daily, encounters),
+            "answer": answer, "what_matters": what_matters, "why": why,
+            "actions": [
+                "Confirm whether leadership means highest contribution, lowest boarding, or the disclosed balanced view.",
+                "Validate monthly revenue, cost, boarding timestamps, and complete-period coverage.",
+                "Review hospital and service-line contributors before attributing the selected month's position.",
+            ],
+            "action_heading": "What Leadership Should Validate", "limitation": limitation,
+        },
+    }
+
+
 def _weakest_visual_metric(spec, daily, encounters):
     candidates = []
     for key in spec.get("metrics", ()):
@@ -1166,12 +1228,13 @@ def answer_visual_question(page, visual, question, daily, encounters):
     visual_comparison = _visual_comparison_interpretation(visual, spec, question, daily, encounters)
     entity_position = _entity_position_interpretation(visual, spec, question, daily, encounters)
     funnel_stage = _funnel_stage_interpretation(visual, question, daily, encounters)
+    monthly_margin_flow = _monthly_margin_flow_interpretation(visual, question, daily, encounters)
     documented_content = _documented_content_interpretation(visual, question)
     explicit_metrics = [metric for metric in _metrics_in(question) if metric.key in spec.get("metrics", ())]
     dynamic = (
-        named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
+        monthly_margin_flow or named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _metric_detail_interpretation(explicit_metrics[0], daily, encounters)
         if explicit_metrics else
-        named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _dynamic_visual_interpretation(page, visual, daily, encounters)
+        monthly_margin_flow or named_domain or funnel_stage or visual_comparison or entity_position or documented_content or _dynamic_visual_interpretation(page, visual, daily, encounters)
     )
     tokens = flexible_tokens(question)
     wants_callout = bool(tokens & {"callout", "warning", "caution", "note", "annotation", "highlight"})
@@ -1185,9 +1248,13 @@ def answer_visual_question(page, visual, question, daily, encounters):
     wants_action = forward_language and (improvement_word or wants_negative or asks_next_step)
     wants_focus = bool(tokens & {"focus", "important", "interest", "attention", "priority", "matter", "why", "care", "outlier"}) or {"stand", "out"}.issubset(tokens)
     wants_meaning = bool(tokens & {"tell", "mean", "explain", "summarize", "show", "happen", "understand", "interpret", "read"})
-    if named_domain or visual_comparison or entity_position or funnel_stage:
+    if named_domain or visual_comparison or entity_position or funnel_stage or monthly_margin_flow:
         wants_meaning = True
         wants_focus = False
+    if monthly_margin_flow:
+        # A month ranking is distinct from a recent movement summary.
+        wants_positive = False
+        wants_negative = False
     # A broad what/how/why question about a selected visual should receive a
     # useful contextual explanation even without a memorized phrase.
     if not any((wants_callout, wants_calculation, wants_limits, wants_action, wants_positive, wants_negative, wants_focus, wants_meaning)) and tokens & {"what", "how", "why"}:

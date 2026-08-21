@@ -106,6 +106,8 @@ Modeled funnel-stage questions use the actual selected scenario math. Questions 
 
 Every displayed funnel stage now has its own interpretation: ED Arrivals, Admissions, Bed Placement Within Portfolio Target, Modeled Delayed Placements, and Discharges. High/low/why questions use the correct count, denominator, evidence label, stage relationship, and cohort limitation instead of returning generic focus guidance.
 
+Monthly chart questions are also resolved against the plotted monthly data. On **Margin and Flow Pressure by Month**, “What is my best month?” reports the highest Operating Contribution month, the lowest ED Boarding month, and an explicitly defined equal-weight balanced result. Incomplete months are excluded from fair month-total rankings and identified in the answer.
+
 ### Service-line filter behavior
 
 The service-line control now recalculates the operational dashboard, not only encounter-based readmission results. Because the source operations table is hospital-day grain, the app uses a deterministic synthetic allocation layer for service-line capacity, demand, census, flow intervals, quality events, staffing, labor, experience, procedural activity, revenue, cost, and denials. Selecting all service lines reconciles exactly to the original hospital-day portfolio; selecting a subset rolls only those modeled service-line components back into the KPI cards and visuals. The evidence bar labels this scope as a **Modeled Estimate**. Privacy events, source-governance facts, and intervention assumptions do not contain defensible service-line attribution and are explicitly labeled as not applicable rather than being silently changed.

@@ -122,6 +122,9 @@ You can also replace the repository README with `README_UPDATED.md` (rename it t
 102. Preserved the user's named-domain order in the title and answer instead of catalog order.
 103. Corrected domain ranking to use displayed whole-number precision. Financial and Workforce are now described as tied at 90/100 rather than Financial being uniquely highest because of hidden decimals.
 104. Added displayed-precision peer language to Why explanations and exact regression coverage for `Why is Financial and Patient Flow so high?`; advanced the build/state contract to `2026.08.20-v11-intent-and-ties`.
+105. Added a data-aware `best/worst month` intent for the Margin and Flow chart. It now reports the highest Operating Contribution month, the lowest ED Boarding month, and a disclosed equal-weight balanced result instead of substituting a recent-movement answer.
+106. Excluded incomplete months from month-total rankings and identifies them explicitly, preventing the partial August 2026 bar from being misclassified as a weak full month.
+107. Added exact regression coverage for `What is my best month?` and advanced the visible build/state contract to `2026.08.20-v12-month-ranking`.
 
 ## Validation completed
 - Python syntax compilation: passed.
